@@ -362,7 +362,9 @@ const reportRoutes = computed(() => newReportRoutes());
 // [turuta] Entradas del menu que el asesor inmobiliario no usa. Se filtran por
 // nombre al final de menuItems en vez de borrar sus bloques: asi el rebase
 // sobre cada version de Chatwoot casi nunca choca. Apagar la funcion en la
-// cuenta no basta: solo bloquea la pagina, el menu no lo mira.
+// cuenta no basta: Captain y Portals son premium y usePolicy.shouldShow los
+// ensena siempre para vender el plan, y Calls aparece por existir enterprise/.
+// Campaigns y Companies se filtran de paso para no depender de cada cuenta.
 // Registro de parches: docs/11-parches-chatwoot.md en crm-inmobi.
 const TURUTA_HIDDEN_MENU = new Set([
   'Captain',
