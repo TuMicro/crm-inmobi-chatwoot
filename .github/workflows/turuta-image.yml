@@ -47,6 +47,9 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.IMAGE }}
+          # Nunca "latest": la version se fija a mano en los compose, a proposito.
+          flavor: |
+            latest=false
           tags: |
             type=ref,event=tag
             type=raw,value=turuta-main,enable=${{ github.ref == 'refs/heads/turuta/main' }}
