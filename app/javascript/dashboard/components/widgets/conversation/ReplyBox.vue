@@ -61,6 +61,7 @@ import { LOCAL_STORAGE_KEYS } from 'dashboard/constants/localStorage';
 import { FEATURE_FLAGS } from 'dashboard/featureFlags';
 import { LocalStorage } from 'shared/helpers/localStorage';
 import { emitter } from 'shared/helpers/mitt';
+import { asegurarBandeja } from 'dashboard/turuta/asegurarBandeja';
 const EmojiIconPicker = defineAsyncComponent(
   () =>
     import('dashboard/components-next/emoji-icon-picker/EmojiIconPicker.vue')
@@ -496,6 +497,14 @@ export default {
     },
   },
   watch: {
+    // [turuta] Sin la bandeja del chat cargada no salen ni adjuntar, ni audio, ni
+    // plantillas. Ver turuta/asegurarBandeja.js.
+    inboxId: {
+      immediate: true,
+      handler(id) {
+        asegurarBandeja(this.$store, id);
+      },
+    },
     currentChat(conversation, oldConversation) {
       if (oldConversation && oldConversation.id !== conversation.id) {
         // Only update email fields when switching to a completely different conversation (by ID)

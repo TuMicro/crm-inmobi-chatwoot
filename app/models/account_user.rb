@@ -37,12 +37,37 @@ class AccountUser < ApplicationRecord
   accepts_nested_attributes_for :account
 
   after_create_commit :notify_creation, :create_notification_setting
+  # [turuta] Aviso inmediato a nuestra API: ver turuta_notify_agents_changed.
+  after_commit :turuta_notify_agents_changed, on: [:create, :destroy]
+  after_update_commit :turuta_notify_agents_changed, if: :turuta_reparto_changed?
   after_destroy :notify_deletion, :remove_user_from_account
   after_save :update_presence_in_redis, if: :saved_change_to_availability?
   after_commit :invalidate_filtered_unread_count_visibility, on: [:create, :destroy]
   after_update_commit :invalidate_filtered_unread_count_visibility_update, if: :filtered_unread_count_visibility_changed?
 
   validates :user_id, uniqueness: { scope: :account_id }
+
+  # [turuta] Lo que cambia a quien se le reparten leads: el rol (solo los agentes
+  # son asesores), la disponibilidad, y el auto offline, del que depende que la
+  # disponibilidad signifique algo.
+  def turuta_reparto_changed?
+    saved_change_to_role? || saved_change_to_availability? || saved_change_to_auto_offline?
+  end
+
+  # [turuta] Alta, baja o cambio de estado de un agente: se avisa por los webhooks
+  # de la cuenta con un evento nuestro, 'turuta_agents_changed'. Nuestra API lo
+  # recibe por el mismo webhook que ya tiene registrado (con su secreto en la URL)
+  # y sincroniza los asesores al momento, en vez de esperar a su sondeo de cinco
+  # minutos. No hace falta configurar nada nuevo. Un webhook ajeno recibiria un
+  # evento que no conoce y lo ignoraria. Nunca debe impedir guardar el agente.
+  def turuta_notify_agents_changed
+    payload = { event: 'turuta_agents_changed', account: { id: account_id } }
+    Webhook.where(account_id: account_id, webhook_type: :account_type).find_each do |webhook|
+      WebhookJob.perform_later(webhook.url, payload)
+    end
+  rescue StandardError => e
+    Rails.logger.warn("[turuta] no se pudo avisar del cambio de agentes: #{e.message}")
+  end
 
   def create_notification_setting
     setting = user.notification_settings.new(account_id: account.id)

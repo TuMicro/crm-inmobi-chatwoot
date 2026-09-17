@@ -77,7 +77,7 @@ async function elegir(item) {
   } catch (e) {
     useAlert(
       e.message === 'sin-asesor'
-        ? 'Ese agente todavía no figura como asesor en el CRM. Si lo acabas de crear, espera cinco minutos.'
+        ? 'Ese agente todavía no figura como asesor en el CRM. Si lo acabas de crear, espera unos segundos y vuelve a intentarlo.'
         : 'No se pudo guardar el descanso. Inténtalo de nuevo.'
     );
   } finally {
