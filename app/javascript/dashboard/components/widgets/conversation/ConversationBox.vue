@@ -4,6 +4,7 @@ import ConversationHeader from './ConversationHeader.vue';
 import DashboardAppFrame from '../DashboardApp/Frame.vue';
 import EmptyState from './EmptyState/EmptyState.vue';
 import MessagesView from './MessagesView.vue';
+import { isLeadApp } from 'dashboard/turuta/leadApp'; // [turuta]
 
 export default {
   components: {
@@ -37,8 +38,13 @@ export default {
   computed: {
     ...mapGetters({
       currentChat: 'getSelectedChat',
-      dashboardApps: 'dashboardApps/getRecords',
+      allDashboardApps: 'dashboardApps/getRecords',
     }),
+    // [turuta] La ficha del lead ya vive en el panel de contacto. Su Dashboard
+    // App se conserva solo como portadora de la configuracion y no se pinta.
+    dashboardApps() {
+      return this.allDashboardApps.filter(app => !isLeadApp(app));
+    },
     dashboardAppTabs() {
       return [
         {

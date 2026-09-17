@@ -19,6 +19,10 @@ import ConversationInfo from './ConversationInfo.vue';
 import CustomAttributes from './customAttributes/CustomAttributes.vue';
 import SharedFiles from './SharedFiles.vue';
 import Draggable from 'vuedraggable';
+// [turuta] La ficha del lead, dentro del panel. Ver docs/11 en crm-inmobi.
+import LeadHeader from 'dashboard/turuta/LeadHeader.vue';
+import LeadDetails from 'dashboard/turuta/LeadDetails.vue';
+import { withLeadItem, LEAD_SIDEBAR_TITLE } from 'dashboard/turuta/leadApp';
 import MacrosList from './Macros/List.vue';
 import ShopifyOrdersList from 'dashboard/components/widgets/conversation/ShopifyOrdersList.vue';
 import SidebarActionsHeader from 'dashboard/components-next/SidebarActionsHeader.vue';
@@ -123,7 +127,11 @@ const closeContactPanel = () => {
 };
 
 onMounted(() => {
-  conversationSidebarItems.value = conversationSidebarItemsOrder.value;
+  // [turuta] withLeadItem: la seccion "Lead" entra aunque el orden guardado
+  // del asesor sea anterior a ella.
+  conversationSidebarItems.value = withLeadItem(
+    conversationSidebarItemsOrder.value
+  );
   getContactDetails();
   store.dispatch('attributes/get', 0);
   // Load integrations to ensure linear integration state is available
@@ -138,6 +146,8 @@ onMounted(() => {
       @close="closeContactPanel"
     />
     <ContactInfo :contact="contact" :channel-type="channelType" />
+    <!-- [turuta] etapa, asesor y ventana de 24 h, siempre a la vista -->
+    <LeadHeader :conversation-id="conversationId" :contact="contact" />
     <div class="px-2 pb-8 list-group">
       <Draggable
         :list="conversationSidebarItems"
@@ -150,8 +160,21 @@ onMounted(() => {
         @end="onDragEnd"
       >
         <template #item="{ element }">
+          <!-- [turuta] transferir e historial, reordenable como el resto -->
+          <div v-if="element.name === 'turuta_lead'">
+            <AccordionItem
+              :title="LEAD_SIDEBAR_TITLE"
+              :is-open="isContactSidebarItemOpen('is_turuta_lead_open')"
+              compact
+              @toggle="
+                value => toggleSidebarUIState('is_turuta_lead_open', value)
+              "
+            >
+              <LeadDetails :conversation-id="conversationId" />
+            </AccordionItem>
+          </div>
           <div
-            v-if="element.name === 'conversation_actions'"
+            v-else-if="element.name === 'conversation_actions'"
             class="conversation--actions"
           >
             <AccordionItem
