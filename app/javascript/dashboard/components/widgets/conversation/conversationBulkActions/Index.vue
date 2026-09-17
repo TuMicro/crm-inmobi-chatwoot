@@ -196,7 +196,9 @@ onUnmounted(() => {
             :conversation-count="conversations.length"
             @select="onAssignAgent"
           />
+          <!-- [turuta] sin equipos -->
           <BulkTeamActions
+            v-if="false"
             :conversation-count="conversations.length"
             @select="onAssignTeam"
           />

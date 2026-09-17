@@ -173,16 +173,31 @@ export function useLead(conversationId, contact) {
     );
   }
 
-  // Transferir se hace con el selector "Agente asignado" de Chatwoot, y llega
-  // a nuestra API por webhook un instante despues. Se espera un poco antes de
-  // recargar, y se vuelve a mirar por si el webhook tardo mas. Solo cuando
-  // cambia el asignado de la MISMA conversacion: al cambiar de conversacion ya
-  // recarga el otro watcher.
+  // Dos cosas mas que cambian el lead sin pasar por la ficha, y llegan por
+  // websocket a la conversacion: el asignado (transferir se hace con el
+  // selector nativo) y los mensajes. Un mensaje nuevo puede ser el
+  // recordatorio de visita que mando nuestra API, o el lead pulsando
+  // "Confirmar". Nuestra API los procesa por webhook un instante despues, asi
+  // que se espera un poco antes de recargar, y se vuelve a mirar por si el
+  // webhook tardo mas. Solo dentro de la MISMA conversacion: al cambiar de
+  // conversacion ya recarga el otro watcher.
   const currentChat = useMapGetter('getSelectedChat');
+  const ultimoMensaje = () => {
+    const mensajes = currentChat.value?.messages;
+    return mensajes?.length ? mensajes[mensajes.length - 1].id : null;
+  };
   watch(
-    () => [currentChat.value?.id, currentChat.value?.meta?.assignee?.id],
-    ([chatId, assignee], [prevChatId, prevAssignee] = []) => {
-      if (chatId !== prevChatId || assignee === prevAssignee) return;
+    () => [
+      currentChat.value?.id,
+      currentChat.value?.meta?.assignee?.id,
+      ultimoMensaje(),
+    ],
+    (
+      [chatId, assignee, mensaje],
+      [prevChatId, prevAssignee, prevMensaje] = []
+    ) => {
+      if (chatId !== prevChatId) return;
+      if (assignee === prevAssignee && mensaje === prevMensaje) return;
       setTimeout(() => load(), 1500);
       setTimeout(() => load(), 6000);
     }

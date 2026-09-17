@@ -372,10 +372,30 @@ const TURUTA_HIDDEN_MENU = new Set([
   'Campaigns',
   'Portals', // Centro de ayuda
   'Companies',
+  // Dentro de Ajustes e Informes: lo que un CRM de WhatsApp no usa o es de
+  // pago. Equipos y prioridad se esconden en toda la interfaz.
+  'Settings Teams',
+  'Settings Agent Bots',
+  'Settings Integrations',
+  'Settings Data',
+  'Settings Audit Logs',
+  'Settings Custom Roles',
+  'Settings Sla',
+  'Settings Security',
+  'Reports SLA',
+  'Reports Bot',
 ]);
 
+// [turuta] Quita los items ocultos a cualquier profundidad del menu.
+const turutaPodar = items =>
+  items
+    .filter(item => !TURUTA_HIDDEN_MENU.has(item.name))
+    .map(item =>
+      item.children ? { ...item, children: turutaPodar(item.children) } : item
+    );
+
 const menuItems = computed(() => {
-  return [
+  return turutaPodar([
     {
       name: 'Inbox',
       label: t('SIDEBAR.INBOX'),
@@ -962,7 +982,7 @@ const menuItems = computed(() => {
         },
       ],
     },
-  ].filter(item => !TURUTA_HIDDEN_MENU.has(item.name)); // [turuta]
+  ]); // [turuta] turutaPodar
 });
 </script>
 

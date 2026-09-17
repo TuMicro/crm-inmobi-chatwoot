@@ -92,6 +92,19 @@ describe('withLeadItems', () => {
     expect(withLeadItems(order)).toEqual(order);
   });
 
+  it('no pinta nunca las secciones ocultas, ni con orden guardado', () => {
+    const order = [
+      { name: 'conversation_info' },
+      { name: 'macros' },
+      { name: 'conversation_participants' },
+    ];
+    expect(nombres(withLeadItems(order))).toEqual([
+      'macros',
+      LEAD_SIDEBAR_ITEM,
+    ]);
+    expect(ORDEN_TURUTA).not.toContain('conversation_info');
+  });
+
   it('quita la seccion antigua "turuta_lead" de 4.17.1-3', () => {
     const order = [{ name: 'turuta_lead' }, { name: 'macros' }];
     expect(nombres(withLeadItems(order))).toEqual([

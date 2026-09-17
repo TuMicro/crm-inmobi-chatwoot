@@ -8,6 +8,8 @@ export const routes = [
     path: frontendURL('accounts/:accountId/turuta/embudo'),
     name: 'turuta_embudo',
     component: EmbudoPage,
-    meta: { permissions: ['administrator', 'agent'] },
+    // Solo administradores: el asesor trabaja con sus leads, no con los de
+    // todos. El item del menu se esconde solo, porque mira estos permisos.
+    meta: { permissions: ['administrator'] },
   },
 ];

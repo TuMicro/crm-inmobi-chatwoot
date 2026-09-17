@@ -120,7 +120,7 @@ const filterTypes = [
   },
 ];
 
-export const filterAttributeGroups = [
+const rawFilterAttributeGroups = [
   {
     name: 'Standard Filters',
     i18nGroup: 'STANDARD_FILTERS',
@@ -183,4 +183,15 @@ export const filterAttributeGroups = [
   },
 ];
 
-export default filterTypes;
+// [turuta] Equipos y prioridad no se usan en el CRM: fuera de los filtros,
+// tanto del antiguo (filterTypes) como del nuevo (grupos).
+const TURUTA_OCULTOS = ['team_id', 'priority'];
+export const filterAttributeGroups = rawFilterAttributeGroups.map(group => ({
+  ...group,
+  attributes: (group.attributes || []).filter(
+    attribute => !TURUTA_OCULTOS.includes(attribute.key)
+  ),
+}));
+export default filterTypes.filter(
+  f => !TURUTA_OCULTOS.includes(f.attributeKey)
+);

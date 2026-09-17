@@ -260,7 +260,8 @@ export default {
         @select="onClickAssignAgent"
       />
     </div>
-    <div>
+    <!-- [turuta] Equipos y prioridad no se usan en el CRM: fuera -->
+    <div v-if="false">
       <ContactDetailsItem
         compact
         :title="$t('CONVERSATION_SIDEBAR.TEAM_LABEL')"
@@ -280,7 +281,7 @@ export default {
         @select="onClickAssignTeam"
       />
     </div>
-    <div>
+    <div v-if="false">
       <ContactDetailsItem compact :title="$t('CONVERSATION.PRIORITY.TITLE')" />
       <MultiselectDropdown
         :options="priorityOptions"

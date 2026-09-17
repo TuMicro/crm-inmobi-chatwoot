@@ -33,7 +33,7 @@ const FUZZY_SEARCH_KEYS = [
 ];
 
 const TEMPLATE_LEARN_MORE_URL =
-  'https://www.chatwoot.com/hc/user-guide/articles/1754940076-whatsapp-templates';
+  'https://developers.facebook.com/docs/whatsapp/message-templates/guidelines/'; // [turuta] la guia oficial de Meta
 
 const store = useStore();
 const { t } = useI18n();

@@ -1,4 +1,3 @@
-<!-- eslint-disable @intlify/vue-i18n/no-raw-text -->
 <script setup>
 // [turuta] Zona fija del panel de contacto, pegada a ContactInfo: la etapa, el
 // asesor, la ventana de 24 h y el selector de etapa. Fuera del acordeon a
@@ -38,9 +37,7 @@ const { state, cambiarEtapa, agendarVisita, quitarVisita } = useLead(
 const lead = computed(() => (state.lead?.found ? state.lead : null));
 const siguiente = computed(() => lead.value?.siguiente || null);
 const otras = computed(() =>
-  (lead.value?.siguientes || []).filter(
-    s => s.code !== siguiente.value?.code
-  )
+  (lead.value?.siguientes || []).filter(s => s.code !== siguiente.value?.code)
 );
 
 const abierto = ref(false); // el desplegable "Mover a otra etapa"
@@ -70,6 +67,20 @@ function abrirVisita(etapa) {
   abierto.value = false;
 }
 
+// Que cualquier clic en el campo abra el selector de fecha u hora, no solo
+// el icono de la derecha. showPicker solo existe en navegadores modernos y
+// solo funciona dentro de un gesto del usuario; si no, el navegador hace lo
+// suyo.
+function abrirSelector(event) {
+  const input = event.target;
+  if (typeof input.showPicker !== 'function') return;
+  try {
+    input.showPicker();
+  } catch (e) {
+    // sin gesto de usuario o ya abierto: no pasa nada
+  }
+}
+
 function cerrarVisita() {
   visitaPara.value = null;
   editandoVisita.value = false;
@@ -78,10 +89,7 @@ function cerrarVisita() {
 const visitaIso = computed(() => isoDesdeInputs(vFecha.value, vHora.value));
 const puedeGuardarVisita = computed(
   () =>
-    !!visitaIso.value &&
-    new Date(visitaIso.value) > new Date() &&
-    !!vDireccion.value.trim() &&
-    !state.busy
+    !!visitaIso.value && new Date(visitaIso.value) > new Date() && !state.busy
 );
 
 async function guardarVisita() {
@@ -146,6 +154,8 @@ const claseEtapa = computed(() => {
 </script>
 
 <template>
+  <!-- eslint-disable vue/no-bare-strings-in-template, @intlify/vue-i18n/no-raw-text -->
+  <!-- [turuta] Textos en espanol a proposito: la ficha es nuestra y no pasa por el i18n de Chatwoot -->
   <div class="px-4 pb-3 border-b border-n-weak" data-turuta="lead-header">
     <p v-if="state.error" class="text-xs text-n-slate-11">
       {{ textoError(state.error) }}
@@ -197,7 +207,9 @@ const claseEtapa = computed(() => {
       >
         <span
           class="flex-shrink-0 size-3.5 mt-px"
-          :class="lead.ventana24h ? 'i-lucide-clock' : 'i-lucide-alert-triangle'"
+          :class="
+            lead.ventana24h ? 'i-lucide-clock' : 'i-lucide-alert-triangle'
+          "
         />
         <span v-if="lead.ventana24h">
           <b>Dentro de la ventana de 24 h.</b> Responder es gratis.
@@ -217,9 +229,13 @@ const claseEtapa = computed(() => {
             class="flex-shrink-0 i-lucide-calendar-check size-3.5 text-n-slate-10"
           />
           <span class="font-medium">Visita</span>
-          <span class="truncate">{{ cuandoVisita(lead.visita.scheduledAt) }}</span>
+          <span class="truncate">{{
+            cuandoVisita(lead.visita.scheduledAt)
+          }}</span>
         </div>
-        <div class="truncate text-n-slate-11">{{ lead.visita.address }}</div>
+        <div v-if="lead.visita.address" class="truncate text-n-slate-11">
+          {{ lead.visita.address }}
+        </div>
         <div class="text-n-slate-11">{{ textoVisita(lead.visita) }}</div>
         <div class="flex gap-3 mt-1">
           <button
@@ -296,34 +312,44 @@ const claseEtapa = computed(() => {
 
       <div
         v-else-if="formularioVisita"
-        class="p-2 mt-3 border rounded-lg border-n-weak bg-n-alpha-1"
+        class="p-3 mt-3 border rounded-xl border-n-weak bg-n-solid-1"
       >
         <div class="text-sm font-medium text-n-slate-12">
           {{ visitaPara ? 'Agendar la visita' : 'Cambiar la visita' }}
         </div>
-        <div class="mt-0.5 text-xs text-n-slate-11">
-          Dos horas antes le llega al lead un recordatorio por WhatsApp con la
-          hora y la direccion.
-        </div>
-        <div class="flex gap-2 mt-2">
+        <p class="mt-0.5 text-xs text-n-slate-11">
+          Dos horas antes le llega al lead un recordatorio por WhatsApp.
+        </p>
+        <label class="block mt-3 text-xs font-medium text-n-slate-11">
+          Fecha
           <input
             v-model="vFecha"
             type="date"
-            class="flex-1 min-w-0 px-2 py-1 text-sm border rounded-md border-n-weak bg-n-background text-n-slate-12"
+            :min="fechaInput(new Date())"
+            class="turuta-input"
+            @click="abrirSelector"
           />
+        </label>
+        <label class="block mt-2 text-xs font-medium text-n-slate-11">
+          Hora
           <input
             v-model="vHora"
             type="time"
-            class="px-2 py-1 text-sm border rounded-md w-28 border-n-weak bg-n-background text-n-slate-12"
+            class="turuta-input"
+            @click="abrirSelector"
           />
-        </div>
-        <input
-          v-model="vDireccion"
-          type="text"
-          placeholder="Direccion de la visita"
-          class="w-full px-2 py-1 mt-2 text-sm border rounded-md border-n-weak bg-n-background text-n-slate-12"
-        />
-        <div class="flex justify-end gap-2 mt-2">
+        </label>
+        <label class="block mt-2 text-xs font-medium text-n-slate-11">
+          Direccion
+          <span class="font-normal text-n-slate-10">(opcional)</span>
+          <input
+            v-model="vDireccion"
+            type="text"
+            placeholder="Av. Larco 1234, Miraflores"
+            class="turuta-input"
+          />
+        </label>
+        <div class="flex justify-end gap-2 mt-3">
           <Button
             label="Cancelar"
             variant="ghost"
@@ -332,9 +358,7 @@ const claseEtapa = computed(() => {
             @click="cerrarVisita"
           />
           <Button
-            :label="
-              visitaPara ? `Agendar y pasar a ${visitaPara.name}` : 'Guardar'
-            "
+            :label="visitaPara ? 'Agendar' : 'Guardar'"
             variant="solid"
             color="blue"
             size="sm"
@@ -399,3 +423,15 @@ const claseEtapa = computed(() => {
     </template>
   </div>
 </template>
+
+<style scoped>
+/* [turuta] Campos del formulario de visita, con los mismos tokens que los
+   inputs de Chatwoot. */
+.turuta-input {
+  @apply block w-full h-9 px-3 mt-1 text-sm font-normal rounded-lg border border-n-weak bg-n-alpha-black2 text-n-slate-12 outline-none hover:border-n-slate-6 focus:border-n-strong;
+}
+input[type='date'].turuta-input::-webkit-calendar-picker-indicator,
+input[type='time'].turuta-input::-webkit-calendar-picker-indicator {
+  @apply opacity-60 cursor-pointer;
+}
+</style>

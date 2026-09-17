@@ -1,4 +1,3 @@
-<!-- eslint-disable @intlify/vue-i18n/no-raw-text -->
 <script setup>
 // [turuta] Pagina "Embudo": leads por etapa y por asesor, desde nuestra API.
 // Es una ruta nuestra dentro del dashboard de Chatwoot (turuta/routes.js).
@@ -36,7 +35,9 @@ async function cargar() {
     if (!body.found) throw new Error('config');
     datos.value = body;
   } catch (e) {
-    error.value = ['auth', 'config'].includes(e.message) ? e.message : 'network';
+    error.value = ['auth', 'config'].includes(e.message)
+      ? e.message
+      : 'network';
   } finally {
     cargando.value = false;
   }
@@ -54,9 +55,7 @@ watch(config, (cfg, prev) => {
 
 const etapas = computed(() => datos.value?.etapas || []);
 const asesores = computed(() => datos.value?.asesores || []);
-const maxEtapa = computed(() =>
-  Math.max(1, ...etapas.value.map(e => e.total))
-);
+const maxEtapa = computed(() => Math.max(1, ...etapas.value.map(e => e.total)));
 const cerrados = computed(() =>
   etapas.value
     .filter(e => e.terminal && !e.requiereMotivo)
@@ -68,6 +67,8 @@ const perdidos = computed(() =>
 </script>
 
 <template>
+  <!-- eslint-disable vue/no-bare-strings-in-template, @intlify/vue-i18n/no-raw-text -->
+  <!-- [turuta] Textos en espanol a proposito: la ficha es nuestra y no pasa por el i18n de Chatwoot -->
   <div
     class="flex flex-col w-full h-full min-h-0 overflow-auto bg-n-background"
     data-turuta="embudo"
@@ -180,7 +181,9 @@ const perdidos = computed(() =>
                 v-for="e in etapas"
                 :key="e.code"
                 class="px-2 py-1 text-right tabular-nums"
-                :class="a.porEtapa[e.code] ? 'text-n-slate-12' : 'text-n-slate-9'"
+                :class="
+                  a.porEtapa[e.code] ? 'text-n-slate-12' : 'text-n-slate-9'
+                "
               >
                 {{ a.porEtapa[e.code] }}
               </td>

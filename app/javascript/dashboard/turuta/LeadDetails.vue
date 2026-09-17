@@ -1,4 +1,3 @@
-<!-- eslint-disable @intlify/vue-i18n/no-raw-text -->
 <script setup>
 // [turuta] Seccion "Historial del lead" del acordeon del panel de contacto.
 // Se consulta, pero no a cada rato: por eso va dentro del acordeon, la ultima
@@ -30,6 +29,8 @@ const icono = tipo => {
 </script>
 
 <template>
+  <!-- eslint-disable vue/no-bare-strings-in-template, @intlify/vue-i18n/no-raw-text -->
+  <!-- [turuta] Textos en espanol a proposito: la ficha es nuestra y no pasa por el i18n de Chatwoot -->
   <div class="px-4 py-3" data-turuta="lead-details">
     <p v-if="!lead" class="text-xs text-n-slate-11">
       {{ state.loading ? 'Cargando...' : 'Sin lead para esta conversacion.' }}

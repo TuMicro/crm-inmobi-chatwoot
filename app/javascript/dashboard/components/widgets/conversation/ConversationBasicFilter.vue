@@ -61,48 +61,50 @@ const chatStatusOptions = computed(() => [
   },
 ]);
 
-const chatSortOptions = computed(() => [
-  {
-    label: t('CHAT_LIST.SORT_ORDER_ITEMS.last_activity_at_asc.TEXT'),
-    value: 'last_activity_at_asc',
-  },
-  {
-    label: t('CHAT_LIST.SORT_ORDER_ITEMS.last_activity_at_desc.TEXT'),
-    value: 'last_activity_at_desc',
-  },
-  {
-    label: t('CHAT_LIST.SORT_ORDER_ITEMS.created_at_desc.TEXT'),
-    value: 'created_at_desc',
-  },
-  {
-    label: t('CHAT_LIST.SORT_ORDER_ITEMS.created_at_asc.TEXT'),
-    value: 'created_at_asc',
-  },
-  {
-    label: t('CHAT_LIST.SORT_ORDER_ITEMS.unread.TEXT'),
-    value: 'unread',
-  },
-  {
-    label: t('CHAT_LIST.SORT_ORDER_ITEMS.priority_desc.TEXT'),
-    value: 'priority_desc',
-  },
-  {
-    label: t('CHAT_LIST.SORT_ORDER_ITEMS.priority_asc.TEXT'),
-    value: 'priority_asc',
-  },
-  {
-    label: t('CHAT_LIST.SORT_ORDER_ITEMS.priority_desc_created_at_asc.TEXT'),
-    value: 'priority_desc_created_at_asc',
-  },
-  {
-    label: t('CHAT_LIST.SORT_ORDER_ITEMS.waiting_since_asc.TEXT'),
-    value: 'waiting_since_asc',
-  },
-  {
-    label: t('CHAT_LIST.SORT_ORDER_ITEMS.waiting_since_desc.TEXT'),
-    value: 'waiting_since_desc',
-  },
-]);
+const chatSortOptions = computed(() =>
+  [
+    {
+      label: t('CHAT_LIST.SORT_ORDER_ITEMS.last_activity_at_asc.TEXT'),
+      value: 'last_activity_at_asc',
+    },
+    {
+      label: t('CHAT_LIST.SORT_ORDER_ITEMS.last_activity_at_desc.TEXT'),
+      value: 'last_activity_at_desc',
+    },
+    {
+      label: t('CHAT_LIST.SORT_ORDER_ITEMS.created_at_desc.TEXT'),
+      value: 'created_at_desc',
+    },
+    {
+      label: t('CHAT_LIST.SORT_ORDER_ITEMS.created_at_asc.TEXT'),
+      value: 'created_at_asc',
+    },
+    {
+      label: t('CHAT_LIST.SORT_ORDER_ITEMS.unread.TEXT'),
+      value: 'unread',
+    },
+    {
+      label: t('CHAT_LIST.SORT_ORDER_ITEMS.priority_desc.TEXT'),
+      value: 'priority_desc',
+    },
+    {
+      label: t('CHAT_LIST.SORT_ORDER_ITEMS.priority_asc.TEXT'),
+      value: 'priority_asc',
+    },
+    {
+      label: t('CHAT_LIST.SORT_ORDER_ITEMS.priority_desc_created_at_asc.TEXT'),
+      value: 'priority_desc_created_at_asc',
+    },
+    {
+      label: t('CHAT_LIST.SORT_ORDER_ITEMS.waiting_since_asc.TEXT'),
+      value: 'waiting_since_asc',
+    },
+    {
+      label: t('CHAT_LIST.SORT_ORDER_ITEMS.waiting_since_desc.TEXT'),
+      value: 'waiting_since_desc',
+    },
+  ].filter(option => !option.value.startsWith('priority'))
+); // [turuta] sin prioridad
 
 const activeChatStatusLabel = computed(
   () =>

@@ -23,6 +23,12 @@ const FEATURE_HELP_URLS = {
   captain_billing: 'https://chwt.app/hc/captain_billing',
 };
 
+// [turuta] Sin enlaces de "saber mas": todos llevan a la documentacion de
+// Chatwoot y no hay equivalente oficial para estas pantallas. Las cabeceras
+// de ajustes esconden el enlace cuando no hay URL. La tabla se conserva por
+// si algun dia hay documentacion propia que enlazar.
+const TURUTA_SIN_ENLACES = true;
+
 export function getHelpUrlForFeature(featureName) {
-  return FEATURE_HELP_URLS[featureName];
+  return TURUTA_SIN_ENLACES ? '' : FEATURE_HELP_URLS[featureName];
 }

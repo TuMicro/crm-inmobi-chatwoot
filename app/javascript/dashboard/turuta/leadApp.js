@@ -47,12 +47,19 @@ export const ORDEN_TURUTA = [
   'shared_files',
   'macros',
   'contact_attributes',
-  'conversation_info',
-  'conversation_participants',
   'linear_issues',
   'shopify_orders',
   LEAD_SIDEBAR_ITEM,
 ];
+
+/** Secciones de Chatwoot que no se pintan nunca, ni aunque el asesor las
+ *  tuviera guardadas. "Informacion de la conversacion" solo ensena la etapa,
+ *  que ya esta arriba, y deja borrar el atributo con una papelera.
+ *  "Participantes" es un aviso interno de Chatwoot que aqui no se usa. */
+const SECCIONES_OCULTAS = new Set([
+  'conversation_info',
+  'conversation_participants',
+]);
 
 /** True si esta Dashboard App es la nuestra: se reconoce por la ruta, no por
  *  el titulo, porque el titulo lo puede cambiar un administrador. */
@@ -80,16 +87,22 @@ export function leadAppConfig(apps) {
  *  da el nuestro. Si ya lo movio, se respeta: solo se quita la seccion antigua
  *  y se anade el historial al final si falta. */
 export function withLeadItems(order) {
-  const list = (Array.isArray(order) ? order : []).filter(
-    item => item && item.name && item.name !== LEAD_SIDEBAR_ITEM_ANTIGUO
+  const crudo = (Array.isArray(order) ? order : []).filter(
+    item => item && item.name
   );
-  const nombres = list.map(item => item.name);
+  const nombres = crudo.map(item => item.name);
   const deFabrica =
     nombres.length === ORDEN_CHATWOOT.length &&
     nombres.every((name, i) => name === ORDEN_CHATWOOT[i]);
-  if (deFabrica) return ORDEN_TURUTA.map(name => ({ name }));
-  if (!nombres.includes(LEAD_SIDEBAR_ITEM))
+  const base = deFabrica ? ORDEN_TURUTA.map(name => ({ name })) : crudo;
+  const list = base.filter(
+    item =>
+      !SECCIONES_OCULTAS.has(item.name) &&
+      item.name !== LEAD_SIDEBAR_ITEM_ANTIGUO
+  );
+  if (!list.some(item => item.name === LEAD_SIDEBAR_ITEM)) {
     list.push({ name: LEAD_SIDEBAR_ITEM });
+  }
   return list;
 }
 
