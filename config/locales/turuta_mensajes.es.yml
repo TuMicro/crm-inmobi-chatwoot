@@ -1,0 +1,143 @@
+# [turuta] Textos del SERVIDOR que llegan a la pantalla (avisos, mensajes de
+# actividad dentro del chat, errores de validacion, cabeceras de los CSV) y que
+# el es.yml de Chatwoot deja en ingles, a medias, o diciendo "conversacion".
+#
+# Aqui NO hace falta pareja en ingles: todas las claves existen ya en en.yml o en
+# Rails. Este fichero carga despues de es.yml (orden alfabetico), asi que gana.
+# Se queda fuera, a proposito, lo de funciones que aqui no existen: Captain,
+# SAML, MFA, recargas, integraciones, portales, encuestas y SLA.
+es:
+  messages:
+    reset_password: "Si ese correo existe en el sistema, en unos minutos recibirás las instrucciones para cambiar la contraseña."
+
+  # Mensajes de validacion de Rails. Chatwoot solo carga de rails-i18n las reglas
+  # de plural, asi que sin esto salen en ingles: "Email has already been taken".
+  errors:
+    format: "%{attribute} %{message}"
+    messages:
+      accepted: "debe aceptarse"
+      blank: "no puede estar en blanco"
+      confirmation: "no coincide"
+      empty: "no puede estar vacío"
+      equal_to: "debe ser igual a %{count}"
+      even: "debe ser par"
+      exclusion: "está reservado"
+      greater_than: "debe ser mayor que %{count}"
+      greater_than_or_equal_to: "debe ser mayor o igual que %{count}"
+      inclusion: "no está en la lista"
+      invalid: "no es válido"
+      less_than: "debe ser menor que %{count}"
+      less_than_or_equal_to: "debe ser menor o igual que %{count}"
+      model_invalid: "No se pudo guardar: %{errors}"
+      not_a_number: "no es un número"
+      not_an_integer: "debe ser un número entero"
+      odd: "debe ser impar"
+      other_than: "debe ser distinto de %{count}"
+      present: "debe estar en blanco"
+      required: "debe existir"
+      taken: "ya está en uso"
+      too_long:
+        one: "es demasiado largo (máximo 1 carácter)"
+        other: "es demasiado largo (máximo %{count} caracteres)"
+      too_short:
+        one: "es demasiado corto (mínimo 1 carácter)"
+        other: "es demasiado corto (mínimo %{count} caracteres)"
+      wrong_length:
+        one: "no tiene la longitud correcta (debe tener 1 carácter)"
+        other: "no tiene la longitud correcta (debe tener %{count} caracteres)"
+      search:
+        time_range_limit_exceeded: "La búsqueda está limitada a los últimos %{days} días"
+    account:
+      reporting_timezone:
+        invalid: "no es una zona horaria válida"
+      support_email:
+        invalid: "no es un correo válido"
+    attachments:
+      invalid: "El adjunto no es válido"
+    upload:
+      missing_input: "No se indicó ningún archivo ni URL"
+      invalid_url: "La URL no es válida"
+      fetch_failed: "No se pudo descargar el archivo de esa URL"
+      fetch_failed_with_message: "No se pudo descargar el archivo de esa URL: %{message}"
+      file_too_large: "El archivo supera el tamaño máximo permitido"
+      unsupported_content_type: "Ese tipo de archivo no se admite (solo imágenes y vídeos)"
+      unexpected: "Ha ocurrido un error inesperado"
+    conversations:
+      resolved: "El chat está resuelto y no admite mensajes nuevos"
+    whatsapp:
+      token_exchange_failed: "No se pudo obtener el token de acceso. Inténtalo de nuevo."
+      invalid_token_permissions: "El token de acceso no tiene los permisos que necesita WhatsApp."
+      phone_info_fetch_failed: "No se pudo leer la información del número. Inténtalo de nuevo."
+      phone_number_already_exists: "Ya existe un canal para este número: %{phone_number}. Si el error sigue, avisa a soporte."
+      reauthorization:
+        generic: "No se pudo volver a autorizar WhatsApp. Inténtalo de nuevo."
+        not_supported: "Este tipo de canal de WhatsApp no admite volver a autorizarse."
+    custom_attribute_definition:
+      attribute_key_format: "solo puede llevar letras, números, guiones bajos, guiones y puntos"
+      key_conflict: "Esa clave no se puede usar: podría chocar con un atributo del sistema."
+    reports:
+      date_range_too_long: "El periodo no puede pasar de 6 meses"
+
+  inbox:
+    reauthorization:
+      success: "Canal autorizado de nuevo"
+      not_required: "Esta bandeja no necesita volver a autorizarse"
+      invalid_channel: "Este tipo de canal no se puede volver a autorizar"
+
+  reports:
+    agent_csv:
+      conversations_count: "Chats asignados"
+    inbox_csv:
+      conversations_count: "N.º de chats"
+    label_csv:
+      conversations_count: "N.º de chats"
+      avg_reply_time: "Tiempo medio de respuesta"
+    team_csv:
+      conversations_count: "N.º de chats"
+    conversation_csv:
+      conversations_count: "Chats"
+      resolution_count: "Chats resueltos"
+    conversation_traffic_csv:
+      timezone: "Zona horaria"
+
+  notifications:
+    notification_title:
+      conversation_creation: "Hay un chat nuevo (#%{display_id}) en %{inbox_name}"
+      conversation_assignment: "Se te ha asignado un chat (#%{display_id})"
+      assigned_conversation_new_message: "Mensaje nuevo en el chat (#%{display_id})"
+      conversation_mention: "Te han mencionado en el chat (#%{display_id})"
+
+  auto_assignment:
+    default_policy_name: "Reparto por defecto"
+    policy_actor: "Automatización (%{policy_name})"
+  automation:
+    system_name: "Automatización"
+
+  conversations:
+    messages:
+      whatsapp:
+        list_button_label: "Elige una opción"
+    reply:
+      email_subject: "Mensajes nuevos en este chat"
+    # Los avisos grises que salen DENTRO del chat.
+    activity:
+      status:
+        resolved: "%{user_name} marcó el chat como resuelto"
+        contact_resolved: "%{contact_name} resolvió el chat"
+        open: "%{user_name} reabrió el chat"
+        pending: "%{user_name} marcó el chat como pendiente"
+        snoozed: "%{user_name} pospuso el chat"
+        auto_resolved_days: "El sistema resolvió el chat tras %{count} días sin actividad"
+        auto_resolved_hours: "El sistema resolvió el chat tras %{count} horas sin actividad"
+        auto_resolved_minutes: "El sistema resolvió el chat tras %{count} minutos sin actividad"
+        system_auto_open: "El sistema reabrió el chat porque llegó un mensaje nuevo."
+      assignee:
+        self_assigned: "%{user_name} se asignó este chat"
+        removed: "%{user_name} dejó el chat sin asignar"
+      labels:
+        removed: "%{user_name} quitó %{labels}"
+      auto_resolve:
+        not_sent_due_to_messaging_window: "El mensaje de resolución automática no se envió: la ventana de 24 horas de WhatsApp está cerrada"
+      muted: "%{user_name} silenció el chat"
+      unmuted: "%{user_name} quitó el silencio del chat"
+      auto_resolution_message: "Cerramos este chat porque lleva un tiempo sin actividad. Si necesitas algo más, escríbenos de nuevo."

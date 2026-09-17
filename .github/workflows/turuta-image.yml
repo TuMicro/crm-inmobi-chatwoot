@@ -52,11 +52,13 @@ jobs:
           ruby -c app/mailers/application_mailer.rb
           ruby -c app/models/user.rb
           ruby -c app/listeners/automation_rule_listener.rb
+          ruby -c app/controllers/devise_overrides/confirmations_controller.rb
+          ruby -c app/controllers/devise_overrides/passwords_controller.rb
           for f in app/views/turuta/devise/mailer/*.erb app/views/turuta/conversation_reply_mailer/*.erb; do
             ruby -rerb -e 'File.write("/tmp/vista.rb", ERB.new(File.read(ARGV[0]), trim_mode: "-").src)' "$f"
             ruby -c /tmp/vista.rb
           done
-          ruby -ryaml -e 'ARGV.each { |f| YAML.load_file(f); puts "YAML OK #{f}" }' config/locales/turuta.es.yml config/locales/turuta.en.yml config/locales/secure_password.es.yml
+          ruby -ryaml -e 'ARGV.each { |f| YAML.load_file(f); puts "YAML OK #{f}" }' config/locales/turuta.es.yml config/locales/turuta.en.yml config/locales/secure_password.es.yml config/locales/turuta_mensajes.es.yml
           ruby -rerb -e 'File.write("/tmp/layout.rb", ERB.new(File.read("app/views/layouts/vueapp.html.erb"), trim_mode: "-").src)'
           ruby -c /tmp/layout.rb
 

@@ -28,6 +28,8 @@ export default {
       <br />
     </span>
     <!-- Cmd bar, keyboard shortcuts placeholder -->
-    <FeaturePlaceholder />
+    <!-- [turuta] Sin pistas de atajos: llevan el simbolo de Mac, casi todos usan
+         Windows, y el menu de atajos ya no existe. -->
+    <FeaturePlaceholder v-if="false" />
   </div>
 </template>

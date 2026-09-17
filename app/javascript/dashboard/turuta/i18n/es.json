@@ -350,10 +350,18 @@
       "PREVIOUS_CONVERSATIONS": "Chats anteriores"
     }
   },
+  "CONTENT_TEMPLATES": {
+    "PICKER": {
+      "REFRESH_ERROR": "No se pudieron actualizar las plantillas. Inténtalo de nuevo.",
+      "REFRESH_SUCCESS": "Actualizando las plantillas. Puede tardar un par de minutos."
+    }
+  },
   "CONVERSATION": {
     "404": "Lo sentimos, no podemos encontrar el chat. Por favor, inténtalo de nuevo",
     "API_HOURS_WINDOW": "Solo puedes responder a este chat dentro de {hours} horas",
+    "BOT_HANDOFF_ERROR": "No se pudo tomar el chat. Inténtalo de nuevo.",
     "BOT_HANDOFF_MESSAGE": "Este chat está siendo gestionado por {assigneeName}.",
+    "BOT_HANDOFF_SUCCESS": "El chat ha pasado a ti",
     "CARD_CONTEXT_MENU": {
       "API": {
         "AGENT_ASSIGNMENT": {
@@ -553,6 +561,15 @@
         "CONVERSATION_ID": "ID de chat"
       }
     },
+    "REAUTHORIZE": {
+      "CONFIGURATION_ERROR": "Hubo un error de configuración al volver a autorizar.",
+      "ERROR": "No se pudo volver a conectar WhatsApp. Inténtalo de nuevo.",
+      "FACEBOOK_LOAD_ERROR": "No se pudo cargar la conexión con Facebook. Inténtalo de nuevo.",
+      "LOADING_FACEBOOK": "Cargando la conexión con Facebook...",
+      "SUCCESS": "WhatsApp conectado de nuevo",
+      "WHATSAPP_APP_ID_MISSING": "Falta configurar el identificador de la aplicación de WhatsApp. Avisa a tu administrador.",
+      "WHATSAPP_CONFIG_ID_MISSING": "Falta configurar el identificador de configuración de WhatsApp. Avisa a tu administrador."
+    },
     "TYPES": {
       "ASSIGNED_CONVERSATION_NEW_MESSAGE": "Nuevo mensaje en un chat asignado",
       "CONVERSATION_ASSIGNMENT": "Se te ha asignado un chat",
@@ -688,6 +705,17 @@
         "CHANNEL_GREETING_TOGGLE": {
           "HELP_TEXT": "Envía automáticamente un mensaje de saludo cuando se crea un nuevo chat."
         }
+      },
+      "WHATSAPP": {
+        "EMBEDDED_SIGNUP": {
+          "AUTH_NOT_COMPLETED": "La autenticación no se completó. Empieza de nuevo.",
+          "CANCELLED": "Se canceló el alta de WhatsApp",
+          "INVALID_BUSINESS_DATA": "Facebook devolvió datos de empresa no válidos. Inténtalo de nuevo.",
+          "PROCESSING": "Configurando tu cuenta de WhatsApp Business",
+          "SIGNUP_ERROR": "Hubo un error en el alta",
+          "SUCCESS_FALLBACK": "La cuenta de WhatsApp Business quedó configurada",
+          "SUCCESS_TITLE": "Cuenta de WhatsApp Business conectada"
+        }
       }
     },
     "ASSIGNMENT": {
@@ -698,7 +726,13 @@
       "DEFAULT_RULE_2": "Reparto por turnos",
       "DESCRIPTION": "Reparto automático de Chatwoot. En este CRM reparte el sistema de leads, por turnos y respetando descansos: déjalo apagado.",
       "ENABLE_AUTO_ASSIGNMENT": "Activar el reparto automático de Chatwoot",
+      "LINK_ERROR": "No se pudo vincular la política de reparto",
+      "LINK_SUCCESS": "Política de reparto vinculada",
       "TITLE": "Asignación de chat"
+    },
+    "ASSIGNMENT_POLICY": {
+      "DELETE_ERROR": "No se pudo quitar la política de reparto",
+      "DELETE_SUCCESS": "Política de reparto quitada"
     },
     "AUTO_ASSIGNMENT": {
       "MAX_ASSIGNMENT_LIMIT_SUB_TEXT": "Limite la cantidad máxima de chats de esta bandeja de entrada que se pueden asignar automáticamente a un agente"
@@ -706,6 +740,9 @@
     "CHANNEL_PREFERENCES": "Preferencias del canal",
     "COMPLETE_REGISTRATION": "Completar el registro",
     "COUNT": "{n} bandeja | {n} bandejas",
+    "DETAILS": {
+      "ERROR_CHANNEL_CREATION": "No se pudo crear la bandeja. Inténtalo de nuevo."
+    },
     "EDIT": {
       "LOCK_TO_SINGLE_CONVERSATION": {
         "DISABLED": "Crear un chat nuevo",
@@ -942,6 +979,9 @@
       "TITLE": "Conecta todos tus canales de chat"
     }
   },
+  "ONBOARDING_NEXT": {
+    "CONTINUE": "Continuar"
+  },
   "OVERVIEW_REPORTS": {
     "ACCOUNT_CONVERSATIONS": {
       "HEADER": "Chats abiertos",
@@ -1060,12 +1100,19 @@
     }
   },
   "REGISTER": {
+    "API": {
+      "SUCCESS_MESSAGE": "Registro completado"
+    },
     "PASSWORD": {
       "REQUIREMENTS_LENGTH": "Al menos {min} caracteres",
       "REQUIREMENTS_LOWERCASE": "Una letra minúscula",
       "REQUIREMENTS_NUMBER": "Un número",
       "REQUIREMENTS_SPECIAL": "Un carácter especial, como ! # $ % . _ -",
       "REQUIREMENTS_UPPERCASE": "Una letra mayúscula"
+    },
+    "VERIFY_EMAIL": {
+      "RESEND_ERROR": "No se pudo enviar el correo de verificación. Inténtalo de nuevo.",
+      "RESEND_SUCCESS": "Correo de verificación enviado. Revisa tu bandeja."
     }
   },
   "REPORT": {
@@ -1233,6 +1280,17 @@
       "PRIVACIDAD": "Política de privacidad",
       "TERMINOS": "Términos y condiciones"
     }
+  },
+  "WHATSAPP_TEMPLATES": {
+    "PICKER": {
+      "REFRESH_ERROR": "No se pudieron actualizar las plantillas. Inténtalo de nuevo.",
+      "REFRESH_SUCCESS": "Actualizando las plantillas. Puede tardar un par de minutos."
+    }
+  },
+  "WHATSAPP_TEMPLATE_MGMT": {
+    "PARTIAL_SYNC_ERROR": "Se están sincronizando las plantillas de algunas bandejas de WhatsApp, pero otras no se pudieron sincronizar.",
+    "SYNC_ERROR": "No se pudo iniciar la sincronización de plantillas. Inténtalo de nuevo.",
+    "SYNC_SUCCESS": "Sincronizando las plantillas de todas las bandejas de WhatsApp. Puede tardar un par de minutos."
   },
   "YEAR_IN_REVIEW": {
     "BUSIEST_DAY": {

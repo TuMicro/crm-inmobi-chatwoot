@@ -19,11 +19,11 @@ class DeviseOverrides::ConfirmationsController < Devise::ConfirmationsController
 
   def render_confirmation_error
     if @confirmable.blank?
-      render json: { message: 'Invalid token', redirect_url: '/' }, status: :unprocessable_entity
+      render json: { message: I18n.t('turuta.errors.invalid_token', default: 'Invalid token'), redirect_url: '/' }, status: :unprocessable_entity
     elsif @confirmable.confirmed_at
-      render json: { message: 'Already confirmed', redirect_url: '/' }, status: :unprocessable_entity
+      render json: { message: I18n.t('turuta.errors.already_confirmed', default: 'Already confirmed'), redirect_url: '/' }, status: :unprocessable_entity
     else
-      render json: { message: 'Failure', redirect_url: '/' }, status: :unprocessable_entity
+      render json: { message: I18n.t('turuta.errors.failure', default: 'Failure'), redirect_url: '/' }, status: :unprocessable_entity
     end
   end
 

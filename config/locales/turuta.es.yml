@@ -15,6 +15,10 @@ es:
       # De Chatwoot: decia "Transcripción de la conversación".
       transcript_subject: "Transcripción del chat"
   turuta:
+    errors:
+      invalid_token: "El enlace ya no es válido o ha caducado. Pide uno nuevo."
+      already_confirmed: "Esta cuenta ya estaba confirmada. Entra con tu correo y tu contraseña."
+      failure: "No se pudo confirmar la cuenta. Inténtalo de nuevo."
     mail:
       subjects:
         conversation_creation: "%{name}, hay un chat nuevo [n.º %{id}] en %{inbox}"

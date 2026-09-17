@@ -3,6 +3,10 @@
 # lo que cae cualquier otro idioma (config.i18n.fallbacks).
 en:
   turuta:
+    errors:
+      invalid_token: "Invalid token"
+      already_confirmed: "Already confirmed"
+      failure: "Failure"
     mail:
       subjects:
         conversation_creation: "%{name}, A new conversation [ID - %{id}] has been created in %{inbox}."
