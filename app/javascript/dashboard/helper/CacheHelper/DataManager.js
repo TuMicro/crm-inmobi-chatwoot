@@ -1,5 +1,6 @@
 import { openDB } from 'idb';
 import { DATA_VERSION } from './version';
+import { abrirConTope } from 'dashboard/turuta/abrirConTope';
 
 export class DataManager {
   constructor(accountId) {
@@ -11,7 +12,11 @@ export class DataManager {
   async initDb() {
     if (this.db) return this.db;
     const dbName = `cw-store-${this.accountId}`;
-    this.db = await openDB(`cw-store-${this.accountId}`, DATA_VERSION, {
+    // [turuta] Dos cambios. `blocking`: si otra pestana quiere borrar o actualizar
+    // la base (cerrar sesion la borra), esta suelta su conexion en vez de
+    // bloquearla; la siguiente lectura la reabre. Y el tope de tiempo: ver
+    // turuta/abrirConTope.js.
+    const abriendo = openDB(`cw-store-${this.accountId}`, DATA_VERSION, {
       upgrade(db) {
         // Existing databases already carry the stores added in earlier versions,
         // and createObjectStore throws on a name that is already taken.
@@ -26,7 +31,12 @@ export class DataManager {
         createStore('team', { keyPath: 'id' });
         createStore('canned_response', { keyPath: 'id' });
       },
+      blocking: () => {
+        this.db?.close();
+        this.db = null;
+      },
     });
+    this.db = await abrirConTope(abriendo);
 
     // Store the database name in LocalStorage
     const dbNames = JSON.parse(localStorage.getItem('cw-idb-names') || '[]');

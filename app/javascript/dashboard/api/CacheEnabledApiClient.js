@@ -30,7 +30,9 @@ class CacheEnabledApiClient extends ApiClient {
 
   get(cache = false) {
     if (cache) {
-      return this.getFromCache();
+      // [turuta] Cualquier fallo de la cache del navegador acaba en el servidor. Antes
+      // solo se cubria el de abrir la base: uno al leerla dejaba la lista vacia.
+      return this.getFromCache().catch(() => this.getFromNetwork());
     }
 
     return this.getFromNetwork();
