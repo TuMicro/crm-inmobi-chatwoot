@@ -37,7 +37,13 @@ class AutomationRuleListener < BaseListener
   private
 
   def process_conversation_event(event, event_name)
-    return if performed_by_automation?(event)
+    # [turuta] Chatwoot ignora los cambios que causan sus propias reglas, para que
+    # no se encadenen. Se abre UNA excepcion: las reglas "mantiene la etiqueta",
+    # que asi tambien se arman con etiquetas que pone otra regla (espera-1h...).
+    # No puede haber bucle rapido: son reglas con espera (minimo 10 minutos) y
+    # cada vez que se pone una etiqueta se arman una sola vez.
+    por_automatizacion = performed_by_automation?(event)
+    return if por_automatizacion && event_name != 'conversation_updated'
 
     auto_reply_skip_events = %w[conversation_created conversation_opened]
     return if auto_reply_skip_events.include?(event_name) && ignore_auto_reply_event?(event)
@@ -47,6 +53,7 @@ class AutomationRuleListener < BaseListener
     changed_attributes = event.data[:changed_attributes]
 
     rules = conversation_rules(event_name, account)
+    rules = turuta_solo_reglas_de_etiqueta(rules) if por_automatizacion
     return if rules.blank?
 
     rules.each do |rule|
@@ -91,6 +98,14 @@ class AutomationRuleListener < BaseListener
       account_id: account.id,
       active: true
     )
+  end
+
+  # [turuta] De un cambio hecho por una automatizacion solo se enteran las reglas
+  # con espera que vigilan una etiqueta.
+  def turuta_solo_reglas_de_etiqueta(rules)
+    rules.select do |rule|
+      rule.execution_delay.present? && AutomationRulePendingExecution.turuta_label_for(rule, nil).present?
+    end
   end
 
   def performed_by_automation?(event)

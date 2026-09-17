@@ -50,7 +50,8 @@ class AccountUser < ApplicationRecord
     # bandeja y el correo de "te asignaron una conversacion" solo hacia ruido.
     # Los necesarios (invitacion, contrasena) no pasan por aqui.
     setting.selected_email_flags = []
-    setting.selected_push_flags = [:push_conversation_assignment]
+    # [turuta] Tampoco push: la seccion de notificaciones del perfil esta oculta.
+    setting.selected_push_flags = []
     setting.save!
   end
 

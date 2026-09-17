@@ -2,11 +2,26 @@
 // [turuta] Pagina "Embudo": leads por etapa y por asesor, desde nuestra API.
 // Es una ruta nuestra dentro del dashboard de Chatwoot (turuta/routes.js).
 // La configuracion (API y token) sale de la Dashboard App, igual que la ficha.
+//
+// Misma envoltura y misma cabecera que los informes de Chatwoot (ReportsWrapper,
+// ReportHeader) y el mismo estilo de tarjeta (MetricCard), para que no se note el salto
+// al pasar de un informe a otro. Los calculos viven en embudo.js.
 import { ref, computed, onMounted, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { useStore, useMapGetter } from 'dashboard/composables/store';
 import Button from 'dashboard/components-next/button/Button.vue';
+import Icon from 'dashboard/components-next/icon/Icon.vue';
+import ReportHeader from 'dashboard/routes/dashboard/settings/reports/components/ReportHeader.vue';
 import { leadAppConfig, textoError } from './leadApp';
+import {
+  filasConBarra,
+  filasPorEtapa,
+  iniciales,
+  intensidad,
+  maximoDeLaTabla,
+  ordenarAsesores,
+  resumen,
+} from './embudo';
 
 const route = useRoute();
 const store = useStore();
@@ -63,226 +78,402 @@ function cambiarPeriodo(n) {
   cargar();
 }
 
-const cierres = computed(() => datos.value?.cierres || null);
+const cifras = computed(() => resumen(datos.value));
 const etapas = computed(() => datos.value?.etapas || []);
-const asesores = computed(() => datos.value?.asesores || []);
-const maxEtapa = computed(() => Math.max(1, ...etapas.value.map(e => e.total)));
-const cerrados = computed(() =>
-  etapas.value
-    .filter(e => e.terminal && !e.requiereMotivo)
-    .reduce((n, e) => n + e.total, 0)
+const porEtapa = computed(() => filasPorEtapa(etapas.value));
+const asesores = computed(() => ordenarAsesores(datos.value?.asesores));
+const maximoCelda = computed(() => maximoDeLaTabla(asesores.value));
+const cierres = computed(() => datos.value?.cierres || null);
+const cierresPorAsesor = computed(() =>
+  filasConBarra(cierres.value?.porAsesor)
 );
-const perdidos = computed(() =>
-  etapas.value.filter(e => e.requiereMotivo).reduce((n, e) => n + e.total, 0)
+const perdidosPorMotivo = computed(() =>
+  filasConBarra(datos.value?.perdidos)
 );
+
+const tarjetas = computed(() => [
+  {
+    id: 'activos',
+    titulo: 'Leads activos',
+    valor: cifras.value.activos,
+    nota: `de ${cifras.value.total} en total`,
+    icono: 'i-lucide-users',
+    color: 'text-n-blue-11 bg-n-blue-3',
+  },
+  {
+    id: 'cerrados',
+    titulo: 'Cerrados',
+    valor: cifras.value.cerrados,
+    nota: 'ventas concretadas',
+    icono: 'i-lucide-circle-check-big',
+    color: 'text-n-teal-11 bg-n-teal-3',
+  },
+  {
+    id: 'perdidos',
+    titulo: 'Perdidos',
+    valor: cifras.value.perdidos,
+    nota: 'con su motivo anotado',
+    icono: 'i-lucide-circle-x',
+    color: 'text-n-slate-11 bg-n-slate-3',
+  },
+  {
+    id: 'tasa',
+    titulo: 'Tasa de cierre',
+    valor:
+      cifras.value.tasaDeCierre === null
+        ? '—'
+        : `${cifras.value.tasaDeCierre} %`,
+    nota: 'cerrados sobre cerrados y perdidos',
+    icono: 'i-lucide-percent',
+    color: 'text-n-amber-11 bg-n-amber-3',
+  },
+]);
+
+const COLOR_DE_BARRA = {
+  abierta: 'bg-n-brand',
+  ganada: 'bg-n-teal-9',
+  perdida: 'bg-n-slate-8',
+};
+
+// Fondo de cada celda de la tabla: mas leads, mas color. Con las variables de
+// color de Chatwoot, asi el tema oscuro sale solo.
+const FONDOS = [
+  'transparent',
+  'rgb(var(--blue-3))',
+  'rgb(var(--blue-4))',
+  'rgb(var(--blue-5))',
+  'rgb(var(--blue-6))',
+];
+const fondoDeCelda = valor => ({
+  backgroundColor: FONDOS[intensidad(valor, maximoCelda.value)],
+});
+
+const generado = computed(() => {
+  if (!datos.value?.generadoEn) return '';
+  return new Date(datos.value.generadoEn).toLocaleTimeString('es-PE', {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+});
+
+const TARJETA =
+  'px-6 py-5 rounded-xl shadow outline outline-1 outline-n-container bg-n-solid-2';
 </script>
 
 <template>
   <!-- eslint-disable vue/no-bare-strings-in-template, @intlify/vue-i18n/no-raw-text -->
-  <!-- [turuta] Textos en espanol a proposito: la ficha es nuestra y no pasa por el i18n de Chatwoot -->
-  <div
-    class="flex flex-col w-full h-full min-h-0 overflow-auto bg-n-background"
-    data-turuta="embudo"
-  >
-    <header
-      class="flex items-center justify-between gap-4 px-6 py-4 border-b border-n-weak"
-    >
-      <div>
-        <h1 class="text-xl font-medium text-n-slate-12">Embudo</h1>
-        <p class="text-sm text-n-slate-11">
-          Leads por etapa y por asesor. Se actualiza al abrir la pagina.
-        </p>
-      </div>
-      <Button
-        label="Actualizar"
-        icon="i-lucide-refresh-cw"
-        variant="faded"
-        color="slate"
-        size="sm"
-        :is-loading="cargando"
-        @click="cargar"
-      />
-    </header>
-
-    <p v-if="error" class="px-6 py-4 text-sm text-n-slate-11">
-      {{ textoError(error) }}
-    </p>
-    <p v-else-if="!datos" class="px-6 py-4 text-sm text-n-slate-11">
-      Cargando...
-    </p>
-
-    <template v-else>
-      <section class="grid max-w-3xl grid-cols-3 gap-3 px-6 py-4">
-        <div class="p-3 border rounded-lg border-n-weak">
-          <div class="text-xs text-n-slate-11">Leads activos</div>
-          <div class="text-2xl font-medium text-n-slate-12">
-            {{ datos.activos }}
-          </div>
+  <!-- [turuta] Textos en español a propósito: la página es nuestra y no pasa por el i18n de Chatwoot -->
+  <div class="w-full px-6 overflow-auto bg-n-surface-1" data-turuta="embudo">
+    <div class="max-w-6xl pb-24 mx-auto">
+      <ReportHeader
+        header-title="Embudo"
+        header-description="Dónde está cada lead y quién lo lleva. Es una foto de este momento; los cierres se miden por periodo."
+      >
+        <div class="flex items-center gap-3">
+          <span v-if="generado" class="text-xs text-n-slate-10">
+            Actualizado a las {{ generado }}
+          </span>
+          <Button
+            label="Actualizar"
+            icon="i-lucide-refresh-cw"
+            variant="faded"
+            color="slate"
+            size="sm"
+            :is-loading="cargando"
+            @click="cargar"
+          />
         </div>
-        <div class="p-3 border rounded-lg border-n-weak">
-          <div class="text-xs text-n-slate-11">Cerrados</div>
-          <div class="text-2xl font-medium text-n-teal-11">{{ cerrados }}</div>
-        </div>
-        <div class="p-3 border rounded-lg border-n-weak">
-          <div class="text-xs text-n-slate-11">Perdidos</div>
-          <div class="text-2xl font-medium text-n-slate-11">{{ perdidos }}</div>
-        </div>
-      </section>
+      </ReportHeader>
 
-      <section v-if="cierres" class="max-w-3xl px-6 pb-6">
-        <div class="flex items-center justify-between gap-4 mb-2">
-          <h2
-            class="text-xs font-medium tracking-wide uppercase text-n-slate-10"
+      <p v-if="error" class="text-sm text-n-slate-11" :class="TARJETA">
+        {{ textoError(error) }}
+      </p>
+      <p v-else-if="!datos" class="text-sm text-n-slate-11" :class="TARJETA">
+        Cargando...
+      </p>
+
+      <div v-else class="flex flex-col gap-4">
+        <!-- Cifras -->
+        <section class="grid grid-cols-2 gap-4 lg:grid-cols-4">
+          <article
+            v-for="t in tarjetas"
+            :key="t.id"
+            class="flex items-start gap-4"
+            :class="TARJETA"
           >
-            Cierres de los ultimos {{ cierres.dias }} dias:
-            <span class="text-n-teal-11">{{ cierres.total }}</span>
-          </h2>
-          <div class="flex gap-1">
-            <button
-              v-for="n in PERIODOS"
-              :key="n"
-              type="button"
-              class="px-2 py-1 text-xs border rounded-md border-n-weak"
-              :class="
-                n === dias
-                  ? 'bg-n-alpha-2 text-n-slate-12'
-                  : 'text-n-slate-11 hover:bg-n-alpha-1'
-              "
-              @click="cambiarPeriodo(n)"
+            <span
+              class="flex items-center justify-center flex-none rounded-lg size-10"
+              :class="t.color"
             >
-              {{ n }} dias
-            </button>
-          </div>
-        </div>
-        <ul class="flex flex-col gap-1 text-sm">
-          <li
-            v-for="c in cierres.porAsesor"
-            :key="c.id || 'sin-asesor'"
-            class="flex justify-between gap-4"
-          >
-            <span class="text-n-slate-12">{{ c.nombre }}</span>
-            <span class="tabular-nums text-n-slate-11">{{ c.total }}</span>
-          </li>
-        </ul>
-        <p class="mt-2 text-xs text-n-slate-10">
-          Leads que llegaron a Cierre en el periodo, contados al asesor que los
-          lleva hoy.
-        </p>
-      </section>
-
-      <section class="px-6 pb-4">
-        <h2
-          class="mb-2 text-xs font-medium tracking-wide uppercase text-n-slate-10"
-        >
-          Por etapa
-        </h2>
-        <ol class="flex flex-col max-w-3xl gap-1.5">
-          <li
-            v-for="e in etapas"
-            :key="e.code"
-            class="flex items-center gap-3 text-sm"
-          >
-            <span class="truncate w-44 text-n-slate-12">{{ e.name }}</span>
-            <div class="flex-1 h-4 rounded bg-n-alpha-1">
-              <div
-                class="h-4 rounded bg-n-brand"
-                :style="{ width: `${(e.total / maxEtapa) * 100}%` }"
-              />
-            </div>
-            <span class="w-8 text-right tabular-nums text-n-slate-12">
-              {{ e.total }}
+              <Icon :icon="t.icono" class="size-5" />
             </span>
-          </li>
-        </ol>
-      </section>
-
-      <section class="px-6 pb-6 overflow-x-auto">
-        <h2
-          class="mb-2 text-xs font-medium tracking-wide uppercase text-n-slate-10"
-        >
-          Por asesor
-        </h2>
-        <table class="text-sm border-collapse">
-          <thead>
-            <tr>
-              <th class="px-2 py-1 font-medium text-left text-n-slate-11">
-                Asesor
-              </th>
-              <th
-                v-for="e in etapas"
-                :key="e.code"
-                class="px-2 py-1 font-medium text-right text-n-slate-11 whitespace-nowrap"
+            <div class="min-w-0">
+              <p class="mb-1 text-sm text-n-slate-11">{{ t.titulo }}</p>
+              <p
+                class="mb-1 text-3xl font-medium leading-none tabular-nums text-n-slate-12"
               >
-                {{ e.name }}
-              </th>
-              <th class="px-2 py-1 font-medium text-right text-n-slate-11">
-                Total
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr
-              v-for="a in asesores"
-              :key="a.id || 'sin-asesor'"
-              class="border-t border-n-weak"
+                {{ t.valor }}
+              </p>
+              <p class="mb-0 text-xs text-n-slate-10">{{ t.nota }}</p>
+            </div>
+          </article>
+        </section>
+
+        <!-- Por etapa -->
+        <section :class="TARJETA">
+          <header class="flex items-baseline justify-between gap-4 mb-5">
+            <h2 class="mb-0 text-lg font-medium text-n-slate-12">Por etapa</h2>
+            <span class="text-xs text-n-slate-10">
+              leads en cada etapa y qué parte del total son
+            </span>
+          </header>
+          <ol class="flex flex-col gap-3 mb-0 list-none ltr:ml-0 rtl:mr-0">
+            <li
+              v-for="e in porEtapa"
+              :key="e.code"
+              class="grid items-center gap-4 grid-cols-[11rem_1fr_5.5rem] text-sm"
             >
-              <td class="px-2 py-1 text-n-slate-12 whitespace-nowrap">
-                {{ a.nombre }}
-              </td>
-              <td
-                v-for="e in etapas"
-                :key="e.code"
-                class="px-2 py-1 text-right tabular-nums"
-                :class="
-                  a.porEtapa[e.code] ? 'text-n-slate-12' : 'text-n-slate-9'
-                "
-              >
-                {{ a.porEtapa[e.code] }}
-              </td>
-              <td
-                class="px-2 py-1 font-medium text-right tabular-nums text-n-slate-12"
-              >
-                {{ a.total }}
-              </td>
-            </tr>
-          </tbody>
-          <tfoot>
-            <tr class="border-t border-n-strong">
-              <td class="px-2 py-1 font-medium text-n-slate-12">Total</td>
-              <td
-                v-for="e in etapas"
-                :key="e.code"
-                class="px-2 py-1 font-medium text-right tabular-nums text-n-slate-12"
-              >
-                {{ e.total }}
-              </td>
-              <td
-                class="px-2 py-1 font-medium text-right tabular-nums text-n-slate-12"
-              >
-                {{ datos.total }}
-              </td>
-            </tr>
-          </tfoot>
-        </table>
-      </section>
+              <span class="truncate text-n-slate-12" :title="e.name">
+                {{ e.name }}
+              </span>
+              <div class="h-2.5 rounded-full bg-n-alpha-2 overflow-hidden">
+                <div
+                  class="h-full transition-all duration-500 rounded-full"
+                  :class="COLOR_DE_BARRA[e.tipo]"
+                  :style="{ width: `${e.ancho}%` }"
+                />
+              </div>
+              <span class="text-right tabular-nums">
+                <span class="font-medium text-n-slate-12">{{ e.total }}</span>
+                <span class="ml-1.5 text-xs text-n-slate-10">
+                  {{ e.parte }} %
+                </span>
+              </span>
+            </li>
+          </ol>
+          <footer class="flex flex-wrap gap-4 mt-5 text-xs text-n-slate-10">
+            <span class="flex items-center gap-1.5">
+              <span class="rounded-full size-2 bg-n-brand" /> En curso
+            </span>
+            <span class="flex items-center gap-1.5">
+              <span class="rounded-full size-2 bg-n-teal-9" /> Venta cerrada
+            </span>
+            <span class="flex items-center gap-1.5">
+              <span class="rounded-full size-2 bg-n-slate-8" /> Perdido
+            </span>
+          </footer>
+        </section>
 
-      <section v-if="datos.perdidos.length" class="px-6 pb-8">
-        <h2
-          class="mb-2 text-xs font-medium tracking-wide uppercase text-n-slate-10"
-        >
-          Perdidos por motivo
-        </h2>
-        <ul class="flex flex-col max-w-md gap-1 text-sm">
-          <li
-            v-for="p in datos.perdidos"
-            :key="p.code"
-            class="flex justify-between gap-4"
-          >
-            <span class="text-n-slate-12">{{ p.name }}</span>
-            <span class="tabular-nums text-n-slate-11">{{ p.total }}</span>
-          </li>
-        </ul>
-      </section>
-    </template>
+        <div class="grid gap-4 lg:grid-cols-2">
+          <!-- Cierres del periodo -->
+          <section v-if="cierres" :class="TARJETA">
+            <header class="flex items-center justify-between gap-4 mb-1">
+              <h2 class="mb-0 text-lg font-medium text-n-slate-12">
+                Cierres del periodo
+              </h2>
+              <div class="flex gap-1 p-0.5 rounded-lg bg-n-alpha-1">
+                <button
+                  v-for="n in PERIODOS"
+                  :key="n"
+                  type="button"
+                  class="px-2.5 py-1 text-xs rounded-md transition-colors"
+                  :class="
+                    n === dias
+                      ? 'bg-n-solid-2 text-n-slate-12 font-medium shadow-sm'
+                      : 'text-n-slate-11 hover:text-n-slate-12'
+                  "
+                  @click="cambiarPeriodo(n)"
+                >
+                  {{ n }} días
+                </button>
+              </div>
+            </header>
+            <p class="mb-5 text-sm text-n-slate-11">
+              <span class="text-2xl font-medium tabular-nums text-n-teal-11">
+                {{ cierres.total }}
+              </span>
+              en los últimos {{ cierres.dias }} días
+            </p>
+            <ul class="flex flex-col gap-3 mb-0 list-none ltr:ml-0 rtl:mr-0">
+              <li
+                v-for="c in cierresPorAsesor"
+                :key="c.id || 'sin-asesor'"
+                class="grid items-center gap-3 grid-cols-[2rem_1fr_2rem] text-sm"
+              >
+                <span
+                  class="flex items-center justify-center text-xs font-medium rounded-full size-8 bg-n-alpha-2 text-n-slate-11"
+                >
+                  {{ iniciales(c.nombre) }}
+                </span>
+                <div class="min-w-0">
+                  <p class="mb-1 truncate text-n-slate-12">{{ c.nombre }}</p>
+                  <div class="h-1.5 rounded-full bg-n-alpha-2 overflow-hidden">
+                    <div
+                      class="h-full transition-all duration-500 rounded-full bg-n-teal-9"
+                      :style="{ width: `${c.ancho}%` }"
+                    />
+                  </div>
+                </div>
+                <span
+                  class="font-medium text-right tabular-nums"
+                  :class="c.total ? 'text-n-slate-12' : 'text-n-slate-9'"
+                >
+                  {{ c.total }}
+                </span>
+              </li>
+            </ul>
+            <p class="mt-5 mb-0 text-xs text-n-slate-10">
+              Leads que llegaron a Cierre en el periodo, contados al asesor que
+              los lleva hoy.
+            </p>
+          </section>
+
+          <!-- Perdidos por motivo -->
+          <section :class="TARJETA">
+            <header class="mb-1">
+              <h2 class="mb-0 text-lg font-medium text-n-slate-12">
+                Perdidos por motivo
+              </h2>
+            </header>
+            <p class="mb-5 text-sm text-n-slate-11">
+              <span class="text-2xl font-medium tabular-nums text-n-slate-12">
+                {{ cifras.perdidos }}
+              </span>
+              en total
+            </p>
+            <ul
+              v-if="perdidosPorMotivo.length"
+              class="flex flex-col gap-3 mb-0 list-none ltr:ml-0 rtl:mr-0"
+            >
+              <li v-for="p in perdidosPorMotivo" :key="p.code" class="text-sm">
+                <div class="flex items-baseline justify-between gap-4 mb-1">
+                  <span class="truncate text-n-slate-12">{{ p.name }}</span>
+                  <span class="flex-none tabular-nums">
+                    <span class="font-medium text-n-slate-12">
+                      {{ p.total }}
+                    </span>
+                    <span class="ml-1.5 text-xs text-n-slate-10">
+                      {{ p.parte }} %
+                    </span>
+                  </span>
+                </div>
+                <div class="h-1.5 rounded-full bg-n-alpha-2 overflow-hidden">
+                  <div
+                    class="h-full transition-all duration-500 rounded-full bg-n-slate-8"
+                    :style="{ width: `${p.ancho}%` }"
+                  />
+                </div>
+              </li>
+            </ul>
+            <p v-else class="mb-0 text-sm text-n-slate-10">
+              Todavía no se ha perdido ningún lead.
+            </p>
+          </section>
+        </div>
+
+        <!-- Por asesor. El scroll horizontal vive en un div interior SIN alto
+             fijo: la tabla ocupa lo que necesite y no sale barra vertical. -->
+        <section :class="TARJETA">
+          <header class="flex items-baseline justify-between gap-4 mb-5">
+            <h2 class="mb-0 text-lg font-medium text-n-slate-12">Por asesor</h2>
+            <span class="text-xs text-n-slate-10">
+              cuanto más color, más leads en esa etapa
+            </span>
+          </header>
+          <div class="-mx-2 overflow-x-auto">
+            <table class="w-full text-sm border-separate border-spacing-0">
+              <thead>
+                <tr>
+                  <th
+                    class="sticky left-0 z-10 px-2 pb-3 font-medium text-left bg-n-solid-2 text-n-slate-11"
+                  >
+                    Asesor
+                  </th>
+                  <th
+                    v-for="e in etapas"
+                    :key="e.code"
+                    class="px-2 pb-3 text-xs font-medium leading-tight text-center align-bottom text-n-slate-11 min-w-[4.5rem]"
+                  >
+                    {{ e.name }}
+                  </th>
+                  <th
+                    class="px-2 pb-3 font-medium text-right text-n-slate-11"
+                  >
+                    Total
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr
+                  v-for="a in asesores"
+                  :key="a.id || 'sin-asesor'"
+                  class="group"
+                >
+                  <td
+                    class="sticky left-0 z-10 py-1.5 px-2 border-t bg-n-solid-2 border-n-weak whitespace-nowrap"
+                  >
+                    <span class="flex items-center gap-2">
+                      <span
+                        class="flex items-center justify-center flex-none font-medium rounded-full text-xxs size-6 bg-n-alpha-2 text-n-slate-11"
+                      >
+                        {{ iniciales(a.nombre) }}
+                      </span>
+                      <span
+                        :class="a.id ? 'text-n-slate-12' : 'text-n-slate-10'"
+                      >
+                        {{ a.nombre }}
+                      </span>
+                    </span>
+                  </td>
+                  <td
+                    v-for="e in etapas"
+                    :key="e.code"
+                    class="px-1 py-1.5 border-t border-n-weak"
+                  >
+                    <span
+                      class="flex items-center justify-center h-8 rounded-md tabular-nums"
+                      :class="
+                        a.porEtapa[e.code]
+                          ? 'text-n-slate-12 font-medium'
+                          : 'text-n-slate-8'
+                      "
+                      :style="fondoDeCelda(a.porEtapa[e.code])"
+                    >
+                      {{ a.porEtapa[e.code] || '·' }}
+                    </span>
+                  </td>
+                  <td
+                    class="px-2 py-1.5 font-medium text-right border-t border-n-weak tabular-nums text-n-slate-12"
+                  >
+                    {{ a.total }}
+                  </td>
+                </tr>
+              </tbody>
+              <tfoot>
+                <tr>
+                  <td
+                    class="sticky left-0 z-10 px-2 pt-3 font-medium border-t bg-n-solid-2 border-n-strong text-n-slate-11"
+                  >
+                    Total
+                  </td>
+                  <td
+                    v-for="e in etapas"
+                    :key="e.code"
+                    class="px-2 pt-3 font-medium text-center border-t border-n-strong tabular-nums text-n-slate-12"
+                  >
+                    {{ e.total }}
+                  </td>
+                  <td
+                    class="px-2 pt-3 font-medium text-right border-t border-n-strong tabular-nums text-n-slate-12"
+                  >
+                    {{ datos.total }}
+                  </td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </section>
+      </div>
+    </div>
   </div>
 </template>

@@ -60,7 +60,7 @@ const menuItems = computed(() => {
       click: toggleChatSupport,
     },
     {
-      show: true,
+      show: false, // [turuta]
       showOnCustomBrandedInstance: true,
       label: t('SIDEBAR_ITEMS.KEYBOARD_SHORTCUTS'),
       icon: 'i-lucide-keyboard',
@@ -76,7 +76,7 @@ const menuItems = computed(() => {
       link: { name: 'profile_settings_index' },
     },
     {
-      show: true,
+      show: false, // [turuta]
       showOnCustomBrandedInstance: true,
       label: t('SIDEBAR_ITEMS.APPEARANCE'),
       icon: 'i-lucide-palette',

@@ -273,7 +273,10 @@ export default {
         />
       </div>
     </SectionLayout>
+    <!-- [turuta] Fuera del perfil: firma, tecla de envio, alertas de audio,
+         preferencias de notificacion y token de acceso. -->
     <SectionLayout
+      v-if="false"
       with-border
       :title="$t('PROFILE_SETTINGS.FORM.MESSAGE_SIGNATURE_SECTION.TITLE')"
       :description="$t('PROFILE_SETTINGS.FORM.MESSAGE_SIGNATURE_SECTION.NOTE')"
@@ -284,6 +287,7 @@ export default {
       />
     </SectionLayout>
     <SectionLayout
+      v-if="false"
       with-border
       :title="$t('PROFILE_SETTINGS.FORM.SEND_MESSAGE.TITLE')"
       :description="$t('PROFILE_SETTINGS.FORM.SEND_MESSAGE.NOTE')"
@@ -337,7 +341,7 @@ export default {
     >
       <ActiveSessions />
     </SectionLayout>
-    <Policy :permissions="audioNotificationPermissions">
+    <Policy v-if="false" :permissions="audioNotificationPermissions">
       <SectionLayout
         with-border
         :title="$t('PROFILE_SETTINGS.FORM.AUDIO_NOTIFICATIONS_SECTION.TITLE')"
@@ -348,7 +352,7 @@ export default {
         <AudioNotifications />
       </SectionLayout>
     </Policy>
-    <Policy :permissions="notificationPermissions">
+    <Policy v-if="false" :permissions="notificationPermissions">
       <SectionLayout
         with-border
         :title="$t('PROFILE_SETTINGS.FORM.NOTIFICATIONS.TITLE')"
@@ -358,6 +362,7 @@ export default {
       </SectionLayout>
     </Policy>
     <SectionLayout
+      v-if="false"
       with-border
       :title="$t('PROFILE_SETTINGS.FORM.ACCESS_TOKEN.TITLE')"
       :description="accessTokenDescription"
