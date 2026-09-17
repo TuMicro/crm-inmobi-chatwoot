@@ -28,14 +28,10 @@ const currentChat = computed(() => store.getters.getSelectedChat);
 const actionMenuItems = computed(() => {
   const items = [];
 
-  if (!currentChat.value.muted) {
-    items.push({
-      icon: 'i-lucide-volume-off',
-      label: t('CONTACT_PANEL.MUTE_CONTACT'),
-      action: 'mute',
-      value: 'mute',
-    });
-  } else {
+  // [turuta] "Silenciar" no se ofrece: resuelve el chat y BLOQUEA al contacto, y
+  // WhatsApp descarta desde entonces sus mensajes. Ese lead deja de existir sin
+  // que nadie se entere. Quitar el silencio a uno que ya lo tenga, si.
+  if (currentChat.value.muted) {
     items.push({
       icon: 'i-lucide-volume-1',
       label: t('CONTACT_PANEL.UNMUTE_CONTACT'),

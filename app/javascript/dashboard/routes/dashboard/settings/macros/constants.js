@@ -83,6 +83,8 @@ const TURUTA_ACCIONES_OCULTAS = new Set([
   'snooze_conversation',
   'change_priority',
   'send_webhook_event',
+  // Resuelve el chat y BLOQUEA al contacto: WhatsApp descarta sus mensajes.
+  'mute_conversation',
 ]);
 export const MACRO_ACTION_TYPES = ACCIONES_DE_CHATWOOT.filter(
   accion => !TURUTA_ACCIONES_OCULTAS.has(accion.key)

@@ -35,7 +35,6 @@ import {
   RESOLVED_CONVERSATION_ACTIONS,
   SEND_TRANSCRIPT_ACTION,
   UNMUTE_ACTION,
-  MUTE_ACTION,
 } from 'dashboard/helper/commandbar/actions';
 import {
   isAConversationRoute,
@@ -330,7 +329,8 @@ export function useConversationHotKeys() {
   const conversationAdditionalActions = computed(() => {
     return prepareActions(
       [
-        currentChat.value.muted ? UNMUTE_ACTION : MUTE_ACTION,
+        // [turuta] Silenciar no se ofrece (ver MoreActions.vue).
+        ...(currentChat.value.muted ? [UNMUTE_ACTION] : []),
         SEND_TRANSCRIPT_ACTION,
       ],
       t

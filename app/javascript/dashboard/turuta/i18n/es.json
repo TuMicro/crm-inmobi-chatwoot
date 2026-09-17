@@ -569,10 +569,110 @@
   },
   "INBOX_MGMT": {
     "ACCOUNT_HEALTH": {
+      "BUSINESS_PROFILE": {
+        "PREVIEW_LABEL": "Perfil de empresa en WhatsApp"
+      },
       "FIELDS": {
+        "ACCOUNT_MODE": {
+          "LABEL": "Modo de la cuenta"
+        },
+        "DISPLAY_NAME_STATUS": {
+          "DESCRIPTIONS": {
+            "APPROVED": "El nombre está aprobado y puede aparecer arriba en los chats de WhatsApp. Si el cliente te tiene guardado con otro nombre, verá ese.",
+            "AVAILABLE_WITHOUT_REVIEW": "El nombre está guardado en tu perfil de WhatsApp, pero los clientes pueden ver el número hasta que Meta lo revise y lo apruebe. Meta empieza esa revisión cuando tu empresa alcanza un límite de mensajes mayor.",
+            "DECLINED": "Meta no aprobó el nombre. Revisa sus normas para nombres visibles y cámbialo o apela en Meta.",
+            "EXPIRED": "El certificado del número ha caducado, así que no se puede registrar para usarlo por API.",
+            "PENDING_REVIEW": "Meta está revisando el nombre. No hay que hacer nada salvo que Meta pida más información.",
+            "REJECTED": "Meta no aprobó el nombre. Revisa sus normas para nombres visibles y cámbialo o apela en Meta.",
+            "UNKNOWN": "Meta no ha devuelto el estado de revisión del nombre."
+          },
+          "LABEL": "Estado del nombre visible"
+        },
+        "DISPLAY_PHONE_NUMBER": {
+          "LABEL": "Número que ve el cliente",
+          "TOOLTIP": "El número de teléfono tal como lo ven los clientes"
+        },
         "MESSAGING_LIMIT_TIER": {
+          "DESCRIPTION": "Este límite lo comparten todos los números de WhatsApp del portafolio de la empresa.",
+          "LABEL": "Límite de mensajes",
           "TOOLTIP": "Número de clientes con los que este número de teléfono puede iniciar chats en 24 horas"
+        },
+        "PROFILE_ADDRESS": {
+          "LABEL": "Dirección",
+          "TOOLTIP": "La dirección que aparece en el perfil de la empresa en WhatsApp"
+        },
+        "PROFILE_DESCRIPTION": {
+          "LABEL": "Descripción",
+          "TOOLTIP": "La descripción que ven los clientes en el perfil de la empresa en WhatsApp"
+        },
+        "PROFILE_EMAIL": {
+          "LABEL": "Correo",
+          "TOOLTIP": "El correo de contacto que aparece en el perfil de la empresa en WhatsApp"
+        },
+        "PROFILE_WEBSITES": {
+          "LABEL": "Sitios web",
+          "TOOLTIP": "Los enlaces que aparecen en el perfil de la empresa en WhatsApp"
+        },
+        "QUALITY_RATING": {
+          "LABEL": "Calidad del número"
         }
+      },
+      "GO_TO_SETTINGS": "Abrir Meta Business Manager",
+      "NO_DATA": "No hay datos de estado disponibles",
+      "SECTIONS": {
+        "BUSINESS_PROFILE": "Perfil de la empresa"
+      },
+      "TITLE": "Tu cuenta de WhatsApp",
+      "VALUES": {
+        "MODES": {
+          "SANDBOX": "Pruebas"
+        },
+        "STATUSES": {
+          "APPAREL": "Ropa",
+          "APPROVED": "Aprobado",
+          "AUTO": "Automoción",
+          "AVAILABLE_WITHOUT_REVIEW": "Disponible sin revisar",
+          "BEAUTY": "Belleza",
+          "DECLINED": "Rechazado",
+          "EDU": "Educación",
+          "ENTERTAIN": "Entretenimiento",
+          "EVENT_PLAN": "Eventos",
+          "FINANCE": "Finanzas",
+          "GOVT": "Administración pública",
+          "GROCERY": "Alimentación",
+          "HEALTH": "Salud",
+          "HOTEL": "Hotelería",
+          "NONPROFIT": "Sin ánimo de lucro",
+          "NON_EXISTS": "No existe",
+          "NOT_A_BIZ": "No es una empresa",
+          "OTHER": "Otro sector",
+          "PENDING_REVIEW": "En revisión",
+          "PROF_SERVICES": "Servicios profesionales",
+          "REJECTED": "Rechazado",
+          "RESTAURANT": "Restaurante",
+          "RETAIL": "Comercio",
+          "TRAVEL": "Viajes",
+          "UNDEFINED": "Sector sin definir"
+        },
+        "TIERS": {
+          "TIER_1000": "1000 clientes cada 24 h",
+          "TIER_100K": "100 000 clientes cada 24 h",
+          "TIER_10K": "10 000 clientes cada 24 h",
+          "TIER_1K": "1000 clientes cada 24 h",
+          "TIER_250": "250 clientes cada 24 h",
+          "TIER_UNLIMITED": "Clientes sin límite cada 24 h",
+          "UNKNOWN": "Sin dato"
+        }
+      },
+      "WEBHOOK": {
+        "ACTION_REQUIRED": "Webhook sin configurar",
+        "CONFIGURED_SUCCESS": "Webhook configurado",
+        "DESCRIPTION": "Sin la URL del webhook, tu cuenta de WhatsApp Business no recibe los mensajes de los clientes",
+        "REGISTER_BUTTON": "Registrar el webhook",
+        "REGISTER_ERROR": "No se pudo registrar el webhook. Inténtalo de nuevo.",
+        "REGISTER_SUCCESS": "Webhook registrado",
+        "TITLE": "Configuración del webhook",
+        "URL_MISMATCH": "La URL del webhook no coincide"
       }
     },
     "ADD": {
@@ -591,12 +691,29 @@
       }
     },
     "ASSIGNMENT": {
+      "CURRENT_BEHAVIOR": "Ahora mismo se usa el reparto por defecto:",
+      "DEFAULT_RULES_DESCRIPTION": "Se usa el reparto por defecto para todos los chats",
+      "DEFAULT_RULES_TITLE": "Reglas de reparto por defecto",
+      "DEFAULT_RULE_1": "Primero los chats más antiguos",
+      "DEFAULT_RULE_2": "Reparto por turnos",
+      "DESCRIPTION": "Reparto automático de Chatwoot. En este CRM reparte el sistema de leads, por turnos y respetando descansos: déjalo apagado.",
+      "ENABLE_AUTO_ASSIGNMENT": "Activar el reparto automático de Chatwoot",
       "TITLE": "Asignación de chat"
     },
     "AUTO_ASSIGNMENT": {
       "MAX_ASSIGNMENT_LIMIT_SUB_TEXT": "Limite la cantidad máxima de chats de esta bandeja de entrada que se pueden asignar automáticamente a un agente"
     },
+    "CHANNEL_PREFERENCES": "Preferencias del canal",
+    "COMPLETE_REGISTRATION": "Completar el registro",
     "COUNT": "{n} bandeja | {n} bandejas",
+    "EDIT": {
+      "LOCK_TO_SINGLE_CONVERSATION": {
+        "DISABLED": "Crear un chat nuevo",
+        "DISABLED_DESCRIPTION": "Si su chat anterior estaba resuelto, se crea uno nuevo cada vez que vuelve a escribir.",
+        "ENABLED": "Reabrir el mismo chat",
+        "ENABLED_DESCRIPTION": "Cuando el contacto vuelve a escribir se reabre su chat de siempre, con todo el historial seguido."
+      }
+    },
     "FEATURES": {
       "ALLOW_END_CONVERSATION": "Permitir a los usuarios finalizar chats desde el widget"
     },
@@ -617,6 +734,8 @@
       "ENABLE_CONTINUITY_VIA_EMAIL": "Habilitar continuidad de chat por correo electrónico",
       "ENABLE_CONTINUITY_VIA_EMAIL_DISABLED_TEXT": "Esta función está disponible en un plan de pago. Actualiza para habilitar la continuidad del chat por correo electrónico.",
       "ENABLE_CONTINUITY_VIA_EMAIL_SUB_TEXT": "Los chats continuarán por correo electrónico si la dirección de correo electrónico de contacto está disponible.",
+      "LOCK_TO_SINGLE_CONVERSATION": "Cuando un contacto vuelve a escribir",
+      "LOCK_TO_SINGLE_CONVERSATION_SUB_TEXT": "Qué pasa con el chat de un contacto que ya existía",
       "WHATSAPP_MANUAL_MIGRATION": {
         "DIALOG": {
           "PRESERVED_DESCRIPTION": "Chats, contactos, colaboradores, enrutamiento, horas de trabajo y ajustes de bandeja de entrada."
@@ -628,6 +747,9 @@
         }
       }
     },
+    "TABS": {
+      "ACCOUNT_HEALTH": "Estado de WhatsApp"
+    },
     "VOICE_CONFIGURATION": {
       "INBOUND": {
         "DESCRIPTION": "Permitir que los clientes llamen a este número. Cuando se desactivan, las llamadas entrantes son rechazadas automáticamente: los agentes no son notificados y no se crea ningún chat. Los agentes todavía pueden realizar llamadas salientes."
@@ -638,6 +760,7 @@
         "PLACEHOLDER": "Nos gustaría llamarte en relación con tu chat."
       }
     },
+    "WHATSAPP_REGISTRATION_INCOMPLETE": "El registro de WhatsApp Business no está completo. Revisa el estado del nombre visible en Meta Business Manager antes de volver a conectar.",
     "WIDGET_BUILDER": {
       "FOOTER": {
         "START_CONVERSATION_BUTTON_TEXT": "Iniciar chat"

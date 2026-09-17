@@ -41,14 +41,15 @@ export default {
       isBusinessHoursEnabled: false,
       unavailableMessage: '',
       timeZone: DEFAULT_TIMEZONE,
+      // [turuta] Chatwoot los tenia escritos en ingles.
       dayNames: {
-        0: 'Sunday',
-        1: 'Monday',
-        2: 'Tuesday',
-        3: 'Wednesday',
-        4: 'Thursday',
-        5: 'Friday',
-        6: 'Saturday',
+        0: this.$t('DAYS_OF_WEEK.SUNDAY'),
+        1: this.$t('DAYS_OF_WEEK.MONDAY'),
+        2: this.$t('DAYS_OF_WEEK.TUESDAY'),
+        3: this.$t('DAYS_OF_WEEK.WEDNESDAY'),
+        4: this.$t('DAYS_OF_WEEK.THURSDAY'),
+        5: this.$t('DAYS_OF_WEEK.FRIDAY'),
+        6: this.$t('DAYS_OF_WEEK.SATURDAY'),
       },
       timeSlots: [...defaultTimeSlot],
     };
@@ -103,9 +104,12 @@ export default {
       this.isBusinessHoursEnabled = isEnabled;
       this.unavailableMessage = unavailableMessage || '';
       this.timeSlots = slots;
+      // [turuta] La zona la impone nuestra API (la del tenant) y el selector esta
+      // oculto. Si la de la bandeja no esta en la lista de Chatwoot se CONSERVA,
+      // en vez de cambiarla por "Pacific Time" al guardar los horarios.
       this.timeZone =
         this.timeZones.find(item => timeZone === item.value) ||
-        DEFAULT_TIMEZONE;
+        (timeZone ? { label: timeZone, value: timeZone } : DEFAULT_TIMEZONE);
     },
     onSlotUpdate(slotIndex, slotData) {
       this.timeSlots = this.timeSlots.map(item =>
@@ -166,7 +170,7 @@ export default {
     </div>
 
     <SettingsFieldSection
-      v-if="isBusinessHoursEnabled"
+      v-if="false && isBusinessHoursEnabled"
       :label="$t('INBOX_MGMT.BUSINESS_HOURS.TIMEZONE_LABEL')"
     >
       <ComboBox

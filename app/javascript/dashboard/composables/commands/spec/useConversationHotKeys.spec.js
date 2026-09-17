@@ -181,7 +181,9 @@ describe('useConversationHotKeys', () => {
       action => action.id === 'send_transcript'
     );
 
-    expect(muteAction).toBeDefined();
+    // [turuta] Silenciar no se ofrece: bloquea al contacto y WhatsApp descarta
+    // sus mensajes. Quitar el silencio (la prueba siguiente) si sigue.
+    expect(muteAction).toBeUndefined();
     expect(sendTranscriptAction).toBeDefined();
   });
 

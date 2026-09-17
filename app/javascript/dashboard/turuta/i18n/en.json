@@ -20,6 +20,33 @@
       }
     }
   },
+  "INBOX_MGMT": {
+    "ACCOUNT_HEALTH": {
+      "VALUES": {
+        "STATUSES": {
+          "APPAREL": "Apparel",
+          "AUTO": "Automotive",
+          "BEAUTY": "Beauty",
+          "EDU": "Education",
+          "ENTERTAIN": "Entertainment",
+          "EVENT_PLAN": "Event planning",
+          "FINANCE": "Finance",
+          "GOVT": "Government",
+          "GROCERY": "Grocery",
+          "HEALTH": "Health",
+          "HOTEL": "Hotel",
+          "NONPROFIT": "Nonprofit",
+          "NOT_A_BIZ": "Not a business",
+          "OTHER": "Other",
+          "PROF_SERVICES": "Professional services",
+          "RESTAURANT": "Restaurant",
+          "RETAIL": "Retail",
+          "TRAVEL": "Travel",
+          "UNDEFINED": "Undefined"
+        }
+      }
+    }
+  },
   "MACROS": {
     "EXECUTE": {
       "TURUTA_RUNNING": "Running the macro: messages go out in order. Keep the chat open…"

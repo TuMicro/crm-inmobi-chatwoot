@@ -114,7 +114,10 @@ function changeAvailabilityStatus(availability) {
           </DropdownBody>
         </DropdownContainer>
       </DropdownItem>
-      <DropdownItem>
+      <!-- [turuta] Oculto: nuestra API apaga el auto offline de cada agente en
+           cada sincronizacion (sin eso "Desconectado" no significaria nada para
+           el reparto), asi que este interruptor se deshacia solo. -->
+      <DropdownItem v-if="false">
         <div class="flex-grow min-w-0">
           {{ $t('SIDEBAR.SET_AUTO_OFFLINE.TEXT') }}
           <Icon

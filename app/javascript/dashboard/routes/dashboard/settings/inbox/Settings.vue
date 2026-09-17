@@ -278,7 +278,12 @@ export default {
         ];
       }
 
-      return visibleToAllChannelTabs;
+      // [turuta] Fuera tres pestanas. "Encuestas" y "Bot" no se usan. "Configuracion"
+      // ensena en claro el token permanente de Meta y sirve para cambiarlo o para
+      // forzar la sincronizacion de plantillas: lo primero lo hace TuRuta en el
+      // alta, y las plantillas se sincronizan solas cada tres horas.
+      const ocultas = ['csat', 'configuration', 'bot-configuration'];
+      return visibleToAllChannelTabs.filter(tab => !ocultas.includes(tab.key));
     },
     currentInboxId() {
       return this.$route.params.inboxId;
@@ -975,7 +980,9 @@ export default {
               />
             </SettingsFieldSection>
 
+            <!-- [turuta] El centro de ayuda ya no existe en el menu. -->
             <SettingsFieldSection
+              v-if="false"
               :label="$t('INBOX_MGMT.HELP_CENTER.LABEL')"
               :help-text="$t('INBOX_MGMT.HELP_CENTER.SUB_TEXT')"
             >

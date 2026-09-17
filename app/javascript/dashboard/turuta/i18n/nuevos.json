@@ -34,5 +34,81 @@
   "TURUTA.CONTRASENA.TITULO": {
     "es": "Tu contraseña debe tener:",
     "en": "Your password must have:"
+  },
+  "INBOX_MGMT.ACCOUNT_HEALTH.VALUES.STATUSES.UNDEFINED": {
+    "es": "Sector sin definir",
+    "en": "Undefined"
+  },
+  "INBOX_MGMT.ACCOUNT_HEALTH.VALUES.STATUSES.OTHER": {
+    "es": "Otro sector",
+    "en": "Other"
+  },
+  "INBOX_MGMT.ACCOUNT_HEALTH.VALUES.STATUSES.AUTO": {
+    "es": "Automoción",
+    "en": "Automotive"
+  },
+  "INBOX_MGMT.ACCOUNT_HEALTH.VALUES.STATUSES.BEAUTY": {
+    "es": "Belleza",
+    "en": "Beauty"
+  },
+  "INBOX_MGMT.ACCOUNT_HEALTH.VALUES.STATUSES.APPAREL": {
+    "es": "Ropa",
+    "en": "Apparel"
+  },
+  "INBOX_MGMT.ACCOUNT_HEALTH.VALUES.STATUSES.EDU": {
+    "es": "Educación",
+    "en": "Education"
+  },
+  "INBOX_MGMT.ACCOUNT_HEALTH.VALUES.STATUSES.ENTERTAIN": {
+    "es": "Entretenimiento",
+    "en": "Entertainment"
+  },
+  "INBOX_MGMT.ACCOUNT_HEALTH.VALUES.STATUSES.EVENT_PLAN": {
+    "es": "Eventos",
+    "en": "Event planning"
+  },
+  "INBOX_MGMT.ACCOUNT_HEALTH.VALUES.STATUSES.FINANCE": {
+    "es": "Finanzas",
+    "en": "Finance"
+  },
+  "INBOX_MGMT.ACCOUNT_HEALTH.VALUES.STATUSES.GROCERY": {
+    "es": "Alimentación",
+    "en": "Grocery"
+  },
+  "INBOX_MGMT.ACCOUNT_HEALTH.VALUES.STATUSES.GOVT": {
+    "es": "Administración pública",
+    "en": "Government"
+  },
+  "INBOX_MGMT.ACCOUNT_HEALTH.VALUES.STATUSES.HOTEL": {
+    "es": "Hotelería",
+    "en": "Hotel"
+  },
+  "INBOX_MGMT.ACCOUNT_HEALTH.VALUES.STATUSES.HEALTH": {
+    "es": "Salud",
+    "en": "Health"
+  },
+  "INBOX_MGMT.ACCOUNT_HEALTH.VALUES.STATUSES.NONPROFIT": {
+    "es": "Sin ánimo de lucro",
+    "en": "Nonprofit"
+  },
+  "INBOX_MGMT.ACCOUNT_HEALTH.VALUES.STATUSES.PROF_SERVICES": {
+    "es": "Servicios profesionales",
+    "en": "Professional services"
+  },
+  "INBOX_MGMT.ACCOUNT_HEALTH.VALUES.STATUSES.RETAIL": {
+    "es": "Comercio",
+    "en": "Retail"
+  },
+  "INBOX_MGMT.ACCOUNT_HEALTH.VALUES.STATUSES.TRAVEL": {
+    "es": "Viajes",
+    "en": "Travel"
+  },
+  "INBOX_MGMT.ACCOUNT_HEALTH.VALUES.STATUSES.RESTAURANT": {
+    "es": "Restaurante",
+    "en": "Restaurant"
+  },
+  "INBOX_MGMT.ACCOUNT_HEALTH.VALUES.STATUSES.NOT_A_BIZ": {
+    "es": "No es una empresa",
+    "en": "Not a business"
   }
 }
