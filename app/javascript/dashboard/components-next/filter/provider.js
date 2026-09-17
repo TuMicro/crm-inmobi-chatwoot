@@ -12,6 +12,7 @@ import {
 import { groupFilterTypes } from './helper/filterAttributeIcons';
 import languages from 'dashboard/components/widgets/conversation/advancedFilterItems/languages.js';
 import { ordenarFiltros } from 'dashboard/turuta/filtros';
+import { comoFiltrosDeContacto } from 'dashboard/turuta/filtrosDeContacto';
 
 /**
  * @typedef {Object} FilterOption
@@ -307,8 +308,20 @@ export function useConversationFilterContext() {
   // se lee con useMapGetter y no con useAdmin porque es lo que simula la
   // prueba de Chatwoot de este fichero, y asi no se la rompemos.
   const rolActual = useMapGetter('getCurrentRole');
+  // [turuta] Los atributos de CONTACTO tambien filtran chats. Chatwoot solo
+  // ofrece los de conversacion. Ver turuta/filtrosDeContacto.js.
+  const atributosDeContacto = useMapGetter('attributes/getContactAttributes');
+  const filtrosPorContacto = computed(() =>
+    comoFiltrosDeContacto(
+      buildAttributesFilterTypes(
+        atributosDeContacto.value || [],
+        getOperatorTypes,
+        'contact'
+      )
+    )
+  );
   const filterTypes = computed(() =>
-    ordenarFiltros(filtrosDeChatwoot.value, {
+    ordenarFiltros([...filtrosDeChatwoot.value, ...filtrosPorContacto.value], {
       esAdmin: rolActual.value === 'administrator',
     })
   );

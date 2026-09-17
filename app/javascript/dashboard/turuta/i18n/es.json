@@ -537,6 +537,10 @@
     "EDIT_CUSTOM_FILTER": "Editar filtro",
     "FOLDER_LABEL": "Nombre del filtro",
     "FOLDER_QUERY_LABEL": "Condiciones del filtro",
+    "GROUPS": {
+      "CUSTOM_ATTRIBUTES": "Atributos del chat",
+      "TURUTA_CONTACT_ATTRIBUTES": "Atributos de contacto"
+    },
     "MULTI_VALUE_INPUT_PLACEHOLDER": "Escribe un valor y pulsa Enter para añadir más",
     "MULTI_VALUE_INPUT_PLACEHOLDER_SHORT": "Escribe un valor",
     "TITLE": "Filtrar chats",

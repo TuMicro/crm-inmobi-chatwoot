@@ -110,5 +110,9 @@
   "INBOX_MGMT.ACCOUNT_HEALTH.VALUES.STATUSES.NOT_A_BIZ": {
     "es": "No es una empresa",
     "en": "Not a business"
+  },
+  "FILTER.GROUPS.TURUTA_CONTACT_ATTRIBUTES": {
+    "es": "Atributos de contacto",
+    "en": "Contact attributes"
   }
 }

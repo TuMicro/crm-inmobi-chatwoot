@@ -69,6 +69,8 @@ const GROUPS = [
   { model: 'standard', labelKey: 'STANDARD_FILTERS' },
   { model: 'additional', labelKey: 'ADDITIONAL_FILTERS' },
   { model: 'customAttributes', labelKey: 'CUSTOM_ATTRIBUTES' },
+  // [turuta] Atributos de contacto como filtros de chats (turuta/filtrosDeContacto.js).
+  { model: 'contactAttributes', labelKey: 'TURUTA_CONTACT_ATTRIBUTES' },
 ];
 
 const KNOWN_MODELS = GROUPS.map(({ model }) => model);

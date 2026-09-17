@@ -47,6 +47,8 @@ jobs:
           ruby -c app/services/macros/execution_service.rb
           ruby -c app/models/custom_attribute_definition.rb
           ruby -c app/services/filter_service.rb
+          ruby -c app/services/conversations/filter_service.rb
+          ruby -c app/services/turuta/contact_attribute_filters.rb
           ruby -c app/models/automation_rule.rb
           ruby -c app/models/automation_rule_pending_execution.rb
           ruby -c app/mailers/application_mailer.rb

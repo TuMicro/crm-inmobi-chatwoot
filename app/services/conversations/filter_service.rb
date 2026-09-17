@@ -1,4 +1,7 @@
 class Conversations::FilterService < FilterService
+  # [turuta] Filtrar chats por atributos de CONTACTO: app/services/turuta.
+  prepend Turuta::ContactAttributeFilters
+
   ATTRIBUTE_MODEL = 'conversation_attribute'.freeze
 
   def initialize(params, user, account)

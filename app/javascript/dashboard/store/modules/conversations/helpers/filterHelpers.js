@@ -52,6 +52,10 @@ import {
   contieneAlguna,
   esIdDeFiltro,
 } from 'dashboard/turuta/atributos/multiple';
+import {
+  esClaveDeContacto,
+  valorDeContacto,
+} from 'dashboard/turuta/filtrosDeContacto';
 
 /**
  * Gets a value from a conversation based on the attribute key
@@ -91,6 +95,10 @@ const getValueFromConversation = (conversation, attributeKey) => {
     case 'referer':
       return conversation.additional_attributes?.[attributeKey];
     default:
+      // [turuta] Atributo de CONTACTO: se lee del contacto del chat.
+      if (esClaveDeContacto(attributeKey)) {
+        return valorDeContacto(conversation, attributeKey);
+      }
       // Check if it's a custom attribute
       if (
         conversation.custom_attributes &&

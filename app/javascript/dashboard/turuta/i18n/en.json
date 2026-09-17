@@ -20,6 +20,11 @@
       }
     }
   },
+  "FILTER": {
+    "GROUPS": {
+      "TURUTA_CONTACT_ATTRIBUTES": "Contact attributes"
+    }
+  },
   "INBOX_MGMT": {
     "ACCOUNT_HEALTH": {
       "VALUES": {

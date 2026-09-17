@@ -51,6 +51,7 @@ import {
 } from 'dashboard/helper/permissionsHelper.js';
 import { matchesFilters } from '../store/modules/conversations/helpers/filterHelpers';
 import { conEtapaPrimero } from 'dashboard/turuta/filtros';
+import { definicionesDeContacto } from 'dashboard/turuta/filtrosDeContacto';
 import { CONVERSATION_EVENTS } from '../helper/AnalyticsHelper/events';
 import { ASSIGNEE_TYPE_TAB_PERMISSIONS } from 'dashboard/constants/permissions.js';
 
@@ -218,6 +219,11 @@ const hasCurrentPageEndReached = useFunctionGetter(
 const conversationCustomAttributes = useFunctionGetter(
   'attributes/getAttributesByModel',
   'conversation_attribute'
+);
+// [turuta] Tambien se filtra por atributos de contacto.
+const contactCustomAttributes = useFunctionGetter(
+  'attributes/getAttributesByModel',
+  'contact_attribute'
 );
 
 const activeAssigneeTabCount = computed(() => {
@@ -490,7 +496,12 @@ function setParamsForEditFolderModal() {
       { id: 'urgent', name: t('CONVERSATION.PRIORITY.OPTIONS.URGENT') },
     ],
     filterTypes: advancedFilterTypes.value,
-    allCustomAttributes: conversationCustomAttributes.value,
+    // [turuta] Sin las de contacto, editar un filtro guardado que las use
+    // revienta: Chatwoot da por hecho que toda condicion tiene definicion.
+    allCustomAttributes: [
+      ...conversationCustomAttributes.value,
+      ...definicionesDeContacto(contactCustomAttributes.value),
+    ],
   };
 }
 
