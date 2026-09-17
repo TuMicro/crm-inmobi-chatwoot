@@ -52,6 +52,7 @@ import {
 import { matchesFilters } from '../store/modules/conversations/helpers/filterHelpers';
 import { conEtapaPrimero } from 'dashboard/turuta/filtros';
 import { definicionesDeContacto } from 'dashboard/turuta/filtrosDeContacto';
+import { pestanaVisible } from 'dashboard/turuta/chatsPropios';
 import { CONVERSATION_EVENTS } from '../helper/AnalyticsHelper/events';
 import { ASSIGNEE_TYPE_TAB_PERMISSIONS } from 'dashboard/constants/permissions.js';
 
@@ -173,20 +174,26 @@ const currentUserDetails = computed(() => {
   return { id, name };
 });
 
+const rolActual = useMapGetter('getCurrentRole'); // [turuta]
 const userPermissions = computed(() => {
   return getUserPermissions(currentUser.value, currentAccountId.value);
 });
 
 const assigneeTabItems = computed(() => {
-  return filterItemsByPermission(
-    ASSIGNEE_TYPE_TAB_PERMISSIONS,
-    userPermissions.value,
-    item => item.permissions
-  ).map(({ key, count: countKey }) => ({
-    key,
-    name: t(`CHAT_LIST.ASSIGNEE_TYPE_TABS.${key}`),
-    count: conversationStats.value[countKey] || 0,
-  }));
+  return (
+    filterItemsByPermission(
+      ASSIGNEE_TYPE_TAB_PERMISSIONS,
+      userPermissions.value,
+      item => item.permissions
+    )
+      // [turuta] Para un agente, "Todos" sobra: ver turuta/chatsPropios.js.
+      .filter(({ key }) => pestanaVisible(key, rolActual.value))
+      .map(({ key, count: countKey }) => ({
+        key,
+        name: t(`CHAT_LIST.ASSIGNEE_TYPE_TABS.${key}`),
+        count: conversationStats.value[countKey] || 0,
+      }))
+  );
 });
 
 const showAssigneeInConversationCard = computed(() => {

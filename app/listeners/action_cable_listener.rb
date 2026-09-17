@@ -1,4 +1,7 @@
 class ActionCableListener < BaseListener
+  # [turuta] Los avisos en vivo de un chat van a su agente, no a toda la bandeja: app/services/turuta/own_conversations.rb
+  prepend Turuta::OwnConversations::CableScope
+
   include Events::Types
 
   def notification_created(event)

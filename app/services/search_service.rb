@@ -1,4 +1,7 @@
 class SearchService
+  # [turuta] Un agente solo busca en lo suyo y en lo que esta sin asignar: app/services/turuta/own_conversations.rb
+  prepend Turuta::OwnConversations::Search
+
   pattr_initialize [:current_user!, :current_account!, :params!, :search_type!]
 
   def account_user

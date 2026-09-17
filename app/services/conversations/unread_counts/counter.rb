@@ -1,4 +1,7 @@
 class Conversations::UnreadCounts::Counter
+  # [turuta] No leidos de un agente: lo suyo y lo que esta sin asignar: app/services/turuta/own_conversations.rb
+  prepend Turuta::OwnConversations::UnreadCounter
+
   MANAGE_ALL_PERMISSION = 'conversation_manage'.freeze
   UNASSIGNED_PERMISSION = 'conversation_unassigned_manage'.freeze
   PARTICIPATING_PERMISSION = 'conversation_participating_manage'.freeze

@@ -2,7 +2,7 @@
 <html>
   <head>
     <%# [turuta] Marca de la instalacion por variables de entorno TURUTA_*. Solo cambia lo que pinta esta pagina: no escribe en installation_configs. Sin las variables, todo queda como en Chatwoot. %>
-    <% ({ 'INSTALLATION_NAME' => 'TURUTA_BRAND_NAME', 'BRAND_NAME' => 'TURUTA_BRAND_NAME', 'LOGO' => 'TURUTA_LOGO', 'LOGO_DARK' => 'TURUTA_LOGO_DARK', 'LOGO_THUMBNAIL' => 'TURUTA_LOGO_THUMBNAIL', 'LOGO_THUMBNAIL_DARK' => 'TURUTA_LOGO_THUMBNAIL_DARK', 'TERMS_URL' => 'TURUTA_TERMS_URL', 'PRIVACY_URL' => 'TURUTA_PRIVACY_URL' }).each { |clave, variable| @global_config[clave] = ENV[variable] if ENV[variable].present? } %>
+    <% ({ 'INSTALLATION_NAME' => 'TURUTA_BRAND_NAME', 'BRAND_NAME' => 'TURUTA_BRAND_NAME', 'LOGO' => 'TURUTA_LOGO', 'LOGO_DARK' => 'TURUTA_LOGO_DARK', 'LOGO_THUMBNAIL' => 'TURUTA_LOGO_THUMBNAIL', 'LOGO_THUMBNAIL_DARK' => 'TURUTA_LOGO_THUMBNAIL_DARK', 'TURUTA_AGENTS_SEE_ALL' => 'TURUTA_AGENTS_SEE_ALL', 'TERMS_URL' => 'TURUTA_TERMS_URL', 'PRIVACY_URL' => 'TURUTA_PRIVACY_URL' }).each { |clave, variable| @global_config[clave] = ENV[variable] if ENV[variable].present? } %>
     <title>
       <%= @global_config['INSTALLATION_NAME'] %>
     </title>

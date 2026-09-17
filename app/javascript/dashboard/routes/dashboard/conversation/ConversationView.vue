@@ -10,6 +10,7 @@ import CmdBarConversationSnooze from 'dashboard/routes/dashboard/commands/CmdBar
 import { emitter } from 'shared/helpers/mitt';
 import SidepanelSwitch from 'dashboard/components-next/Conversation/SidepanelSwitch.vue';
 import ConversationSidebar from 'dashboard/components/widgets/conversation/ConversationSidebar.vue';
+import VigilaChatAjeno from 'dashboard/turuta/VigilaChatAjeno.vue';
 
 export default {
   components: {
@@ -18,6 +19,7 @@ export default {
     CmdBarConversationSnooze,
     SidepanelSwitch,
     ConversationSidebar,
+    VigilaChatAjeno,
   },
   beforeRouteLeave(to, from, next) {
     // Clear selected state if navigating away from a conversation to a route without a conversationId to prevent stale data issues
@@ -215,5 +217,7 @@ export default {
     </ConversationBox>
     <ConversationSidebar v-if="shouldShowSidebar" :current-chat="currentChat" />
     <CmdBarConversationSnooze />
+    <!-- [turuta] Si el chat abierto pasa a otro asesor, vuelve a la lista. -->
+    <VigilaChatAjeno />
   </section>
 </template>

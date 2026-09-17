@@ -1,4 +1,8 @@
 import { CONVERSATION_PRIORITY_ORDER } from 'shared/constants/messages';
+import {
+  esAgenteRestringido,
+  esMioOSinAsignar,
+} from 'dashboard/turuta/chatsPropios';
 
 export const findPendingMessageIndex = (chat, message) => {
   const { echo_id: tempMessageId } = message;
@@ -81,6 +85,12 @@ export const applyRoleFilter = (
   // the backend handles this by checking the custom_role_id at the user model
   // here however, the `getUserRole` returns "custom_role" if the id is present,
   // so we can check the role === "agent" directly
+  // [turuta] Un agente solo ve lo suyo y lo que esta sin asignar. El servidor ya
+  // no le manda lo demas; esto cubre lo que cambia de manos con la pagina abierta.
+  if (esAgenteRestringido(role)) {
+    return esMioOSinAsignar(conversation, currentUserId);
+  }
+
   if (['administrator', 'agent'].includes(role)) {
     return true;
   }

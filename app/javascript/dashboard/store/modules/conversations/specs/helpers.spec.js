@@ -1,7 +1,12 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, afterEach } from 'vitest';
 import { applyRoleFilter } from '../helpers';
 
 describe('Conversation Helpers', () => {
+  // [turuta] El interruptor de algunas pruebas no debe pasar a las siguientes.
+  afterEach(() => {
+    delete window.globalConfig;
+  });
+
   describe('#applyRoleFilter', () => {
     // Test data for conversations
     const conversationWithAssignee = {
@@ -60,6 +65,8 @@ describe('Conversation Helpers', () => {
 
     // Test for agent role
     it('always returns true for agent role regardless of permissions', () => {
+      // [turuta] Solo con TURUTA_AGENTS_SEE_ALL: ver turuta/chatsPropios.js.
+      window.globalConfig = { TURUTA_AGENTS_SEE_ALL: 'true' };
       const role = 'agent';
       const permissions = [];
       const currentUserId = 1;

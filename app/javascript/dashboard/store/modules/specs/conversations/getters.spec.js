@@ -13,6 +13,11 @@ import conversations from './conversations.fixtures';
 commonHelpers();
 
 describe('#getters', () => {
+  // [turuta] El interruptor de algunas pruebas no debe pasar a las siguientes.
+  afterEach(() => {
+    delete window.globalConfig;
+  });
+
   describe('#getAllConversations', () => {
     it('returns conversations ordered by lastActivityAt in descending order if no sort order is available', () => {
       const state = { allConversations: [...conversations] };
@@ -478,6 +483,9 @@ describe('#getters', () => {
     });
 
     it('filters conversations based on role permissions for agent', () => {
+      // [turuta] Chatwoot da por hecho que un agente lo ve todo. Aqui eso solo pasa
+      // con TURUTA_AGENTS_SEE_ALL: ver turuta/chatsPropios.js.
+      window.globalConfig = { TURUTA_AGENTS_SEE_ALL: 'true' };
       const state = {
         allConversations: mockConversations,
         chatSortFilter: 'last_activity_at_desc',
@@ -701,6 +709,9 @@ describe('#getters', () => {
     });
 
     it('sorts filtered conversations according to chatSortFilter', () => {
+      // [turuta] Chatwoot da por hecho que un agente lo ve todo. Aqui eso solo pasa
+      // con TURUTA_AGENTS_SEE_ALL: ver turuta/chatsPropios.js.
+      window.globalConfig = { TURUTA_AGENTS_SEE_ALL: 'true' };
       const state = {
         allConversations: mockConversations,
         chatSortFilter: 'last_activity_at_asc',

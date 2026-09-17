@@ -49,6 +49,12 @@ jobs:
           ruby -c app/services/filter_service.rb
           ruby -c app/services/conversations/filter_service.rb
           ruby -c app/services/turuta/contact_attribute_filters.rb
+          for f in app/services/turuta/own_conversations.rb app/services/turuta/own_conversations/*.rb; do ruby -c "$f"; done
+          ruby -c app/services/conversations/permission_filter_service.rb
+          ruby -c app/policies/conversation_policy.rb
+          ruby -c app/services/search_service.rb
+          ruby -c app/listeners/action_cable_listener.rb
+          ruby -c app/services/conversations/unread_counts/counter.rb
           ruby -c app/models/automation_rule.rb
           ruby -c app/models/automation_rule_pending_execution.rb
           ruby -c app/mailers/application_mailer.rb

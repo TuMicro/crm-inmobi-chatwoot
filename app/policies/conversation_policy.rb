@@ -1,4 +1,7 @@
 class ConversationPolicy < ApplicationPolicy
+  # [turuta] Un agente solo abre lo suyo y lo que esta sin asignar: app/services/turuta/own_conversations.rb
+  prepend Turuta::OwnConversations::Policy
+
   def index?
     true
   end

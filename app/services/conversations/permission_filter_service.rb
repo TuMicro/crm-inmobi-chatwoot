@@ -1,4 +1,7 @@
 class Conversations::PermissionFilterService
+  # [turuta] Un agente solo ve lo suyo y lo que esta sin asignar: app/services/turuta/own_conversations.rb
+  prepend Turuta::OwnConversations::PermissionFilter
+
   attr_reader :conversations, :user, :account
 
   def initialize(conversations, user, account, plan_hint_selective_filter: false)
