@@ -38,6 +38,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Lo poco que tocamos fuera de app/javascript no lo compila nadie: un
+      # error de sintaxis ahi no rompe la imagen, rompe TODAS las paginas al
+      # arrancar. Se comprueba aqui, que cuesta un segundo.
+      - name: Sintaxis de los parches en Ruby
+        run: |
+          ruby -c app/models/account_user.rb
+          ruby -rerb -e 'File.write("/tmp/layout.rb", ERB.new(File.read("app/views/layouts/vueapp.html.erb"), trim_mode: "-").src)'
+          ruby -c /tmp/layout.rb
+
       # Igual que hace Chatwoot para su imagen sin sufijo.
       - name: Fijar la edicion
         run: echo -en '\nENV CW_EDITION="ee"' >> docker/Dockerfile

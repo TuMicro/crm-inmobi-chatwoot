@@ -1,11 +1,14 @@
 <!DOCTYPE html>
 <html>
   <head>
+    <%# [turuta] Marca de la instalacion por variables de entorno TURUTA_*. Solo cambia lo que pinta esta pagina: no escribe en installation_configs. Sin las variables, todo queda como en Chatwoot. %>
+    <% ({ 'INSTALLATION_NAME' => 'TURUTA_BRAND_NAME', 'BRAND_NAME' => 'TURUTA_BRAND_NAME', 'LOGO' => 'TURUTA_LOGO', 'LOGO_DARK' => 'TURUTA_LOGO_DARK', 'LOGO_THUMBNAIL' => 'TURUTA_LOGO_THUMBNAIL' }).each { |clave, variable| @global_config[clave] = ENV[variable] if ENV[variable].present? } %>
     <title>
       <%= @global_config['INSTALLATION_NAME'] %>
     </title>
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no, user-scalable=0"/>
-    <% if @global_config['DISPLAY_MANIFEST'] %>
+    <%# [turuta] Con icono propio no se cargan los iconos de Chatwoot: manda el enlace de LOGO_THUMBNAIL de mas abajo. %>
+    <% if @global_config['DISPLAY_MANIFEST'] && ENV['TURUTA_LOGO_THUMBNAIL'].blank? %>
       <meta name="msapplication-TileColor" content="#2781F6">
       <meta name="msapplication-TileImage" content="/ms-icon-144x144.png">
       <meta name="theme-color" content="#2781F6">

@@ -32,29 +32,34 @@ const onToggle = () => {
 </script>
 
 <template>
-  <div class="text-sm">
+  <!-- [turuta] Estilo de tarjeta: borde suave, esquinas redondas y una flecha
+       que gira, en vez de la caja gris con + y -. Solo lo usa el panel de
+       contacto. Sin overflow-hidden: los desplegables de dentro se cortarian. -->
+  <div class="text-sm border rounded-xl border-n-weak bg-n-solid-1">
     <button
-      class="flex items-center select-none w-full rounded-lg bg-n-slate-2 outline outline-1 outline-n-weak m-0 cursor-grab justify-between py-2 px-4 drag-handle"
-      :class="{ 'rounded-bl-none rounded-br-none': isOpen }"
+      class="flex items-center justify-between w-full px-4 py-2.5 m-0 select-none cursor-grab drag-handle hover:bg-n-alpha-1"
+      :class="isOpen ? 'rounded-t-xl' : 'rounded-xl'"
       @click.stop="onToggle"
     >
-      <div class="flex justify-between">
+      <div class="flex items-center min-w-0">
         <EmojiOrIcon class="inline-block w-5" :icon="icon" :emoji="emoji" />
-        <h5 class="text-n-slate-12 text-sm mb-0 py-0 pr-2 pl-0">
+        <h5
+          class="py-0 pl-0 pr-2 mb-0 text-sm font-medium truncate text-n-slate-12"
+        >
           {{ title }}
         </h5>
       </div>
-      <div class="flex flex-row">
+      <div class="flex flex-row items-center gap-1">
         <slot name="button" />
-        <div class="flex justify-end w-3 text-n-blue-11 cursor-pointer">
-          <fluent-icon v-if="isOpen" size="24" icon="subtract" type="solid" />
-          <fluent-icon v-else size="24" icon="add" type="solid" />
-        </div>
+        <span
+          class="transition-transform i-lucide-chevron-down size-4 text-n-slate-10"
+          :class="{ 'rotate-180': isOpen }"
+        />
       </div>
     </button>
     <div
       v-if="isOpen"
-      class="outline outline-1 outline-n-weak -mt-[-1px] border-t-0 rounded-br-lg rounded-bl-lg"
+      class="border-t border-n-weak"
       :class="compact ? 'p-0' : 'px-2 py-4'"
     >
       <slot />

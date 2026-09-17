@@ -160,6 +160,7 @@ const toggleConversationLayout = () => {
         @change-filter="onBasicFilterChange"
       />
       <SwitchLayout
+        v-if="false"
         :is-on-expanded-layout="isOnExpandedLayout"
         @toggle="toggleConversationLayout"
       />

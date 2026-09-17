@@ -1,4 +1,5 @@
 <script setup>
+import StageBadge from 'dashboard/turuta/StageBadge.vue'; // [turuta]
 import { computed, ref } from 'vue';
 import { useRoute } from 'vue-router';
 import { useStore } from 'vuex';
@@ -134,6 +135,7 @@ const copyConversationId = async () => {
           >
             {{ currentContact.name }}
           </span>
+          <StageBadge :name="chat.custom_attributes?.crm_stage_name" />
           <fluent-icon
             v-if="!isHMACVerified"
             v-tooltip="$t('CONVERSATION.UNVERIFIED_SESSION')"

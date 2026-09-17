@@ -156,7 +156,10 @@ const claseEtapa = computed(() => {
 <template>
   <!-- eslint-disable vue/no-bare-strings-in-template, @intlify/vue-i18n/no-raw-text -->
   <!-- [turuta] Textos en espanol a proposito: la ficha es nuestra y no pasa por el i18n de Chatwoot -->
-  <div class="px-4 pb-3 border-b border-n-weak" data-turuta="lead-header">
+  <div
+    class="p-3 mx-2 mb-3 border rounded-xl border-n-weak bg-n-solid-1"
+    data-turuta="lead-header"
+  >
     <p v-if="state.error" class="text-xs text-n-slate-11">
       {{ textoError(state.error) }}
     </p>

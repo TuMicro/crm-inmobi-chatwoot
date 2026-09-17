@@ -372,6 +372,11 @@ const TURUTA_HIDDEN_MENU = new Set([
   'Campaigns',
   'Portals', // Centro de ayuda
   'Companies',
+  // Avisos internos de Chatwoot que aqui no se usan: la bandeja de
+  // notificaciones, las menciones en notas y el seguimiento de conversaciones.
+  'Inbox',
+  'Mentions',
+  'Participating',
   // Dentro de Ajustes e Informes: lo que un CRM de WhatsApp no usa o es de
   // pago. Equipos y prioridad se esconden en toda la interfaz.
   'Settings Teams',
@@ -1064,7 +1069,7 @@ const menuItems = computed(() => {
         >
           <span class="i-lucide-search size-4 text-n-slate-11" />
         </RouterLink>
-        <ComposeConversation align="start">
+        <ComposeConversation v-if="false" align="start">
           <template #trigger="{ isOpen }">
             <Button
               icon="i-lucide-pen-line"

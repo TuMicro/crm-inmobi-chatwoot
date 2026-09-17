@@ -1,4 +1,5 @@
 <script setup>
+import StageBadge from 'dashboard/turuta/StageBadge.vue'; // [turuta]
 import { computed, ref, watch } from 'vue';
 import { getLastMessage } from 'dashboard/helper/conversationHelper';
 import Avatar from 'next/avatar/Avatar.vue';
@@ -185,6 +186,7 @@ watch(
         :class="hasUnread ? 'font-semibold' : 'font-medium'"
       >
         {{ currentContact.name }}
+        <StageBadge :name="chat.custom_attributes?.crm_stage_name" />
       </h4>
       <VoiceCallStatus
         v-if="voiceCallData.status"
