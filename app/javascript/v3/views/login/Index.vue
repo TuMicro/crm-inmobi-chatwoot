@@ -91,6 +91,16 @@ export default {
   },
   computed: {
     ...mapGetters({ globalConfig: 'globalConfig/get' }),
+    // [turuta] Enlaces legales del pie. Solo los NUESTROS: sin las variables
+    // TURUTA_*_URL la configuracion trae los de chatwoot.com, y esos no se
+    // ensenan.
+    enlacesLegales() {
+      const propia = url => (url && !url.includes('chatwoot.com') ? url : '');
+      return {
+        terminos: propia(this.globalConfig.termsURL),
+        privacidad: propia(this.globalConfig.privacyURL),
+      };
+    },
     allowedLoginMethods() {
       return window.chatwootConfig.allowedLoginMethods || ['email'];
     },
@@ -417,5 +427,29 @@ export default {
         <Spinner color-scheme="primary" size="" />
       </div>
     </section>
+    <!-- [turuta] Terminos y privacidad de la plataforma. -->
+    <p
+      v-if="enlacesLegales.terminos || enlacesLegales.privacidad"
+      class="flex justify-center gap-4 mt-6 text-xs text-n-slate-10"
+    >
+      <a
+        v-if="enlacesLegales.terminos"
+        :href="enlacesLegales.terminos"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="hover:underline"
+      >
+        {{ $t('TURUTA.LEGAL.TERMINOS') }}
+      </a>
+      <a
+        v-if="enlacesLegales.privacidad"
+        :href="enlacesLegales.privacidad"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="hover:underline"
+      >
+        {{ $t('TURUTA.LEGAL.PRIVACIDAD') }}
+      </a>
+    </p>
   </main>
 </template>

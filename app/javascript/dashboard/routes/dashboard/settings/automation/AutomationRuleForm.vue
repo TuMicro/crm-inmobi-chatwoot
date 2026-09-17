@@ -115,6 +115,14 @@ const statusOptions = computed(() =>
     .map(option => ({ value: option.id, label: option.name }))
 );
 
+// [turuta] Para el disparador "mantiene la etiqueta".
+const labelOptions = computed(() =>
+  (props.getConditionDropdownValues('labels') || []).map(option => ({
+    value: option.id,
+    label: option.name,
+  }))
+);
+
 const inboxOptions = computed(
   () => props.getConditionDropdownValues('inbox_id') || []
 );
@@ -336,6 +344,7 @@ defineExpose({ open, close });
         v-model:unit="delayUnit"
         :status-options="statusOptions"
         :inbox-options="inboxOptions"
+        :label-options="labelOptions"
         :is-saved-wait="isSavedWait"
         :has-error="Boolean(errors.execution_delay)"
       />

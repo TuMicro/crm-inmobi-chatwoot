@@ -9,6 +9,9 @@
 //      (la conversacion abierta -> el chat abierto).
 //   2. manual.json: textos escritos a mano, por ruta (traducciones que faltan
 //      en Chatwoot, "Carpetas" -> "Filtros", arreglos de la regla 1...).
+//   3. nuevos.json: textos de funciones NUESTRAS, con rutas que Chatwoot no
+//      tiene. Van en espanol y en ingles, porque sin ellos quien use la
+//      interfaz en ingles veria la ruta cruda. Generan tambien en.json.
 //
 // Tras subir de version de Chatwoot: volver a ejecutarlo y revisar el diff.
 const fs = require('fs');
@@ -158,10 +161,25 @@ if (huerfanas.length) {
 }
 Object.assign(planos, manual);
 
+// Claves nuestras. Al reves que manual.json: si Chatwoot YA tiene la ruta es que
+// la anadio en una version nueva, y hay que decidir cual gana.
+const nuevos = JSON.parse(fs.readFileSync(path.join(__dirname, 'nuevos.json'), 'utf8'));
+const pisadas = Object.keys(nuevos).filter(r => r in existentes);
+if (pisadas.length) {
+  console.error('nuevos.json usa rutas que Chatwoot ya tiene (pasarlas a manual.json):\n  ' + pisadas.join('\n  '));
+  process.exit(1);
+}
+const ingles_nuestro = {};
+Object.keys(nuevos).sort().forEach(r => {
+  planos[r] = nuevos[r].es;
+  poner(ingles_nuestro, r, nuevos[r].en);
+});
+fs.writeFileSync(path.join(__dirname, 'en.json'), JSON.stringify(ingles_nuestro, null, 2) + '\n');
+
 const salida = {};
 Object.keys(planos).sort().forEach(r => poner(salida, r, planos[r]));
 fs.writeFileSync(path.join(__dirname, 'es.json'), JSON.stringify(salida, null, 2) + '\n');
-console.log('automaticos:', automaticos, '| manuales:', Object.keys(manual).length, '| total:', Object.keys(planos).length);
+console.log('automaticos:', automaticos, '| manuales:', Object.keys(manual).length, '| nuevos:', Object.keys(nuevos).length, '| total:', Object.keys(planos).length);
 
 if (process.argv.includes('--muestra')) {
   recorrer(base, (ruta, valor) => {

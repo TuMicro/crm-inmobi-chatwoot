@@ -133,8 +133,18 @@ export function useOperators() {
    * @param {string} key - Type of operator to get
    * @returns {Array<Operator>}
    */
+  // [turuta] Seleccion multiple: "contiene" alguna de las elegidas, o ninguna.
+  const multiListOperators = computed(() => [
+    operators.value[FILTER_OPS.CONTAINS],
+    operators.value[FILTER_OPS.DOES_NOT_CONTAIN],
+    operators.value[FILTER_OPS.IS_PRESENT],
+    operators.value[FILTER_OPS.IS_NOT_PRESENT],
+  ]);
+
   const getOperatorTypes = key => {
     switch (key) {
+      case 'multi_list': // [turuta]
+        return multiListOperators.value;
       case 'list':
         return equalityOperators.value;
       case 'text':

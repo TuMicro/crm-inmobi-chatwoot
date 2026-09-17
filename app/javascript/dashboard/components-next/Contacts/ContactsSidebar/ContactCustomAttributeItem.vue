@@ -9,6 +9,7 @@ import ListAttribute from 'dashboard/components-next/CustomAttributes/ListAttrib
 import CheckboxAttribute from 'dashboard/components-next/CustomAttributes/CheckboxAttribute.vue';
 import DateAttribute from 'dashboard/components-next/CustomAttributes/DateAttribute.vue';
 import OtherAttribute from 'dashboard/components-next/CustomAttributes/OtherAttribute.vue';
+import AtributoMultipleNext from 'dashboard/turuta/atributos/AtributoMultipleNext.vue';
 
 const props = defineProps({
   attribute: {
@@ -61,6 +62,7 @@ const handleUpdate = async value => {
 
 const componentMap = {
   list: ListAttribute,
+  multi_list: AtributoMultipleNext, // [turuta]
   checkbox: CheckboxAttribute,
   date: DateAttribute,
   default: OtherAttribute,

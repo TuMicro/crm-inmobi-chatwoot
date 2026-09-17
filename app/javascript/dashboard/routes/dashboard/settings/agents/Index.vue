@@ -15,6 +15,7 @@ import EditAgent from './EditAgent.vue';
 import BaseSettingsHeader from '../components/BaseSettingsHeader.vue';
 import SettingsLayout from '../SettingsLayout.vue';
 import Button from 'dashboard/components-next/button/Button.vue';
+import DescansoAgente from 'dashboard/turuta/DescansoAgente.vue';
 
 const getters = useStoreGetters();
 const store = useStore();
@@ -254,6 +255,8 @@ const confirmDeletion = () => {
             </div>
           </div>
           <div class="flex justify-end gap-3">
+            <!-- [turuta] Descanso del asesor con hora de vuelta. -->
+            <DescansoAgente :agent="agent" />
             <Button
               v-if="showEditAction(agent)"
               v-tooltip.top="$t('AGENT_MGMT.EDIT.BUTTON_TEXT')"

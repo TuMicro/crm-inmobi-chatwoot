@@ -43,7 +43,10 @@ class CustomAttributeDefinition < ApplicationRecord
   validate :attribute_must_not_conflict, on: :create
 
   enum attribute_model: { conversation_attribute: 0, contact_attribute: 1, company_attribute: 2 }
-  enum attribute_display_type: { text: 0, number: 1, currency: 2, percent: 3, link: 4, date: 5, list: 6, checkbox: 7 }
+  # [turuta] multi_list: lista con seleccion multiple. El valor se guarda como un
+  # array de textos. El 20 deja hueco para los tipos que anada Chatwoot: si algun
+  # dia usa el 8, no chocamos. Ver app/javascript/dashboard/turuta/atributos.
+  enum attribute_display_type: { text: 0, number: 1, currency: 2, percent: 3, link: 4, date: 5, list: 6, checkbox: 7, multi_list: 20 }
 
   belongs_to :account
   after_update :update_widget_pre_chat_custom_fields, unless: :company_attribute?

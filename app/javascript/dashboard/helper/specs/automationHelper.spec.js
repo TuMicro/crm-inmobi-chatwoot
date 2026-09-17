@@ -282,7 +282,9 @@ describe('getStandardAttributeInputType', () => {
         'conversation_updated',
         'referer'
       )
-    ).toEqual('plain_text');
+      // [turuta] 'referer' ya no se ofrece como condicion (constants.js): la
+      // funcion devuelve undefined en vez de romper.
+    ).toBeUndefined();
   });
 });
 

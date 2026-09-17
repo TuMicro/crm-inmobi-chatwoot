@@ -72,7 +72,12 @@ export const getOperatorTypes = key => {
   return operatorMap[key] || OPERATOR_TYPES_1;
 };
 
-export const generateCustomAttributeTypes = (customAttributes, type) => {
+export const generateCustomAttributeTypes = (todos, type) => {
+  // [turuta] La seleccion multiple no se ofrece como condicion de una regla:
+  // el motor de automatizacion no sabe comparar un array.
+  const customAttributes = todos.filter(
+    attr => attr.attribute_display_type !== 'multi_list'
+  );
   return customAttributes.map(attr => {
     return {
       key: attr.attribute_key,
@@ -248,8 +253,11 @@ export const filterCustomAttributes = customAttributes => {
 };
 
 export const getStandardAttributeInputType = (automationTypes, event, key) => {
+  // [turuta] ?. porque una regla antigua puede traer una condicion que ya no
+  // ofrecemos (prioridad, equipo, enlace de referencia...): sin esto, abrirla
+  // para editar rompia el formulario.
   return automationTypes[event].conditions.find(item => item.key === key)
-    .inputType;
+    ?.inputType;
 };
 
 export const generateAutomationPayload = payload => {

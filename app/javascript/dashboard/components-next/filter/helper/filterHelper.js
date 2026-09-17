@@ -1,3 +1,4 @@
+import { opcionesDeFiltro } from 'dashboard/turuta/atributos/multiple';
 /**
  * Number of options a filter dropdown can hold before it renders a search field.
  * Shared so the attribute and value dropdowns never disagree on when to show one.
@@ -51,6 +52,8 @@ export const getCustomAttributeInputType = key => {
       return 'plainText';
     case 'list':
       return 'searchSelect';
+    case 'multi_list': // [turuta]
+      return 'multiSelect';
     case 'checkbox':
       return 'booleanSelect';
     default:
@@ -89,7 +92,7 @@ export const buildAttributesFilterTypes = (
       options:
         attr.attributeDisplayType === 'list'
           ? attr.attributeValues.map(item => ({ id: item, name: item }))
-          : [],
+          : opcionesDeFiltro(attr), // [turuta] vacio salvo en seleccion multiple
       attributeModel: 'customAttributes',
     }));
 };

@@ -1,0 +1,104 @@
+/* [turuta] Estilo de las paginas legales estaticas (terminos y privacidad).
+   Sin marca a proposito: la misma pagina vale para cualquier cliente. */
+:root {
+  --fondo: #ffffff;
+  --texto: #1f2328;
+  --suave: #59636e;
+  --linea: #e4e7eb;
+  --enlace: #1f6feb;
+  --pendiente-fondo: #fff3c4;
+  --pendiente-texto: #7a4d00;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --fondo: #14161a;
+    --texto: #e6e8eb;
+    --suave: #9aa4af;
+    --linea: #2b3038;
+    --enlace: #79b0ff;
+    --pendiente-fondo: #4a3a00;
+    --pendiente-texto: #ffe08a;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--fondo);
+  color: var(--texto);
+  font-family:
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    sans-serif;
+  font-size: 16px;
+  line-height: 1.65;
+}
+
+main {
+  max-width: 46rem;
+  margin: 0 auto;
+  padding: 2.5rem 1rem 4rem;
+}
+
+h1 {
+  margin: 0.5rem 0 0.25rem;
+  font-size: 1.9rem;
+  line-height: 1.2;
+}
+
+h2 {
+  margin: 2.25rem 0 0.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--linea);
+  font-size: 1.15rem;
+}
+
+h3 {
+  margin: 1.25rem 0 0.25rem;
+  font-size: 1rem;
+}
+
+p,
+ul {
+  margin: 0.6rem 0;
+}
+
+ul {
+  padding-left: 1.25rem;
+}
+
+li {
+  margin: 0.35rem 0;
+}
+
+a {
+  color: var(--enlace);
+}
+
+.migas,
+.fecha,
+.pie {
+  color: var(--suave);
+  font-size: 0.9rem;
+}
+
+.pie {
+  margin-top: 3rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--linea);
+}
+
+/* Dato que falta por rellenar antes de publicar. Se ve a proposito. */
+.pendiente {
+  padding: 0 0.3em;
+  border-radius: 0.25em;
+  background: var(--pendiente-fondo);
+  color: var(--pendiente-texto);
+  font-weight: 600;
+}

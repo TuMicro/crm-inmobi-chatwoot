@@ -1,0 +1,29 @@
+{
+  "ATTRIBUTES_MGMT": {
+    "ATTRIBUTE_TYPES": {
+      "MULTI_LIST": "List (multiple choice)"
+    }
+  },
+  "AUTOMATION": {
+    "ADD": {
+      "FORM": {
+        "WAIT": {
+          "EXPLANATION": {
+            "LABEL_KEPT": "The timer starts when the label is added to the chat. If it is still there {duration} later, the actions below run. If it is removed earlier, nothing happens."
+          },
+          "OPTIONS": {
+            "LABEL_KEPT": "The contact keeps the label"
+          },
+          "TAG_EMPTY": "Create a label in Settings first",
+          "TAG_LABEL": "Label"
+        }
+      }
+    }
+  },
+  "TURUTA": {
+    "LEGAL": {
+      "PRIVACIDAD": "Privacy policy",
+      "TERMINOS": "Terms and conditions"
+    }
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "ATTRIBUTES_MGMT.ATTRIBUTE_TYPES.MULTI_LIST": {
+    "es": "Lista (selección múltiple)",
+    "en": "List (multiple choice)"
+  },
+  "AUTOMATION.ADD.FORM.WAIT.OPTIONS.LABEL_KEPT": {
+    "es": "El contacto mantiene la etiqueta",
+    "en": "The contact keeps the label"
+  },
+  "AUTOMATION.ADD.FORM.WAIT.EXPLANATION.LABEL_KEPT": {
+    "es": "El contador empieza cuando se le pone la etiqueta al chat. Si {duration} después la sigue teniendo, se ejecutan las acciones de abajo. Si se la quitan antes, no ocurre nada.",
+    "en": "The timer starts when the label is added to the chat. If it is still there {duration} later, the actions below run. If it is removed earlier, nothing happens."
+  },
+  "AUTOMATION.ADD.FORM.WAIT.TAG_LABEL": {
+    "es": "Etiqueta",
+    "en": "Label"
+  },
+  "AUTOMATION.ADD.FORM.WAIT.TAG_EMPTY": {
+    "es": "Crea primero una etiqueta en Ajustes",
+    "en": "Create a label in Settings first"
+  },
+  "TURUTA.LEGAL.TERMINOS": {
+    "es": "Términos y condiciones",
+    "en": "Terms and conditions"
+  },
+  "TURUTA.LEGAL.PRIVACIDAD": {
+    "es": "Política de privacidad",
+    "en": "Privacy policy"
+  }
+}

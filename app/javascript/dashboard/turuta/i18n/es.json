@@ -64,6 +64,9 @@
     "ATTRIBUTE_MODELS": {
       "CONVERSATION": "Chat"
     },
+    "ATTRIBUTE_TYPES": {
+      "MULTI_LIST": "Lista (selección múltiple)"
+    },
     "COUNT": "{n} atributo | {n} atributos",
     "DESCRIPTION": "Un atributo personalizado rastrea detalles adicionales sobre tus contactos o chats, como el plan de suscripción o la fecha de su primera compra. Puede agregar diferentes tipos de atributos personalizados, como textos, listas o números, para capturar la información específica que necesita.",
     "LIST": {
@@ -97,12 +100,16 @@
       "FORM": {
         "WAIT": {
           "EXPLANATION": {
-            "CONVERSATION_STATUS": "El contador comienza cuando un chat pasa a este estado. Si continúa en él {duration} después, se ejecutan las acciones siguientes. Si el estado cambia antes, no ocurre nada."
+            "CONVERSATION_STATUS": "El contador comienza cuando un chat pasa a este estado. Si continúa en él {duration} después, se ejecutan las acciones siguientes. Si el estado cambia antes, no ocurre nada.",
+            "LABEL_KEPT": "El contador empieza cuando se le pone la etiqueta al chat. Si {duration} después la sigue teniendo, se ejecutan las acciones de abajo. Si se la quitan antes, no ocurre nada."
           },
           "FOOTNOTE": "Solo la actividad nueva inicia un contador. Los chats que ya se encuentren en este estado se procesarán la próxima vez que ocurra algo en ellos.",
           "OPTIONS": {
-            "CONVERSATION_STATUS": "El chat permanece en un estado"
-          }
+            "CONVERSATION_STATUS": "El chat permanece en un estado",
+            "LABEL_KEPT": "El contacto mantiene la etiqueta"
+          },
+          "TAG_EMPTY": "Crea primero una etiqueta en Ajustes",
+          "TAG_LABEL": "Etiqueta"
         }
       }
     },
@@ -1071,6 +1078,12 @@
         "INFO_TEXT": "Número total de chats utilizados en el cálculo:",
         "TOOLTIP_TEXT": "El tiempo de resolución es {metricValue} (basado en {conversationCount} chats)"
       }
+    }
+  },
+  "TURUTA": {
+    "LEGAL": {
+      "PRIVACIDAD": "Política de privacidad",
+      "TERMINOS": "Términos y condiciones"
     }
   },
   "YEAR_IN_REVIEW": {

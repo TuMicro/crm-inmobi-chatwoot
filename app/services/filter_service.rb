@@ -7,7 +7,10 @@ class FilterService
 
   ATTRIBUTE_MODEL = 'conversation_attribute'.freeze
   ATTRIBUTE_TYPES = {
-    date: 'date', text: 'text', number: 'numeric', link: 'text', list: 'text', checkbox: 'boolean'
+    date: 'date', text: 'text', number: 'numeric', link: 'text', list: 'text', checkbox: 'boolean',
+    # [turuta] Se filtra como texto: `->>` sobre el array da su JSON y la interfaz
+    # manda el valor con comillas, asi "contiene" encaja con el elemento entero.
+    multi_list: 'text'
   }.with_indifferent_access
 
   def initialize(params, user)

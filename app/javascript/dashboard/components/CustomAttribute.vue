@@ -3,6 +3,7 @@ import { format, parseISO } from 'date-fns';
 import { required, url } from '@vuelidate/validators';
 import { BUS_EVENTS } from 'shared/constants/busEvents';
 import MultiselectDropdown from 'shared/components/ui/MultiselectDropdown.vue';
+import SelectorMultiple from 'dashboard/turuta/atributos/SelectorMultiple.vue';
 import HelperTextPopup from 'dashboard/components/ui/HelperTextPopup.vue';
 import { isValidURL } from '../helper/URLHelper';
 import { getRegexp } from 'shared/helpers/Validators';
@@ -16,6 +17,7 @@ const DATE_FORMAT = 'yyyy-MM-dd';
 export default {
   components: {
     MultiselectDropdown,
+    SelectorMultiple,
     HelperTextPopup,
     NextButton,
   },
@@ -23,7 +25,8 @@ export default {
     label: { type: String, required: true },
     description: { type: String, default: '' },
     values: { type: Array, default: () => [] },
-    value: { type: [String, Number, Boolean], default: '' },
+    // [turuta] Array: el valor de un atributo de seleccion multiple.
+    value: { type: [String, Number, Boolean, Array], default: '' },
     showActions: { type: Boolean, default: false },
     attributeType: { type: String, default: 'text' },
     attributeRegex: {
@@ -77,6 +80,10 @@ export default {
     isAttributeTypeList() {
       return this.attributeType === 'list';
     },
+    // [turuta]
+    isAttributeTypeMultiList() {
+      return this.attributeType === 'multi_list';
+    },
     isAttributeTypeLink() {
       return this.attributeType === 'link';
     },
@@ -93,7 +100,11 @@ export default {
       return isValidURL(this.value) ? this.value : '';
     },
     notAttributeTypeCheckboxAndList() {
-      return !this.isAttributeTypeCheckbox && !this.isAttributeTypeList;
+      return (
+        !this.isAttributeTypeCheckbox &&
+        !this.isAttributeTypeList &&
+        !this.isAttributeTypeMultiList
+      );
     },
     inputType() {
       return this.isAttributeTypeLink ? 'url' : this.attributeType;
@@ -172,6 +183,11 @@ export default {
       this.$nextTick(() => {
         this.focusInput();
       });
+    },
+    // [turuta] La seleccion multiple guarda la lista tal cual, sin pasar por
+    // editedValue ni por la validacion de texto.
+    onUpdateMultiList(lista) {
+      this.$emit('update', this.attributeKey, lista);
     },
     onUpdateListValue(value) {
       if (value) {
@@ -315,6 +331,14 @@ export default {
           />
         </div>
       </div>
+    </div>
+    <div v-if="isAttributeTypeMultiList">
+      <SelectorMultiple
+        :opciones="values"
+        :valor="value"
+        @update="onUpdateMultiList"
+        @delete="onDelete"
+      />
     </div>
     <div v-if="isAttributeTypeList">
       <MultiselectDropdown

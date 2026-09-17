@@ -93,7 +93,8 @@ export default {
       return this.$t('ATTRIBUTES_MGMT.ADD.FORM.KEY.ERROR');
     },
     isAttributeTypeList() {
-      return this.attributeType === 6;
+      // [turuta] 20 = multi_list: tambien necesita su lista de valores.
+      return this.attributeType === 6 || this.attributeType === 20;
     },
     isAttributeTypeText() {
       return this.attributeType === 0;

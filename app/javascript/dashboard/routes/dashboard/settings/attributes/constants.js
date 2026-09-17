@@ -9,5 +9,7 @@ export const ATTRIBUTE_TYPES = [
   { id: 4, key: 'LINK' },
   { id: 5, key: 'DATE' },
   { id: 6, key: 'LIST' },
+  // [turuta] Lista con seleccion multiple (multi_list en el servidor).
+  { id: 20, key: 'MULTI_LIST' },
   { id: 7, key: 'CHECKBOX' },
 ];

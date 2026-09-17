@@ -59,6 +59,10 @@ class AutomationRulePendingExecution < ApplicationRecord
   scope :for_enabled_accounts, -> { joins(:account).merge(Account.feature_delayed_automations) }
 
   def self.schedule(rule:, conversation:, message: nil)
+    # [turuta] Una regla "mantiene la etiqueta" tiene su propio episodio.
+    label = turuta_label_for(rule, message)
+    return turuta_schedule_label(rule, conversation, label) if label
+
     # status_changed_at is only written from this feature onwards, so a conversation that predates it
     # has no status clock. Anchoring on created_at would make every old conversation instantly
     # overdue and fire on the next sweep; leave them for their next status change to arm.
@@ -158,6 +162,50 @@ class AutomationRulePendingExecution < ApplicationRecord
     end
   end
 
+  # [turuta] Episodio de ETIQUETA: "el chat lleva N minutos con la etiqueta X".
+  #
+  # Los episodios de Chatwoot se anclan en el estado o en un mensaje. Ninguno
+  # sirve aqui: el reloj tiene que empezar cuando se PUSO la etiqueta, y eso lo
+  # sabe la fila de taggings (created_at). La clave lleva ese instante, asi que
+  # quitar la etiqueta acaba el episodio (ya no hay fila) y volver a ponerla
+  # abre otro nuevo con su reloj a cero.
+  #
+  # Una regla es de etiqueta si es de conversation_updated y tiene una condicion
+  # "labels es igual a X". Si no, turuta_label_for da nil y todo sigue como en
+  # Chatwoot.
+  def self.turuta_label_for(rule, message)
+    return nil if message.present? || rule.nil? || rule.event_name != 'conversation_updated'
+
+    condition = Array(rule.conditions).find do |item|
+      item['attribute_key'] == 'labels' && item['filter_operator'] == 'equal_to'
+    end
+    Array(condition && condition['values']).first.to_s.presence
+  end
+
+  # [instante en que se puso, clave del episodio], o nil si el chat no la tiene.
+  def self.turuta_label_episode(conversation, label)
+    added_at = ActsAsTaggableOn::Tagging
+               .where(taggable_type: 'Conversation', taggable_id: conversation.id, context: 'labels')
+               .joins(:tag).where(tags: { name: label })
+               .maximum(:created_at)
+    return nil if added_at.blank?
+
+    [added_at, "label:#{label}:#{microsecond_stamp(added_at)}"]
+  end
+
+  def self.turuta_schedule_label(rule, conversation, label)
+    added_at, key = turuta_label_episode(conversation, label)
+    return if key.nil?
+
+    create!(
+      automation_rule: rule, conversation: conversation, account_id: conversation.account_id,
+      episode_key: key, due_at: rule.execution_delay.minutes.since(added_at)
+    )
+  rescue ActiveRecord::RecordNotUnique
+    # El episodio ya esta armado: cualquier otro cambio del chat pasa por aqui.
+    nil
+  end
+
   def self.purge_terminal!
     where(status: [statuses[:executed], statuses[:skipped]], updated_at: ...RETENTION_WINDOW.ago)
       .in_batches(of: 1000).delete_all
@@ -186,6 +234,11 @@ class AutomationRulePendingExecution < ApplicationRecord
   end
 
   def episode_current?
+    # [turuta] En una regla de etiqueta el episodio sigue vivo si la etiqueta sigue
+    # puesta desde el mismo instante en que se armo.
+    label = self.class.turuta_label_for(automation_rule, message)
+    return self.class.turuta_label_episode(conversation, label)&.last == episode_key if label
+
     self.class.episode_key_for(conversation, message) == episode_key
   end
 

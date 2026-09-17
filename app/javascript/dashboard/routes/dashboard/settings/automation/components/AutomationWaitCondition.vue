@@ -23,6 +23,11 @@ const props = defineProps({
     type: Array,
     required: true,
   },
+  // [turuta] Etiquetas de la cuenta, para "mantiene la etiqueta".
+  labelOptions: {
+    type: Array,
+    default: () => [],
+  },
   hasError: {
     type: Boolean,
     default: false,
@@ -44,6 +49,10 @@ const selectedTrigger = ref(DEFAULT_TRIGGER);
 const triggerStatus = ref(DEFAULT_TRIGGER_STATUS);
 // No inbox selected means the rule applies to every inbox.
 const triggerInboxes = ref([]);
+
+// [turuta]
+const triggerLabel = ref('');
+const isLabelTrigger = computed(() => selectedTrigger.value === 'label_kept');
 
 const isStatusTrigger = computed(
   () => selectedTrigger.value === 'conversation_status'
@@ -116,6 +125,14 @@ const hydrateFromRule = () => {
     return;
   }
 
+  // [turuta] Con condicion de etiqueta es una regla "mantiene la etiqueta".
+  const etiqueta = rawConditionValue(conditionFor('labels'));
+  if (eventName.value === 'conversation_updated' && etiqueta) {
+    selectedTrigger.value = 'label_kept';
+    triggerLabel.value = etiqueta;
+    return;
+  }
+
   if (eventName.value === 'conversation_updated') {
     selectedTrigger.value = 'conversation_status';
     triggerStatus.value =
@@ -135,12 +152,23 @@ const applyTrigger = () => {
   const trigger = DELAYED_TRIGGERS.find(
     item => item.key === selectedTrigger.value
   );
+  // [turuta] Una regla antigua de "permanece en un estado" ya no tiene opcion
+  // en la lista: se deja como esta en vez de romper el formulario.
+  if (!trigger) return;
+  if (trigger.label && !triggerLabel.value) {
+    triggerLabel.value = props.labelOptions[0]?.value || '';
+  }
   eventName.value = trigger.eventName;
   const nextConditions = [
     trigger.messageType
       ? buildCondition('message_type', trigger.messageType)
       : buildCondition('status', triggerStatus.value),
   ];
+  // [turuta] La etiqueta va como condicion en lugar del estado. En array: el
+  // servidor lee values.first.
+  if (trigger.label) {
+    nextConditions[0] = buildCondition('labels', [triggerLabel.value]);
+  }
   // A private note is an outgoing message, so without this an internal note would read as a reply
   // and arm the customer-unresponsive wait. Incoming messages are never private.
   if (trigger.messageType === 'outgoing') {
@@ -166,7 +194,10 @@ onMounted(() => {
   if (!props.isSavedWait) applyTrigger();
 });
 
-watch([selectedTrigger, triggerStatus, triggerInboxes], applyTrigger);
+watch(
+  [selectedTrigger, triggerStatus, triggerInboxes, triggerLabel],
+  applyTrigger
+);
 </script>
 
 <template>
@@ -194,6 +225,20 @@ watch([selectedTrigger, triggerStatus, triggerInboxes], applyTrigger);
             {{ $t('AUTOMATION.ADD.FORM.WAIT.STATUS_LABEL') }}
           </span>
           <FilterSelect v-model="triggerStatus" :options="statusOptions" />
+        </div>
+        <!-- [turuta] La etiqueta de "mantiene la etiqueta". -->
+        <div v-if="isLabelTrigger" class="flex items-center gap-3 min-h-8">
+          <span class="text-sm w-20 shrink-0 text-n-slate-11">
+            {{ $t('AUTOMATION.ADD.FORM.WAIT.TAG_LABEL') }}
+          </span>
+          <FilterSelect
+            v-if="labelOptions.length"
+            v-model="triggerLabel"
+            :options="labelOptions"
+          />
+          <span v-else class="text-sm text-n-slate-10">
+            {{ $t('AUTOMATION.ADD.FORM.WAIT.TAG_EMPTY') }}
+          </span>
         </div>
         <div class="flex items-center gap-3 min-h-8">
           <span class="text-sm w-20 shrink-0 text-n-slate-11">

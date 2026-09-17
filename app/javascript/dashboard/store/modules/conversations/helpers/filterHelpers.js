@@ -48,6 +48,10 @@
  */
 import { coerceToDate } from '@chatwoot/utils';
 import jsonLogic from 'json-logic-js';
+import {
+  contieneAlguna,
+  esIdDeFiltro,
+} from 'dashboard/turuta/atributos/multiple';
 
 /**
  * Gets a value from a conversation based on the attribute key
@@ -160,7 +164,7 @@ const equalTo = (filterValue, conversationValue) => {
  * This function performs case-insensitive string containment checks.
  * It only works with string values and returns false for non-string types.
  */
-const contains = (filterValue, conversationValue) => {
+const containsDeChatwoot = (filterValue, conversationValue) => {
   if (
     typeof conversationValue === 'string' &&
     typeof filterValue === 'string'
@@ -168,6 +172,17 @@ const contains = (filterValue, conversationValue) => {
     return conversationValue.toLowerCase().includes(filterValue.toLowerCase());
   }
   return false;
+};
+
+// [turuta] Un atributo de seleccion multiple guarda un array y su filtro manda
+// las opciones entre comillas (turuta/atributos/multiple.js). Solo en ese caso
+// se mira dentro del array; para todo lo demas sigue mandando el "contiene"
+// de Chatwoot, que a proposito no encaja con arrays ni con numeros.
+const contains = (filterValue, conversationValue) => {
+  const valores = Array.isArray(filterValue) ? filterValue : [filterValue];
+  return valores.some(esIdDeFiltro)
+    ? contieneAlguna(valores, conversationValue)
+    : containsDeChatwoot(filterValue, conversationValue);
 };
 
 const DATE_ONLY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;

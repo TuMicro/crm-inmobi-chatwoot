@@ -828,6 +828,10 @@ export const DELAYED_TRIGGERS = [
     eventName: 'message_created',
     messageType: 'incoming',
   },
+  // [turuta] "Mantiene la etiqueta": el reloj corre desde que se pone la
+  // etiqueta (automation_rule_pending_execution.rb). Va la ultima para que el
+  // disparador por defecto siga siendo el primero de Chatwoot.
+  { key: 'label_kept', eventName: 'conversation_updated', label: true },
 ];
 
 export const DEFAULT_TRIGGER = DELAYED_TRIGGERS[0].key;

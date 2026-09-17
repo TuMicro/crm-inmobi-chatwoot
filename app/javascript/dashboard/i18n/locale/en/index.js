@@ -45,7 +45,10 @@ import onboarding from './onboarding.json';
 import sessionLimit from './sessionLimit.json';
 import yearInReview from './yearInReview.json';
 
-export default {
+// [turuta] Claves de funciones nuestras tambien en ingles (turuta/i18n).
+import { conTextosTurutaEn } from 'dashboard/turuta/i18n';
+
+export default conTextosTurutaEn({
   ...advancedFilters,
   ...agentBots,
   ...agentMgmt,
@@ -92,4 +95,4 @@ export default {
   ...onboarding,
   ...sessionLimit,
   ...yearInReview,
-};
+});

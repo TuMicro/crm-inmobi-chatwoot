@@ -25,7 +25,10 @@ class AutomationRule < ApplicationRecord
   EXECUTION_DELAY_RANGE = (10..43_200) # minutes: 10 min to 30 days
   # Conversation-level delayed rules key their episode on status; only status and attributes
   # that never change after the delay (inbox) are safe to also filter on.
-  DELAYED_CONVERSATION_ATTRIBUTES = %w[status inbox_id].freeze
+  # [turuta] + labels: las reglas "mantiene la etiqueta" llevan su propio episodio,
+  # con su propio reloj (AutomationRulePendingExecution.turuta_label_*), asi que
+  # no colapsan periodos distintos como avisa el comentario de arriba.
+  DELAYED_CONVERSATION_ATTRIBUTES = %w[status inbox_id labels].freeze
 
   belongs_to :account
   has_many :pending_executions, class_name: 'AutomationRulePendingExecution', dependent: :delete_all
