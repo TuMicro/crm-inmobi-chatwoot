@@ -4,6 +4,7 @@ import { useAlert, useTrack } from 'dashboard/composables';
 import { useStore, useMapGetter } from 'dashboard/composables/store';
 import { useConversationRequiredAttributes } from 'dashboard/composables/useConversationRequiredAttributes';
 import { CONVERSATION_EVENTS } from 'dashboard/helper/AnalyticsHelper/events';
+import { seguirMacro } from 'dashboard/turuta/macroEnCurso';
 
 // change_status is not offered by the macro builder, but the API accepts it and
 // it resolves the conversation just like resolve_conversation does. Its param is
@@ -48,11 +49,19 @@ export function useMacroExecution() {
         conversationIds: [conversationId],
       });
       useTrack(CONVERSATION_EVENTS.EXECUTED_A_MACRO);
-      useAlert(
-        skippedResolve
+      // [turuta] La macro se encola: aqui aun no se ha enviado nada. El aviso se
+      // queda hasta que el ultimo mensaje sale, y entonces da el de siempre.
+      seguirMacro({
+        macro,
+        leerMensajes: () =>
+          conversationById.value(conversationId)?.messages || [],
+        usuarioId: store.getters?.getCurrentUserID,
+        avisar: useAlert,
+        textoEnCurso: t('MACROS.EXECUTE.TURUTA_RUNNING'),
+        textoFinal: skippedResolve
           ? t('MACROS.EXECUTE.EXECUTED_WITHOUT_RESOLVING')
-          : t('MACROS.EXECUTE.EXECUTED_SUCCESSFULLY')
-      );
+          : t('MACROS.EXECUTE.EXECUTED_SUCCESSFULLY'),
+      });
     } catch (error) {
       useAlert(t('MACROS.ERROR'));
     } finally {

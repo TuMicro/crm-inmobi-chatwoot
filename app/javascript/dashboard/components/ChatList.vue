@@ -50,6 +50,7 @@ import {
   filterItemsByPermission,
 } from 'dashboard/helper/permissionsHelper.js';
 import { matchesFilters } from '../store/modules/conversations/helpers/filterHelpers';
+import { conEtapaPrimero } from 'dashboard/turuta/filtros';
 import { CONVERSATION_EVENTS } from '../helper/AnalyticsHelper/events';
 import { ASSIGNEE_TYPE_TAB_PERMISSIONS } from 'dashboard/constants/permissions.js';
 
@@ -514,6 +515,13 @@ function initializeExistingFilterToModal() {
   ).map(useCamelCase);
 
   appliedFilter.value = [...appliedFilter.value, ...otherFilters];
+  // [turuta] Al abrir, la primera fila es la etapa del lead. Las de contexto
+  // (estado, agente, etiqueta de la vista) se quedan detras: sin ellas el
+  // filtro mezclaria chats resueltos y de otros asesores.
+  appliedFilter.value = conEtapaPrimero(
+    appliedFilter.value,
+    conversationCustomAttributes.value
+  );
 }
 
 function initializeFolderToFilterModal(newActiveFolder) {

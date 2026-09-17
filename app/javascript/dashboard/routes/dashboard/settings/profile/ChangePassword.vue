@@ -4,10 +4,14 @@ import { required, minLength } from '@vuelidate/validators';
 import { useAlert } from 'dashboard/composables';
 import { parseAPIErrorResponse } from 'dashboard/store/utils/api';
 import NextButton from 'dashboard/components-next/button/Button.vue';
+// [turuta] Requisitos a la vista y validados antes de enviar.
+import RequisitosContrasena from 'dashboard/turuta/RequisitosContrasena.vue';
+import { contrasenaValida } from 'dashboard/turuta/contrasena';
 
 export default {
   components: {
     NextButton,
+    RequisitosContrasena,
   },
   setup() {
     return { v$: useVuelidate() };
@@ -33,6 +37,7 @@ export default {
     },
     password: {
       minLength: minLength(6),
+      contrasenaValida, // [turuta]
     },
     passwordConfirmation: {
       minLength: minLength(6),
@@ -111,6 +116,7 @@ export default {
         @input="v$.password.$touch"
         @blur="v$.password.$touch"
       />
+      <RequisitosContrasena :contrasena="password" />
 
       <woot-input
         v-model="passwordConfirmation"

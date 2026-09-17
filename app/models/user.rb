@@ -128,7 +128,9 @@ class User < ApplicationRecord
   end
 
   def send_devise_notification(notification, *)
-    devise_mailer.with(account: Current.account).send(notification, self, *).deliver_later
+    # [turuta] Sin cuenta en curso ("olvide mi contrasena" desde la entrada) se usa
+    # la del propio usuario: de ella sale el idioma del correo.
+    devise_mailer.with(account: Current.account || accounts.first).send(notification, self, *).deliver_later
   end
 
   def set_password_and_uid

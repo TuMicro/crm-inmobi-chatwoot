@@ -26,5 +26,13 @@
   "TURUTA.LEGAL.PRIVACIDAD": {
     "es": "Política de privacidad",
     "en": "Privacy policy"
+  },
+  "MACROS.EXECUTE.TURUTA_RUNNING": {
+    "es": "Ejecutando la macro: los mensajes salen en orden. No cierres el chat…",
+    "en": "Running the macro: messages go out in order. Keep the chat open…"
+  },
+  "TURUTA.CONTRASENA.TITULO": {
+    "es": "Tu contraseña debe tener:",
+    "en": "Your password must have:"
   }
 }

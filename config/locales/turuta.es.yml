@@ -1,0 +1,65 @@
+# [turuta] Textos del servidor que Chatwoot tiene escritos a mano en ingles
+# dentro de las plantillas de correo (app/views/devise/mailer y el layout), y
+# los nombres de los campos que salen en sus mensajes de error.
+# La pareja en ingles es turuta.en.yml: si se anade una clave aqui, alli tambien.
+es:
+  activerecord:
+    attributes:
+      user:
+        password: "La contraseña"
+        password_confirmation: "La confirmación de la contraseña"
+        email: "El correo"
+        name: "El nombre"
+  turuta:
+    mail:
+      layout:
+        sent_by: "Este correo fue enviado por"
+        notifications_reason: "Recibes este correo porque tienes activadas las notificaciones por correo en tu cuenta."
+        manage_notifications: "Gestionar mis notificaciones"
+      greeting: "Hola, %{name}:"
+      fallback_before: "Si el botón no funciona, abre"
+      fallback_link: "este enlace seguro"
+      confirmation:
+        new_email: "Correo nuevo"
+        invited_by: "Te invitó"
+        workspace: "Cuenta"
+        welcome:
+          eyebrow: "Bienvenida"
+          heading: "Confirma tu correo para empezar"
+          intro: "Te damos la bienvenida a %{brand}. Solo falta verificar tu correo para que puedas usar tu cuenta."
+          supporting: "Es un momento."
+          action: "Confirmar mi cuenta"
+        email_update:
+          eyebrow: "Cambio de correo"
+          heading: "Confirma tu nuevo correo"
+          intro: "Recibimos una solicitud para cambiar el correo de tu cuenta de %{brand}."
+          supporting: "Confirma la nueva dirección aquí abajo para terminar el cambio."
+          action: "Confirmar el correo"
+        ready:
+          eyebrow: "Cuenta lista"
+          heading: "Tu cuenta ya está lista"
+          intro: "Tu cuenta de %{brand} ya está activa."
+          supporting: "Usa el botón de abajo para entrar y seguir donde lo dejaste."
+          action: "Abrir mi cuenta"
+        invitation:
+          eyebrow: "Invitación"
+          heading_account: "Te invitaron a unirte a %{account}"
+          heading_brand: "Te invitaron a %{brand}"
+          intro_account: "%{inviter} te invitó a unirte a %{account} en %{brand}."
+          intro_brand: "%{inviter} te invitó a %{brand}."
+          supporting: "Crea tu contraseña para empezar a trabajar con tu equipo."
+          action: "Aceptar la invitación"
+      reset_password:
+        greeting: "Hola, %{email}:"
+        intro: "Alguien pidió un enlace para cambiar tu contraseña. Puedes hacerlo desde aquí:"
+        action: "Cambiar mi contraseña"
+        ignore: "Si no fuiste tú, ignora este correo."
+        unchanged: "Tu contraseña no cambiará hasta que abras el enlace y crees una nueva."
+      password_change:
+        greeting: "Hola, %{email}:"
+        intro: "Te avisamos de que la contraseña de tu cuenta ha cambiado."
+      unlock:
+        greeting: "Hola, %{email}:"
+        intro: "Tu cuenta se bloqueó por demasiados intentos fallidos de inicio de sesión."
+        instruction: "Pulsa este enlace para desbloquearla:"
+        action: "Desbloquear mi cuenta"

@@ -28,12 +28,21 @@ const showPopover = () => {
   }
 };
 
+// [turuta] Los avisos se quitan por su clave, no "el primero de la cola": con
+// un aviso largo delante, el temporizador de uno corto se llevaba el largo.
+// turutaCerrarToast cierra antes de tiempo un aviso que se abrio con clave
+// (turuta/macroEnCurso.js).
+const quitarToast = clave => {
+  snackMessages.value = snackMessages.value.filter(m => m.key !== clave);
+};
+
 const onNewToastMessage = ({ message: originalMessage, action }) => {
   const message = action?.usei18n ? t(originalMessage) : originalMessage;
   const duration = action?.duration || props.duration;
+  const clave = action?.turutaClave || Date.now();
 
   snackMessages.value.push({
-    key: Date.now(),
+    key: clave,
     message,
     action,
   });
@@ -41,16 +50,18 @@ const onNewToastMessage = ({ message: originalMessage, action }) => {
   nextTick(showPopover);
 
   setTimeout(() => {
-    snackMessages.value.shift();
+    quitarToast(clave);
   }, duration);
 };
 
 onMounted(() => {
   emitter.on('newToastMessage', onNewToastMessage);
+  emitter.on('turutaCerrarToast', quitarToast);
 });
 
 onUnmounted(() => {
   emitter.off('newToastMessage', onNewToastMessage);
+  emitter.off('turutaCerrarToast', quitarToast);
 });
 </script>
 

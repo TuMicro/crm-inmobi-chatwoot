@@ -20,7 +20,15 @@
       }
     }
   },
+  "MACROS": {
+    "EXECUTE": {
+      "TURUTA_RUNNING": "Running the macro: messages go out in order. Keep the chat open…"
+    }
+  },
   "TURUTA": {
+    "CONTRASENA": {
+      "TITULO": "Your password must have:"
+    },
     "LEGAL": {
       "PRIVACIDAD": "Privacy policy",
       "TERMINOS": "Terms and conditions"

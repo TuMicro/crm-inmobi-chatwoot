@@ -505,6 +505,7 @@
   },
   "FILTER": {
     "ATTRIBUTES": {
+      "ASSIGNEE_NAME": "Agente asignado",
       "CONVERSATION_IDENTIFIER": "Identificador de chat"
     },
     "CUSTOM_VIEWS": {
@@ -770,8 +771,9 @@
     "COUNT": "{n} macro | {n} macros",
     "DESCRIPTION": "Una macro es un conjunto de acciones guardadas que ayudan a los agentes de servicio al cliente a completar fácilmente las tareas. Los agentes pueden definir un conjunto de acciones como etiquetar un chat con una etiqueta, enviar una transcripción de correo electrónico, actualizar un atributo personalizado, etc. y pueden ejecutar estas acciones en un solo clic.",
     "EXECUTE": {
-      "EXECUTED_SUCCESSFULLY": "Macro en marcha: los mensajes se envían en orden, en unos segundos",
-      "EXECUTED_WITHOUT_RESOLVING": "Macro en marcha. El chat no se resolvió porque faltan atributos obligatorios."
+      "EXECUTED_SUCCESSFULLY": "Macro terminada: mensajes enviados",
+      "EXECUTED_WITHOUT_RESOLVING": "Macro terminada. El chat no se resolvió porque faltan atributos obligatorios.",
+      "TURUTA_RUNNING": "Ejecutando la macro: los mensajes salen en orden. No cierres el chat…"
     },
     "NO_RESULTS": "Ninguna macro coincide con la búsqueda",
     "SEARCH_PLACEHOLDER": "Buscar macros..."
@@ -917,6 +919,9 @@
           "SLA_MISSED_RESOLUTION": "Un chat carece de resolución SLA"
         }
       },
+      "PASSWORD": {
+        "ERROR": "La contraseña no cumple los requisitos de abajo."
+      },
       "PUSH_NOTIFICATIONS_SECTION": {
         "ASSIGNED_CONVERSATION_NEW_MESSAGE": "Enviar notificaciones push cuando un nuevo mensaja es creadao en un chat asignado",
         "CONVERSATION_ASSIGNMENT": "Enviar notificaciones push cuando se me ha asignado un chat",
@@ -929,6 +934,15 @@
         "NOTE": "Opciones de seguridad adicionales para tu cuenta.",
         "TITLE": "Seguridad"
       }
+    }
+  },
+  "REGISTER": {
+    "PASSWORD": {
+      "REQUIREMENTS_LENGTH": "Al menos {min} caracteres",
+      "REQUIREMENTS_LOWERCASE": "Una letra minúscula",
+      "REQUIREMENTS_NUMBER": "Un número",
+      "REQUIREMENTS_SPECIAL": "Un carácter especial, como ! @ # $ % . _ -",
+      "REQUIREMENTS_UPPERCASE": "Una letra mayúscula"
     }
   },
   "REPORT": {
@@ -1003,6 +1017,14 @@
     },
     "TRANSCRIPT": "Transcripción",
     "UPDATED_AT": "actualizado {time}"
+  },
+  "SET_NEW_PASSWORD": {
+    "API": {
+      "ERROR_MESSAGE": "No se pudo conectar con el servidor. Inténtalo de nuevo en un momento."
+    },
+    "PASSWORD": {
+      "ERROR": "La contraseña no cumple los requisitos de abajo."
+    }
   },
   "SIDEBAR": {
     "AGENT_ASSIGNMENT": "Asignación de agentes",
@@ -1081,6 +1103,9 @@
     }
   },
   "TURUTA": {
+    "CONTRASENA": {
+      "TITULO": "Tu contraseña debe tener:"
+    },
     "LEGAL": {
       "PRIVACIDAD": "Política de privacidad",
       "TERMINOS": "Términos y condiciones"

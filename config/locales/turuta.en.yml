@@ -1,0 +1,57 @@
+# [turuta] Pareja en ingles de turuta.es.yml. Son los textos ORIGINALES de las
+# plantillas de Chatwoot, sacados a claves para poder traducirlos. Es tambien a
+# lo que cae cualquier otro idioma (config.i18n.fallbacks).
+en:
+  turuta:
+    mail:
+      layout:
+        sent_by: "This email was sent by"
+        notifications_reason: "You're receiving this email because email notifications are enabled for your account."
+        manage_notifications: "Manage notification preferences"
+      greeting: "Hi %{name},"
+      fallback_before: "If the button does not work, open"
+      fallback_link: "this secure link"
+      confirmation:
+        new_email: "New email"
+        invited_by: "Invited by"
+        workspace: "Workspace"
+        welcome:
+          eyebrow: "Welcome"
+          heading: "Confirm your email to get started"
+          intro: "Welcome to %{brand}. We just need to verify your email address before you can start using your account."
+          supporting: "This only takes a moment."
+          action: "Confirm my account"
+        email_update:
+          eyebrow: "Email update"
+          heading: "Confirm your new email address"
+          intro: "We received a request to update the email address on your %{brand} account."
+          supporting: "Confirm the new address below to finish the change."
+          action: "Confirm email address"
+        ready:
+          eyebrow: "Account ready"
+          heading: "Your account is ready"
+          intro: "Your %{brand} account is already active."
+          supporting: "Use the button below to sign in and continue where you left off."
+          action: "Open my account"
+        invitation:
+          eyebrow: "Workspace invitation"
+          heading_account: "You're invited to join %{account}"
+          heading_brand: "You're invited to try %{brand}"
+          intro_account: "%{inviter} invited you to join the %{account} workspace on %{brand}."
+          intro_brand: "%{inviter} invited you to try %{brand}."
+          supporting: "Create your account to start collaborating with your team."
+          action: "Accept invitation"
+      reset_password:
+        greeting: "Hello %{email}!"
+        intro: "Someone has requested a link to change your password. You can do this through the link below."
+        action: "Change my password"
+        ignore: "If you didn't request this, please ignore this email."
+        unchanged: "Your password won't change until you access the link above and create a new one."
+      password_change:
+        greeting: "Hello %{email}!"
+        intro: "We're contacting you to notify you that your password has been changed."
+      unlock:
+        greeting: "Hello %{email}!"
+        intro: "Your account has been locked due to an excessive number of unsuccessful sign in attempts."
+        instruction: "Click the link below to unlock your account:"
+        action: "Unlock my account"

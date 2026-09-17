@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { mezclar } from './index';
+import { conMarca, mezclar } from './index';
 import es from 'dashboard/i18n/locale/es';
 
 describe('mezclar', () => {
@@ -36,5 +36,35 @@ describe('textos en espanol con nuestra capa', () => {
       });
     mirar(es, '');
     expect(restos).toEqual([]);
+  });
+});
+
+describe('conMarca', () => {
+  it('cambia Chatwoot y Woot sueltos por la marca, a cualquier profundidad', () => {
+    const r = conMarca(
+      { A: 'Bienvenido a Chatwoot', B: { C: 'servidor Woot caido' } },
+      'MadHouse CRM'
+    );
+    expect(r).toEqual({
+      A: 'Bienvenido a MadHouse CRM',
+      B: { C: 'servidor MadHouse CRM caido' },
+    });
+  });
+
+  it('no toca las URL ni otras palabras', () => {
+    const textos = { A: 'https://www.chatwoot.com/docs', B: 'Wootric', C: 7 };
+    expect(conMarca(textos, 'MadHouse')).toEqual(textos);
+  });
+
+  it('sin marca, o con la de fabrica, devuelve lo mismo', () => {
+    const textos = { A: 'Chatwoot' };
+    expect(conMarca(textos, '')).toBe(textos);
+    expect(conMarca(textos, 'Chatwoot')).toBe(textos);
+  });
+
+  it('quita de la marca lo que rompe a vue-i18n', () => {
+    expect(conMarca({ A: 'Chatwoot' }, 'Mad{House} | CRM @').A).toBe(
+      'MadHouse  CRM'
+    );
   });
 });

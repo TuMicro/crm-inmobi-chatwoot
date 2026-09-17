@@ -177,6 +177,15 @@
   "INBOX_REPORTS.METRICS.CONVERSATIONS.DESC": "( Total )",
   "INBOX_REPORTS.METRICS.INCOMING_MESSAGES.DESC": "( Total )",
   "INBOX_REPORTS.METRICS.OUTGOING_MESSAGES.DESC": "( Total )",
-  "MACROS.EXECUTE.EXECUTED_SUCCESSFULLY": "Macro en marcha: los mensajes se envían en orden, en unos segundos",
-  "MACROS.EXECUTE.EXECUTED_WITHOUT_RESOLVING": "Macro en marcha. El chat no se resolvió porque faltan atributos obligatorios."
+  "MACROS.EXECUTE.EXECUTED_SUCCESSFULLY": "Macro terminada: mensajes enviados",
+  "MACROS.EXECUTE.EXECUTED_WITHOUT_RESOLVING": "Macro terminada. El chat no se resolvió porque faltan atributos obligatorios.",
+  "REGISTER.PASSWORD.REQUIREMENTS_LENGTH": "Al menos {min} caracteres",
+  "REGISTER.PASSWORD.REQUIREMENTS_UPPERCASE": "Una letra mayúscula",
+  "REGISTER.PASSWORD.REQUIREMENTS_LOWERCASE": "Una letra minúscula",
+  "REGISTER.PASSWORD.REQUIREMENTS_NUMBER": "Un número",
+  "REGISTER.PASSWORD.REQUIREMENTS_SPECIAL": "Un carácter especial, como ! @ # $ % . _ -",
+  "SET_NEW_PASSWORD.PASSWORD.ERROR": "La contraseña no cumple los requisitos de abajo.",
+  "PROFILE_SETTINGS.FORM.PASSWORD.ERROR": "La contraseña no cumple los requisitos de abajo.",
+  "SET_NEW_PASSWORD.API.ERROR_MESSAGE": "No se pudo conectar con el servidor. Inténtalo de nuevo en un momento.",
+  "FILTER.ATTRIBUTES.ASSIGNEE_NAME": "Agente asignado"
 }

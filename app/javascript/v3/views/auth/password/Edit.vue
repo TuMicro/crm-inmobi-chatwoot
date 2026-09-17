@@ -6,11 +6,15 @@ import FormInput from '../../../components/Form/Input.vue';
 import NextButton from 'dashboard/components-next/button/Button.vue';
 import { DEFAULT_REDIRECT_URL } from 'dashboard/constants/globals';
 import { setNewPassword } from '../../../api/auth';
+// [turuta] Requisitos a la vista y validados antes de enviar.
+import RequisitosContrasena from 'dashboard/turuta/RequisitosContrasena.vue';
+import { contrasenaValida } from 'dashboard/turuta/contrasena';
 
 export default {
   components: {
     FormInput,
     NextButton,
+    RequisitosContrasena,
   },
   props: {
     resetPasswordToken: { type: String, default: '' },
@@ -45,6 +49,7 @@ export default {
       password: {
         required,
         minLength: minLength(6),
+        contrasenaValida, // [turuta]
       },
       confirmPassword: {
         required,
@@ -110,6 +115,7 @@ export default {
           :placeholder="$t('SET_NEW_PASSWORD.PASSWORD.PLACEHOLDER')"
           @blur="v$.credentials.password.$touch"
         />
+        <RequisitosContrasena :contrasena="credentials.password" />
         <FormInput
           v-model="credentials.confirmPassword"
           class="mt-3"
