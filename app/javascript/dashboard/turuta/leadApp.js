@@ -109,6 +109,73 @@ export function cuando(iso, now = Date.now()) {
   return `${f.toLocaleDateString('es-PE', { day: 'numeric', month: 'short' })} ${hora}`;
 }
 
+const dosDigitos = n => String(n).padStart(2, '0');
+
+/** Fecha para un <input type="date">, en la hora local del navegador. */
+export function fechaInput(date) {
+  const d = new Date(date);
+  if (Number.isNaN(d.getTime())) return '';
+  return `${d.getFullYear()}-${dosDigitos(d.getMonth() + 1)}-${dosDigitos(d.getDate())}`;
+}
+
+/** Hora para un <input type="time">, en la hora local del navegador. */
+export function horaInput(date) {
+  const d = new Date(date);
+  if (Number.isNaN(d.getTime())) return '';
+  return `${dosDigitos(d.getHours())}:${dosDigitos(d.getMinutes())}`;
+}
+
+/** ISO con zona a partir de los dos inputs, o null si falta algo. El
+ *  navegador del asesor esta en la zona del cliente: esa es la hora buena. */
+export function isoDesdeInputs(fecha, hora) {
+  if (!fecha || !hora) return null;
+  const d = new Date(`${fecha}T${hora}:00`);
+  return Number.isNaN(d.getTime()) ? null : d.toISOString();
+}
+
+/** "hoy 4:00 p. m.", "manana 4:00 p. m.", "vie 19 sep, 4:00 p. m." */
+export function cuandoVisita(iso, now = Date.now()) {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  const hora = d
+    .toLocaleTimeString('es-PE', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    })
+    .replace(/\s+/g, ' ');
+  const hoy = new Date(now);
+  const diaVisita = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const diaHoy = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
+  const dias = Math.round((diaVisita - diaHoy) / 86400000);
+  if (dias === 0) return `hoy ${hora}`;
+  if (dias === 1) return `mañana ${hora}`;
+  if (dias === -1) return `ayer ${hora}`;
+  const fecha = d.toLocaleDateString('es-PE', {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+  });
+  return `${fecha}, ${hora}`;
+}
+
+/** El estado de la visita en una frase, para la ficha. */
+export function textoVisita(v) {
+  if (!v) return '';
+  if (v.status === 'CONFIRMED') return 'Confirmada por el lead.';
+  if (v.status === 'RESCHEDULE_REQUESTED') return 'El lead pide reprogramar.';
+  switch (v.reminderStatus) {
+    case 'SENT':
+      return 'Recordatorio enviado, sin respuesta todavia.';
+    case 'SKIPPED':
+      return 'Sin recordatorio: se agendo con menos de 2 h de margen.';
+    case 'FAILED':
+      return `El recordatorio fallo: ${v.reminderError || 'sin detalle'}.`;
+    default:
+      return 'Le llegara un recordatorio por WhatsApp 2 h antes.';
+  }
+}
+
 /** Mensaje de error que se ensena al asesor segun lo que fallo. */
 export function textoError(kind) {
   if (kind === 'config') {

@@ -96,11 +96,14 @@ export function useLead(conversationId, contact) {
   // peticiones: la primera mueve el lead y la segunda vuelve rebotada con
   // "ya esta en esa etapa". Ver un error rojo tras una accion que SI funciono
   // es de lo mas desconcertante que puede pasar.
-  async function act(path, body) {
+  async function act(path, body, method = 'PATCH') {
     if (state.busy || !state.lead?.found) return false;
     state.busy = true;
     try {
-      await request(path, { method: 'PATCH', body: JSON.stringify(body) });
+      await request(path, {
+        method,
+        body: body === undefined ? undefined : JSON.stringify(body),
+      });
       await load();
       return true;
     } catch (e) {
@@ -125,6 +128,17 @@ export function useLead(conversationId, contact) {
 
   const transferir = advisorId =>
     act(`/leads/${state.lead.id}/transfer`, { advisorId });
+
+  /** Agendar o cambiar la visita vigente. `at` es ISO con zona horaria. */
+  const agendarVisita = (at, address) =>
+    act(
+      `/leads/${state.lead.id}/visit`,
+      { scheduledAt: at, address, ...actor() },
+      'PUT'
+    );
+
+  const quitarVisita = () =>
+    act(`/leads/${state.lead.id}/visit`, undefined, 'DELETE');
 
   // Las Dashboard Apps las carga ConversationBox al montarse; si entramos por
   // URL directa puede que aun no esten. Se piden una vez.
@@ -174,5 +188,13 @@ export function useLead(conversationId, contact) {
     }
   );
 
-  return { state, config, load, cambiarEtapa, transferir };
+  return {
+    state,
+    config,
+    load,
+    cambiarEtapa,
+    transferir,
+    agendarVisita,
+    quitarVisita,
+  };
 }

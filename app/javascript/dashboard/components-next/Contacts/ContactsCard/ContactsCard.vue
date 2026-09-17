@@ -17,6 +17,7 @@ const props = defineProps({
   email: { type: String, default: '' },
   companyId: { type: [Number, String], default: '' },
   additionalAttributes: { type: Object, default: () => ({}) },
+  customAttributes: { type: Object, default: () => ({}) }, // [turuta]
   phoneNumber: { type: String, default: '' },
   thumbnail: { type: String, default: '' },
   availabilityStatus: { type: String, default: null },
@@ -148,6 +149,18 @@ const handleAvatarHover = isHovered => {
           <div class="flex flex-wrap items-center gap-x-4 gap-y-1">
             <span class="text-base font-medium truncate text-n-slate-12">
               {{ name }}
+            </span>
+            <!-- [turuta] la etapa del lead, que nuestra API escribe en el contacto -->
+            <span
+              v-if="
+                customAttributes?.crmStageName ||
+                customAttributes?.crm_stage_name
+              "
+              class="px-1.5 py-0.5 text-xs font-medium rounded-md bg-n-blue-3 text-n-blue-11"
+            >
+              {{
+                customAttributes.crmStageName || customAttributes.crm_stage_name
+              }}
             </span>
             <span class="inline-flex items-center gap-1">
               <span

@@ -10,7 +10,14 @@
 import { computed, ref, watch } from 'vue';
 import Button from 'dashboard/components-next/button/Button.vue';
 import { useLead } from './useLead';
-import { textoError } from './leadApp';
+import {
+  textoError,
+  cuandoVisita,
+  textoVisita,
+  fechaInput,
+  horaInput,
+  isoDesdeInputs,
+} from './leadApp';
 
 const props = defineProps({
   conversationId: {
@@ -23,7 +30,7 @@ const props = defineProps({
   },
 });
 
-const { state, cambiarEtapa } = useLead(
+const { state, cambiarEtapa, agendarVisita, quitarVisita } = useLead(
   computed(() => props.conversationId),
   computed(() => props.contact)
 );
@@ -41,16 +48,69 @@ const motivoPara = ref(null); // etapa que pide motivo, mientras se elige
 const motivo = ref(null);
 const nota = ref('');
 
+// La visita: fecha, hora y direccion. Se pide al entrar en una etapa que la
+// exige (Visita agendada) y se puede cambiar despues desde la ficha. Dos horas
+// antes le llega al lead un recordatorio por WhatsApp (lo manda nuestra API).
+const visitaPara = ref(null); // etapa que pide visita, mientras se rellena
+const editandoVisita = ref(false); // cambiar la visita vigente
+const vFecha = ref('');
+const vHora = ref('');
+const vDireccion = ref('');
+const formularioVisita = computed(
+  () => !!visitaPara.value || editandoVisita.value
+);
+
+function abrirVisita(etapa) {
+  const actual = lead.value?.visita;
+  visitaPara.value = etapa;
+  editandoVisita.value = !etapa;
+  vFecha.value = fechaInput(actual ? actual.scheduledAt : new Date());
+  vHora.value = actual ? horaInput(actual.scheduledAt) : '';
+  vDireccion.value = actual ? actual.address : '';
+  abierto.value = false;
+}
+
+function cerrarVisita() {
+  visitaPara.value = null;
+  editandoVisita.value = false;
+}
+
+const visitaIso = computed(() => isoDesdeInputs(vFecha.value, vHora.value));
+const puedeGuardarVisita = computed(
+  () =>
+    !!visitaIso.value &&
+    new Date(visitaIso.value) > new Date() &&
+    !!vDireccion.value.trim() &&
+    !state.busy
+);
+
+async function guardarVisita() {
+  if (!puedeGuardarVisita.value) return;
+  const direccion = vDireccion.value.trim();
+  const ok = visitaPara.value
+    ? await cambiarEtapa(visitaPara.value.code, {
+        visitAt: visitaIso.value,
+        visitAddress: direccion,
+      })
+    : await agendarVisita(visitaIso.value, direccion);
+  if (ok) cerrarVisita();
+}
+
 watch(
   () => state.conversationId,
   () => {
     abierto.value = false;
     motivoPara.value = null;
+    cerrarVisita();
   }
 );
 
 function elegir(etapa) {
   abierto.value = false;
+  if (etapa.requiereVisita) {
+    abrirVisita(etapa);
+    return;
+  }
   if (etapa.requiereMotivo) {
     motivoPara.value = etapa;
     motivo.value = null;
@@ -149,6 +209,39 @@ const claseEtapa = computed(() => {
       </div>
 
       <div
+        v-if="lead.visita && !formularioVisita"
+        class="px-2 py-1.5 mt-2 text-xs rounded-md bg-n-alpha-2 text-n-slate-12"
+      >
+        <div class="flex items-center gap-1.5">
+          <span
+            class="flex-shrink-0 i-lucide-calendar-check size-3.5 text-n-slate-10"
+          />
+          <span class="font-medium">Visita</span>
+          <span class="truncate">{{ cuandoVisita(lead.visita.scheduledAt) }}</span>
+        </div>
+        <div class="truncate text-n-slate-11">{{ lead.visita.address }}</div>
+        <div class="text-n-slate-11">{{ textoVisita(lead.visita) }}</div>
+        <div class="flex gap-3 mt-1">
+          <button
+            type="button"
+            class="text-n-blue-11 hover:underline"
+            :disabled="state.busy"
+            @click="abrirVisita(null)"
+          >
+            Cambiar
+          </button>
+          <button
+            type="button"
+            class="text-n-slate-11 hover:underline"
+            :disabled="state.busy"
+            @click="quitarVisita()"
+          >
+            Quitar
+          </button>
+        </div>
+      </div>
+
+      <div
         v-if="motivoPara"
         class="p-2 mt-3 border rounded-lg border-n-weak bg-n-alpha-1"
       >
@@ -197,6 +290,57 @@ const claseEtapa = computed(() => {
             :disabled="!puedeConfirmar"
             :is-loading="state.busy"
             @click="confirmarMotivo"
+          />
+        </div>
+      </div>
+
+      <div
+        v-else-if="formularioVisita"
+        class="p-2 mt-3 border rounded-lg border-n-weak bg-n-alpha-1"
+      >
+        <div class="text-sm font-medium text-n-slate-12">
+          {{ visitaPara ? 'Agendar la visita' : 'Cambiar la visita' }}
+        </div>
+        <div class="mt-0.5 text-xs text-n-slate-11">
+          Dos horas antes le llega al lead un recordatorio por WhatsApp con la
+          hora y la direccion.
+        </div>
+        <div class="flex gap-2 mt-2">
+          <input
+            v-model="vFecha"
+            type="date"
+            class="flex-1 min-w-0 px-2 py-1 text-sm border rounded-md border-n-weak bg-n-background text-n-slate-12"
+          />
+          <input
+            v-model="vHora"
+            type="time"
+            class="px-2 py-1 text-sm border rounded-md w-28 border-n-weak bg-n-background text-n-slate-12"
+          />
+        </div>
+        <input
+          v-model="vDireccion"
+          type="text"
+          placeholder="Direccion de la visita"
+          class="w-full px-2 py-1 mt-2 text-sm border rounded-md border-n-weak bg-n-background text-n-slate-12"
+        />
+        <div class="flex justify-end gap-2 mt-2">
+          <Button
+            label="Cancelar"
+            variant="ghost"
+            color="slate"
+            size="sm"
+            @click="cerrarVisita"
+          />
+          <Button
+            :label="
+              visitaPara ? `Agendar y pasar a ${visitaPara.name}` : 'Guardar'
+            "
+            variant="solid"
+            color="blue"
+            size="sm"
+            :disabled="!puedeGuardarVisita"
+            :is-loading="state.busy"
+            @click="guardarVisita"
           />
         </div>
       </div>

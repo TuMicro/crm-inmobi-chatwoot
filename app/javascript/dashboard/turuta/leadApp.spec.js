@@ -3,6 +3,11 @@ import {
   leadAppConfig,
   withLeadItems,
   cuando,
+  cuandoVisita,
+  fechaInput,
+  horaInput,
+  isoDesdeInputs,
+  textoVisita,
   LEAD_SIDEBAR_ITEM,
   ORDEN_TURUTA,
 } from './leadApp';
@@ -116,5 +121,51 @@ describe('cuando', () => {
 
   it('no revienta con una fecha invalida', () => {
     expect(cuando('nada', now)).toBe('');
+  });
+});
+
+describe('visita', () => {
+  it('los inputs de fecha y hora van y vuelven en hora local', () => {
+    const iso = isoDesdeInputs('2026-09-19', '16:00');
+    expect(iso).toBeTruthy();
+    expect(fechaInput(iso)).toBe('2026-09-19');
+    expect(horaInput(iso)).toBe('16:00');
+    expect(isoDesdeInputs('', '16:00')).toBeNull();
+    expect(isoDesdeInputs('2026-09-19', '')).toBeNull();
+  });
+
+  it('cuandoVisita dice hoy, manana o la fecha', () => {
+    const now = new Date(2026, 8, 19, 10, 0).getTime();
+    expect(cuandoVisita(new Date(2026, 8, 19, 16, 0), now)).toMatch(
+      /^hoy 4:00 p/
+    );
+    expect(cuandoVisita(new Date(2026, 8, 20, 9, 30), now)).toMatch(
+      /^mañana 9:30 a/
+    );
+    expect(cuandoVisita(new Date(2026, 8, 25, 16, 0), now)).toMatch(
+      /25.*se[pt].*4:00 p/
+    );
+    expect(cuandoVisita('nada', now)).toBe('');
+  });
+
+  it('textoVisita resume el estado', () => {
+    expect(textoVisita({ status: 'CONFIRMED' })).toMatch(/Confirmada/);
+    expect(textoVisita({ status: 'RESCHEDULE_REQUESTED' })).toMatch(
+      /reprogramar/
+    );
+    expect(
+      textoVisita({ status: 'SCHEDULED', reminderStatus: 'PENDING' })
+    ).toMatch(/2 h antes/);
+    expect(
+      textoVisita({ status: 'SCHEDULED', reminderStatus: 'SENT' })
+    ).toMatch(/enviado/);
+    expect(
+      textoVisita({
+        status: 'SCHEDULED',
+        reminderStatus: 'FAILED',
+        reminderError: 'x',
+      })
+    ).toMatch(/fallo: x/);
+    expect(textoVisita(null)).toBe('');
   });
 });

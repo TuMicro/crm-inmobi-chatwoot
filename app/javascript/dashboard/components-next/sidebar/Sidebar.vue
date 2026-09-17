@@ -600,6 +600,14 @@ const menuItems = computed(() => {
           },
         ]
       : []),
+    // [turuta] Nuestra pagina: leads por etapa y por asesor.
+    {
+      name: 'Embudo',
+      label: 'Embudo',
+      icon: 'i-lucide-filter',
+      to: accountScopedRoute('turuta_embudo'),
+      activeOn: ['turuta_embudo'],
+    },
     {
       name: 'Contacts',
       label: t('SIDEBAR.CONTACTS'),
