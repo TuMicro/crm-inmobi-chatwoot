@@ -50,6 +50,10 @@ const props = defineProps({
 
 const emit = defineEmits(['selectAllConversations']);
 
+// [turuta] Sin "posponer" en el CRM: la opcion no se ofrece aunque la lista
+// la permitiera. La prop se conserva para no tocar a quien la pasa.
+const TURUTA_POSPONER = false;
+
 defineOptions({
   inheritAttrs: false,
 });
@@ -188,7 +192,7 @@ onUnmounted(() => {
           <BulkUpdateActions
             :show-resolve="!showResolvedAction"
             :show-reopen="!showOpenAction"
-            :show-snooze="false"
+            :show-snooze="TURUTA_POSPONER && !showSnoozedAction"
             @update="onUpdateConversations"
           />
           <BulkAgentActions
