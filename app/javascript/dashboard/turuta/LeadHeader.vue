@@ -75,10 +75,12 @@ async function confirmarMotivo() {
   if (ok) motivoPara.value = null;
 }
 
+// Perdido va en gris, no en rojo: en rojo llamaba demasiado la atencion en
+// un panel que el asesor mira todo el dia.
 const claseEtapa = computed(() => {
   if (!lead.value?.etapa?.terminal) return 'bg-n-blue-3 text-n-blue-11';
   return lead.value.perdida
-    ? 'bg-n-ruby-3 text-n-ruby-11'
+    ? 'bg-n-slate-3 text-n-slate-11'
     : 'bg-n-teal-3 text-n-teal-11';
 });
 </script>
@@ -123,7 +125,7 @@ const claseEtapa = computed(() => {
 
       <div
         v-if="lead.perdida"
-        class="px-2 py-1.5 mt-2 text-xs rounded-md bg-n-ruby-3 text-n-ruby-11"
+        class="px-2 py-1.5 mt-2 text-xs rounded-md bg-n-alpha-2 text-n-slate-11"
       >
         <div class="font-medium">{{ lead.perdida.name }}</div>
         <div v-if="lead.perdida.nota">{{ lead.perdida.nota }}</div>
@@ -190,7 +192,7 @@ const claseEtapa = computed(() => {
           <Button
             :label="`Marcar como ${motivoPara.name.toLowerCase()}`"
             variant="solid"
-            color="ruby"
+            color="blue"
             size="sm"
             :disabled="!puedeConfirmar"
             :is-loading="state.busy"
@@ -235,8 +237,7 @@ const claseEtapa = computed(() => {
             v-for="s in otras"
             :key="s.code"
             type="button"
-            class="flex items-center justify-between w-full px-2 py-1.5 text-sm text-left rounded-md hover:bg-n-alpha-2"
-            :class="s.requiereMotivo ? 'text-n-ruby-11' : 'text-n-slate-12'"
+            class="flex items-center justify-between w-full px-2 py-1.5 text-sm text-left rounded-md text-n-slate-12 hover:bg-n-alpha-2"
             :disabled="state.busy"
             @click="elegir(s)"
           >

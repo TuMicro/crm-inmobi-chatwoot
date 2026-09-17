@@ -1,9 +1,10 @@
 import {
   isLeadApp,
   leadAppConfig,
-  withLeadItem,
+  withLeadItems,
   cuando,
   LEAD_SIDEBAR_ITEM,
+  ORDEN_TURUTA,
 } from './leadApp';
 
 const app = url => ({
@@ -11,6 +12,19 @@ const app = url => ({
   title: 'Ficha del lead',
   content: [{ type: 'frame', url }],
 });
+
+const ORDEN_CHATWOOT = [
+  'conversation_actions',
+  'macros',
+  'conversation_info',
+  'contact_attributes',
+  'contact_notes',
+  'shared_files',
+  'previous_conversation',
+  'conversation_participants',
+  'linear_issues',
+  'shopify_orders',
+];
 
 describe('isLeadApp', () => {
   it('reconoce la nuestra por la ruta, con o sin barra final', () => {
@@ -48,25 +62,45 @@ describe('leadAppConfig', () => {
   });
 });
 
-describe('withLeadItem', () => {
-  it('pone la seccion primera si el orden guardado no la tiene', () => {
-    const order = [{ name: 'macros' }, { name: 'conversation_info' }];
-    expect(withLeadItem(order).map(i => i.name)).toEqual([
-      LEAD_SIDEBAR_ITEM,
+describe('withLeadItems', () => {
+  const nombres = list => list.map(i => i.name);
+
+  it('da nuestro orden a quien nunca reordeno, con el historial al final', () => {
+    const order = ORDEN_CHATWOOT.map(name => ({ name }));
+    const result = nombres(withLeadItems(order));
+    expect(result).toEqual(ORDEN_TURUTA);
+    expect(result[result.length - 1]).toBe(LEAD_SIDEBAR_ITEM);
+    expect(result[0]).toBe('conversation_actions');
+  });
+
+  it('respeta el orden de quien ya lo movio y solo anade el historial al final', () => {
+    const order = [{ name: 'macros' }, { name: 'conversation_actions' }];
+    expect(nombres(withLeadItems(order))).toEqual([
       'macros',
-      'conversation_info',
+      'conversation_actions',
+      LEAD_SIDEBAR_ITEM,
     ]);
   });
 
-  it('respeta donde la dejo el asesor', () => {
-    const order = [{ name: 'macros' }, { name: LEAD_SIDEBAR_ITEM }];
-    expect(withLeadItem(order)).toEqual(order);
+  it('no duplica el historial si ya estaba', () => {
+    const order = [{ name: LEAD_SIDEBAR_ITEM }, { name: 'macros' }];
+    expect(withLeadItems(order)).toEqual(order);
   });
 
-  it('no muta el orden original', () => {
-    const order = [{ name: 'macros' }];
-    withLeadItem(order);
-    expect(order).toHaveLength(1);
+  it('quita la seccion antigua "turuta_lead" de 4.17.1-3', () => {
+    const order = [{ name: 'turuta_lead' }, { name: 'macros' }];
+    expect(nombres(withLeadItems(order))).toEqual([
+      'macros',
+      LEAD_SIDEBAR_ITEM,
+    ]);
+  });
+
+  it('no muta el orden original y aguanta basura', () => {
+    const order = [{ name: 'macros' }, null, {}];
+    const result = withLeadItems(order);
+    expect(order).toHaveLength(3);
+    expect(nombres(result)).toEqual(['macros', LEAD_SIDEBAR_ITEM]);
+    expect(nombres(withLeadItems(undefined))).toEqual([LEAD_SIDEBAR_ITEM]);
   });
 });
 

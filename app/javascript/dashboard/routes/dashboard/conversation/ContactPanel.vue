@@ -22,7 +22,11 @@ import Draggable from 'vuedraggable';
 // [turuta] La ficha del lead, dentro del panel. Ver docs/11 en crm-inmobi.
 import LeadHeader from 'dashboard/turuta/LeadHeader.vue';
 import LeadDetails from 'dashboard/turuta/LeadDetails.vue';
-import { withLeadItem, LEAD_SIDEBAR_TITLE } from 'dashboard/turuta/leadApp';
+import {
+  withLeadItems,
+  LEAD_SIDEBAR_ITEM,
+  LEAD_SIDEBAR_TITLE,
+} from 'dashboard/turuta/leadApp';
 import MacrosList from './Macros/List.vue';
 import ShopifyOrdersList from 'dashboard/components/widgets/conversation/ShopifyOrdersList.vue';
 import SidebarActionsHeader from 'dashboard/components-next/SidebarActionsHeader.vue';
@@ -127,9 +131,9 @@ const closeContactPanel = () => {
 };
 
 onMounted(() => {
-  // [turuta] withLeadItem: la seccion "Lead" entra aunque el orden guardado
-  // del asesor sea anterior a ella.
-  conversationSidebarItems.value = withLeadItem(
+  // [turuta] withLeadItems: nuestro orden de secciones para quien no lo haya
+  // tocado, y el historial del lead al final para quien si.
+  conversationSidebarItems.value = withLeadItems(
     conversationSidebarItemsOrder.value
   );
   getContactDetails();
@@ -160,16 +164,15 @@ onMounted(() => {
         @end="onDragEnd"
       >
         <template #item="{ element }">
-          <!-- [turuta] transferir e historial, reordenable como el resto. La
-               clave guarda "cerrado", no "abierto": Chatwoot arranca cerrada
-               toda seccion nueva, y esta queremos verla de entrada -->
-          <div v-if="element.name === 'turuta_lead'">
+          <!-- [turuta] historial del lead, reordenable como el resto y
+               cerrado de entrada: se consulta, no se mira a cada rato -->
+          <div v-if="element.name === LEAD_SIDEBAR_ITEM">
             <AccordionItem
               :title="LEAD_SIDEBAR_TITLE"
-              :is-open="!isContactSidebarItemOpen('is_turuta_lead_closed')"
+              :is-open="isContactSidebarItemOpen('is_turuta_historial_open')"
               compact
               @toggle="
-                value => toggleSidebarUIState('is_turuta_lead_closed', value)
+                value => toggleSidebarUIState('is_turuta_historial_open', value)
               "
             >
               <LeadDetails :conversation-id="conversationId" />

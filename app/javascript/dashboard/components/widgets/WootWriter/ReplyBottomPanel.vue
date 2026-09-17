@@ -237,8 +237,9 @@ export default {
       }
     },
     showMessageSignatureButton() {
-      if (this.isEditorDisabled) return false;
-      return !this.isOnPrivateNote;
+      // [turuta] Sin boton de firma: en un CRM de WhatsApp el asesor no la usa
+      // y el icono estorba en la caja. Ver docs/11-parches-chatwoot.md.
+      return false;
     },
     sendWithSignature() {
       // channelType is sourced from inboxMixin

@@ -10,11 +10,49 @@
 export const LEAD_APP_PATH = '/dashboard-app';
 
 /** Nombre de nuestra seccion en el acordeon del panel de contacto. */
-export const LEAD_SIDEBAR_ITEM = 'turuta_lead';
+export const LEAD_SIDEBAR_ITEM = 'turuta_historial';
 
 /** Titulo de esa seccion. Constante y no texto en la plantilla, para que el
  *  lint de Chatwoot no lo tome por una cadena sin traducir. */
-export const LEAD_SIDEBAR_TITLE = 'Lead';
+export const LEAD_SIDEBAR_TITLE = 'Historial del lead';
+
+/** La seccion "Lead" de 4.17.1-3, que ya no existe. Si quedo guardada en el
+ *  orden de algun asesor, se quita. */
+const LEAD_SIDEBAR_ITEM_ANTIGUO = 'turuta_lead';
+
+/** El orden de fabrica de Chatwoot (useUISettings). Se compara contra el, no se
+ *  importa, para que este fichero siga sin depender del store. Si ellos lo
+ *  cambian, la comparacion falla y solo se anade el historial al final. */
+const ORDEN_CHATWOOT = [
+  'conversation_actions',
+  'macros',
+  'conversation_info',
+  'contact_attributes',
+  'contact_notes',
+  'shared_files',
+  'previous_conversation',
+  'conversation_participants',
+  'linear_issues',
+  'shopify_orders',
+];
+
+/** Nuestro orden, pensado para un asesor inmobiliario en WhatsApp: primero
+ *  lo que toca cada dia (asignar, etiquetas), luego lo que consulta sobre la
+ *  persona (notas, conversaciones anteriores, fotos y documentos), y al final
+ *  lo que casi nunca mira. El historial del lead, el ultimo. */
+export const ORDEN_TURUTA = [
+  'conversation_actions',
+  'contact_notes',
+  'previous_conversation',
+  'shared_files',
+  'macros',
+  'contact_attributes',
+  'conversation_info',
+  'conversation_participants',
+  'linear_issues',
+  'shopify_orders',
+  LEAD_SIDEBAR_ITEM,
+];
 
 /** True si esta Dashboard App es la nuestra: se reconoce por la ruta, no por
  *  el titulo, porque el titulo lo puede cambiar un administrador. */
@@ -36,13 +74,22 @@ export function leadAppConfig(apps) {
   return { api: url.origin, token: url.searchParams.get('token') || '' };
 }
 
-/** El orden guardado por cada asesor puede ser anterior a esta seccion: si
- *  falta, se pone la primera. Si ya esta, se respeta donde la dejo. */
-export function withLeadItem(order) {
-  const list = Array.isArray(order) ? [...order] : [];
-  if (!list.some(item => item && item.name === LEAD_SIDEBAR_ITEM)) {
-    list.unshift({ name: LEAD_SIDEBAR_ITEM });
-  }
+/** Orden de las secciones del panel para este asesor.
+ *
+ *  Si nunca ha reordenado nada (el orden es el de fabrica de Chatwoot), se le
+ *  da el nuestro. Si ya lo movio, se respeta: solo se quita la seccion antigua
+ *  y se anade el historial al final si falta. */
+export function withLeadItems(order) {
+  const list = (Array.isArray(order) ? order : []).filter(
+    item => item && item.name && item.name !== LEAD_SIDEBAR_ITEM_ANTIGUO
+  );
+  const nombres = list.map(item => item.name);
+  const deFabrica =
+    nombres.length === ORDEN_CHATWOOT.length &&
+    nombres.every((name, i) => name === ORDEN_CHATWOOT[i]);
+  if (deFabrica) return ORDEN_TURUTA.map(name => ({ name }));
+  if (!nombres.includes(LEAD_SIDEBAR_ITEM))
+    list.push({ name: LEAD_SIDEBAR_ITEM });
   return list;
 }
 

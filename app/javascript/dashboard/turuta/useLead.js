@@ -159,5 +159,20 @@ export function useLead(conversationId, contact) {
     );
   }
 
+  // Transferir se hace con el selector "Agente asignado" de Chatwoot, y llega
+  // a nuestra API por webhook un instante despues. Se espera un poco antes de
+  // recargar, y se vuelve a mirar por si el webhook tardo mas. Solo cuando
+  // cambia el asignado de la MISMA conversacion: al cambiar de conversacion ya
+  // recarga el otro watcher.
+  const currentChat = useMapGetter('getSelectedChat');
+  watch(
+    () => [currentChat.value?.id, currentChat.value?.meta?.assignee?.id],
+    ([chatId, assignee], [prevChatId, prevAssignee] = []) => {
+      if (chatId !== prevChatId || assignee === prevAssignee) return;
+      setTimeout(() => load(), 1500);
+      setTimeout(() => load(), 6000);
+    }
+  );
+
   return { state, config, load, cambiarEtapa, transferir };
 }
