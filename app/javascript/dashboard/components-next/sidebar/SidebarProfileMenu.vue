@@ -76,7 +76,7 @@ const menuItems = computed(() => {
       link: { name: 'profile_settings_index' },
     },
     {
-      show: false, // [turuta]
+      show: true,
       showOnCustomBrandedInstance: true,
       label: t('SIDEBAR_ITEMS.APPEARANCE'),
       icon: 'i-lucide-palette',

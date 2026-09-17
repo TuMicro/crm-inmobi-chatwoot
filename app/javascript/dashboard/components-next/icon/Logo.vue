@@ -1,16 +1,28 @@
 <script setup>
 import { useAttrs } from 'vue';
 import { useMapGetter } from 'dashboard/composables/store';
+import { iconoParaFondoOscuro } from 'dashboard/turuta/marca';
 
 const attrs = useAttrs();
 const globalConfig = useMapGetter('globalConfig/get');
+// [turuta] Con icono para fondo oscuro se pintan los dos y el tema elige cual
+// se ve, igual que hace Chatwoot con el logo de la pantalla de entrada. Va
+// ANTES del original para no romper su cadena v-if / v-else.
+const iconoOscuro = iconoParaFondoOscuro();
 </script>
 
 <template>
   <img
+    v-if="iconoOscuro && globalConfig.logoThumbnail"
+    v-bind="attrs"
+    :src="iconoOscuro"
+    class="hidden dark:block"
+  />
+  <img
     v-if="globalConfig.logoThumbnail"
     v-bind="attrs"
     :src="globalConfig.logoThumbnail"
+    :class="{ 'dark:hidden': iconoOscuro }"
   />
   <svg
     v-else

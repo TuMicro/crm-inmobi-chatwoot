@@ -2,7 +2,7 @@
 <html>
   <head>
     <%# [turuta] Marca de la instalacion por variables de entorno TURUTA_*. Solo cambia lo que pinta esta pagina: no escribe en installation_configs. Sin las variables, todo queda como en Chatwoot. %>
-    <% ({ 'INSTALLATION_NAME' => 'TURUTA_BRAND_NAME', 'BRAND_NAME' => 'TURUTA_BRAND_NAME', 'LOGO' => 'TURUTA_LOGO', 'LOGO_DARK' => 'TURUTA_LOGO_DARK', 'LOGO_THUMBNAIL' => 'TURUTA_LOGO_THUMBNAIL', 'TERMS_URL' => 'TURUTA_TERMS_URL', 'PRIVACY_URL' => 'TURUTA_PRIVACY_URL' }).each { |clave, variable| @global_config[clave] = ENV[variable] if ENV[variable].present? } %>
+    <% ({ 'INSTALLATION_NAME' => 'TURUTA_BRAND_NAME', 'BRAND_NAME' => 'TURUTA_BRAND_NAME', 'LOGO' => 'TURUTA_LOGO', 'LOGO_DARK' => 'TURUTA_LOGO_DARK', 'LOGO_THUMBNAIL' => 'TURUTA_LOGO_THUMBNAIL', 'LOGO_THUMBNAIL_DARK' => 'TURUTA_LOGO_THUMBNAIL_DARK', 'TERMS_URL' => 'TURUTA_TERMS_URL', 'PRIVACY_URL' => 'TURUTA_PRIVACY_URL' }).each { |clave, variable| @global_config[clave] = ENV[variable] if ENV[variable].present? } %>
     <title>
       <%= @global_config['INSTALLATION_NAME'] %>
     </title>
@@ -32,6 +32,22 @@
       <link rel="manifest" href="/manifest.json">
     <% end %>
     <link rel="icon" type="image/png" sizes="512x512" href="<%= @global_config['LOGO_THUMBNAIL'] %>">
+    <%# [turuta] La pestana la pinta el navegador, no el CRM: su icono sigue el tema del NAVEGADOR (prefers-color-scheme), no el que se elija en "Cambiar apariencia". El del menu lateral si sigue el del CRM: ver components-next/icon/Logo.vue. %>
+    <% if @global_config['LOGO_THUMBNAIL_DARK'].present? %>
+      <script>
+        (function () {
+          var enlace = document.querySelector('link[rel="icon"][sizes="512x512"]');
+          if (!enlace || !window.matchMedia) return;
+          var claro = <%= raw @global_config['LOGO_THUMBNAIL'].to_json %>;
+          var oscuro = <%= raw @global_config['LOGO_THUMBNAIL_DARK'].to_json %>;
+          var consulta = window.matchMedia('(prefers-color-scheme: dark)');
+          var poner = function () { enlace.href = consulta.matches ? oscuro : claro; };
+          poner();
+          if (consulta.addEventListener) consulta.addEventListener('change', poner);
+          else if (consulta.addListener) consulta.addListener(poner);
+        })();
+      </script>
+    <% end %>
     <%= csrf_meta_tags %>
     <script>
       window.chatwootConfig = {
