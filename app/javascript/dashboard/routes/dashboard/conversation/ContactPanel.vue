@@ -160,14 +160,16 @@ onMounted(() => {
         @end="onDragEnd"
       >
         <template #item="{ element }">
-          <!-- [turuta] transferir e historial, reordenable como el resto -->
+          <!-- [turuta] transferir e historial, reordenable como el resto. La
+               clave guarda "cerrado", no "abierto": Chatwoot arranca cerrada
+               toda seccion nueva, y esta queremos verla de entrada -->
           <div v-if="element.name === 'turuta_lead'">
             <AccordionItem
               :title="LEAD_SIDEBAR_TITLE"
-              :is-open="isContactSidebarItemOpen('is_turuta_lead_open')"
+              :is-open="!isContactSidebarItemOpen('is_turuta_lead_closed')"
               compact
               @toggle="
-                value => toggleSidebarUIState('is_turuta_lead_open', value)
+                value => toggleSidebarUIState('is_turuta_lead_closed', value)
               "
             >
               <LeadDetails :conversation-id="conversationId" />
