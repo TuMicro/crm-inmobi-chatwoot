@@ -1,11 +1,12 @@
 <script setup>
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import Auth from 'dashboard/api/auth';
 import { useMapGetter } from 'dashboard/composables/store';
 import { useI18n } from 'vue-i18n';
 import Avatar from 'next/avatar/Avatar.vue';
 import SidebarProfileMenuStatus from './SidebarProfileMenuStatus.vue';
 import { FEATURE_FLAGS } from 'dashboard/featureFlags';
+import SelectorApariencia from 'dashboard/turuta/SelectorApariencia.vue';
 
 import {
   DropdownContainer,
@@ -26,6 +27,9 @@ defineOptions({
 });
 
 const { t } = useI18n();
+// [turuta] La apariencia se elige en un selector propio, sin la paleta de
+// comandos: ver turuta/SelectorApariencia.vue.
+const selectorApariencia = ref(null);
 
 const currentUser = useMapGetter('getCurrentUser');
 const currentUserAvailability = useMapGetter('getCurrentUserAvailability');
@@ -80,10 +84,7 @@ const menuItems = computed(() => {
       showOnCustomBrandedInstance: true,
       label: t('SIDEBAR_ITEMS.APPEARANCE'),
       icon: 'i-lucide-palette',
-      click: () => {
-        const ninja = document.querySelector('ninja-keys');
-        ninja.open({ parent: 'appearance_settings' });
-      },
+      click: () => selectorApariencia.value?.abrir(), // [turuta]
     },
     {
       show: false, // [turuta] enlazaba a la documentacion de Chatwoot
@@ -172,4 +173,6 @@ const allowedMenuItems = computed(() => {
       </template>
     </DropdownBody>
   </DropdownContainer>
+  <!-- [turuta] Fuera del desplegable: su contenido se desmonta al cerrarse. -->
+  <SelectorApariencia ref="selectorApariencia" />
 </template>
