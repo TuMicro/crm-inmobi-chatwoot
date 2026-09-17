@@ -17,6 +17,8 @@ const SEGUNDOS_DE_COLA = 10;
 // Lo que se da de gracia al ultimo mensaje si WhatsApp no confirma.
 const GRACIA_DEL_ULTIMO_MS = 8000;
 const CADA_MS = 700;
+// El aviso final: verde y breve (components/Snackbar.vue).
+const EXITO = { turutaTipo: 'exito', duration: 2000 };
 
 /** Cuantos mensajes al cliente manda la macro. Las notas privadas no cuentan. */
 export const enviosDe = macro =>
@@ -74,10 +76,13 @@ export function seguirMacro({
   avisar,
   textoEnCurso,
   textoFinal,
+  // false cuando el final no es un exito limpio (p. ej. no se pudo resolver).
+  exito = true,
 }) {
   const esperados = enviosDe(macro);
+  const final = exito ? [textoFinal, EXITO] : [textoFinal];
   if (!esperados) {
-    avisar(textoFinal);
+    avisar(...final);
     return;
   }
 
@@ -106,6 +111,6 @@ export function seguirMacro({
     clearInterval(reloj);
     emitter.emit('turutaCerrarToast', clave);
     // Agotada: no se sabe como acabo, asi que no se afirma que termino.
-    if (estado === 'terminada') avisar(textoFinal);
+    if (estado === 'terminada') avisar(...final);
   }, CADA_MS);
 }

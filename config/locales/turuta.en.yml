@@ -4,6 +4,17 @@
 en:
   turuta:
     mail:
+      subjects:
+        conversation_creation: "%{name}, A new conversation [ID - %{id}] has been created in %{inbox}."
+        conversation_assignment: "%{name}, A new conversation [ID - %{id}] has been assigned to you."
+        conversation_mention: "%{name}, You have been mentioned in conversation [ID - %{id}]"
+        assigned_conversation_new_message: "%{name}, New message in your assigned conversation [ID - %{id}]."
+        participating_conversation_new_message: "%{name}, New message in your participating conversation [ID - %{id}]."
+        contact_import_complete: "Contact Import Completed"
+        contact_import_failed: "Contact Import Failed"
+        contact_export_complete: "Your contact's export file is available to download."
+        automation_rule_disabled: "Automation rule disabled due to validation errors."
+        whatsapp_disconnect: "Your Whatsapp connection has expired"
       layout:
         sent_by: "This email was sent by"
         notifications_reason: "You're receiving this email because email notifications are enabled for your account."

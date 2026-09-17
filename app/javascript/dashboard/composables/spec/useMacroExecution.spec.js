@@ -61,8 +61,10 @@ describe('useMacroExecution', () => {
       macroId: 7,
       conversationIds: [CONVERSATION_ID],
     });
+    // [turuta] El aviso de exito va en verde (turuta/macroEnCurso.js).
     expect(useAlert).toHaveBeenCalledWith(
-      'MACROS.EXECUTE.EXECUTED_SUCCESSFULLY'
+      'MACROS.EXECUTE.EXECUTED_SUCCESSFULLY',
+      expect.objectContaining({ turutaTipo: 'exito' })
     );
   });
 

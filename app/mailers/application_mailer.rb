@@ -7,6 +7,11 @@ class ApplicationMailer < ActionMailer::Base
   layout 'mailer/base'
   # Fetch template from Database if available
   # Order: Account Specific > Installation Specific > Fallback to file
+  # [turuta] Nuestras plantillas de correo, en app/views/turuta, van delante de
+  # todas: tambien de enterprise/app/views, que trae su propia copia de la
+  # invitacion. Asi no se edita nada dentro de enterprise/. Se antepone ANTES
+  # que el resolver de la base de datos para que ese siga siendo el primero.
+  prepend_view_path Rails.root.join('app/views/turuta')
   prepend_view_path ::EmailTemplate.resolver
   append_view_path Rails.root.join('app/views/mailers')
   helper :frontend_urls
@@ -31,6 +36,7 @@ class ApplicationMailer < ActionMailer::Base
   end
 
   def send_mail_with_liquid(*args)
+    args[0][:subject] = turuta_subject(args[0][:subject]) # [turuta]
     Rails.logger.info "Email sent to #{args[0][:to]} with subject #{args[0][:subject]}"
     mail(*args) do |format|
       # explored sending a multipart email containing both text type and html
@@ -86,6 +92,32 @@ class ApplicationMailer < ActionMailer::Base
     config['BRAND_NAME'] = marca
     config['BRAND_URL'] = ENV['TURUTA_BRAND_URL'].to_s
     config
+  end
+
+  # [turuta] Los asuntos de estos correos estan escritos en ingles dentro de cada
+  # mailer. En vez de tocar cada uno se traducen aqui, reconociendolos por su
+  # forma. Uno que no encaje (porque Chatwoot lo cambio) sale como venia.
+  TURUTA_SUBJECTS = [
+    [/\A(?<name>.+), A new conversation \[ID - (?<id>\d+)\] has been created in (?<inbox>.+)\.\z/, 'conversation_creation'],
+    [/\A(?<name>.+), A new conversation \[ID - (?<id>\d+)\] has been assigned to you\.\z/, 'conversation_assignment'],
+    [/\A(?<name>.+), You have been mentioned in conversation \[ID - (?<id>\d+)\]\z/, 'conversation_mention'],
+    [/\A(?<name>.+), New message in your assigned conversation \[ID - (?<id>\d+)\]\.\z/, 'assigned_conversation_new_message'],
+    [/\A(?<name>.+), New message in your participating conversation \[ID - (?<id>\d+)\]\.\z/, 'participating_conversation_new_message'],
+    [/\AContact Import Completed\z/, 'contact_import_complete'],
+    [/\AContact Import Failed\z/, 'contact_import_failed'],
+    [/\AYour contact's export file is available to download\.\z/, 'contact_export_complete'],
+    [/\AAutomation rule disabled due to validation errors\.\z/, 'automation_rule_disabled'],
+    [/\AYour Whatsapp connection has expired\z/, 'whatsapp_disconnect']
+  ].freeze
+
+  def turuta_subject(subject)
+    TURUTA_SUBJECTS.each do |(forma, clave)|
+      datos = forma.match(subject.to_s)
+      next unless datos
+
+      return I18n.t("turuta.mail.subjects.#{clave}", **datos.named_captures.symbolize_keys, default: subject.to_s)
+    end
+    subject
   end
 
   def turuta_default_locale

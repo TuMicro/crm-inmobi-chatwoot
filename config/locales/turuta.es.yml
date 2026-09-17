@@ -10,8 +10,23 @@ es:
         password_confirmation: "La confirmación de la contraseña"
         email: "El correo"
         name: "El nombre"
+  conversations:
+    reply:
+      # De Chatwoot: decia "Transcripción de la conversación".
+      transcript_subject: "Transcripción del chat"
   turuta:
     mail:
+      subjects:
+        conversation_creation: "%{name}, hay un chat nuevo [n.º %{id}] en %{inbox}"
+        conversation_assignment: "%{name}, se te ha asignado un chat nuevo [n.º %{id}]"
+        conversation_mention: "%{name}, te han mencionado en el chat [n.º %{id}]"
+        assigned_conversation_new_message: "%{name}, mensaje nuevo en un chat tuyo [n.º %{id}]"
+        participating_conversation_new_message: "%{name}, mensaje nuevo en un chat en el que participas [n.º %{id}]"
+        contact_import_complete: "La importación de contactos ha terminado"
+        contact_import_failed: "La importación de contactos ha fallado"
+        contact_export_complete: "Tu exportación de contactos está lista para descargar"
+        automation_rule_disabled: "Una automatización se ha desactivado por un error en sus condiciones"
+        whatsapp_disconnect: "La conexión con WhatsApp ha caducado"
       layout:
         sent_by: "Este correo fue enviado por"
         notifications_reason: "Recibes este correo porque tienes activadas las notificaciones por correo en tu cuenta."

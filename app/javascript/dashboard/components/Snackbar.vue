@@ -19,9 +19,19 @@ export default {
 
 <template>
   <div>
+    <!-- [turuta] action.turutaTipo === 'exito': aviso verde con su marca. -->
     <div
-      class="shadow-sm bg-n-slate-12 dark:bg-n-slate-7 rounded-lg items-center gap-3 inline-flex mb-2 max-w-[25rem] min-h-[1.875rem] min-w-[15rem] px-6 py-3 text-left"
+      class="shadow-sm rounded-lg items-center gap-3 inline-flex mb-2 max-w-[25rem] min-h-[1.875rem] min-w-[15rem] px-6 py-3 text-left"
+      :class="
+        action && action.turutaTipo === 'exito'
+          ? 'bg-n-teal-9'
+          : 'bg-n-slate-12 dark:bg-n-slate-7'
+      "
     >
+      <span
+        v-if="action && action.turutaTipo === 'exito'"
+        class="flex-none text-white i-lucide-circle-check-big size-5"
+      />
       <div class="text-sm font-medium text-white dark:text-white">
         {{ message }}
       </div>

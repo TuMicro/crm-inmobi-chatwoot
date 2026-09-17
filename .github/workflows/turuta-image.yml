@@ -52,7 +52,7 @@ jobs:
           ruby -c app/mailers/application_mailer.rb
           ruby -c app/models/user.rb
           ruby -c app/listeners/automation_rule_listener.rb
-          for f in app/views/devise/mailer/*.erb; do
+          for f in app/views/turuta/devise/mailer/*.erb app/views/turuta/conversation_reply_mailer/*.erb; do
             ruby -rerb -e 'File.write("/tmp/vista.rb", ERB.new(File.read(ARGV[0]), trim_mode: "-").src)' "$f"
             ruby -c /tmp/vista.rb
           done

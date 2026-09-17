@@ -58,6 +58,7 @@ export function useMacroExecution() {
         usuarioId: store.getters?.getCurrentUserID,
         avisar: useAlert,
         textoEnCurso: t('MACROS.EXECUTE.TURUTA_RUNNING'),
+        exito: !skippedResolve,
         textoFinal: skippedResolve
           ? t('MACROS.EXECUTE.EXECUTED_WITHOUT_RESOLVING')
           : t('MACROS.EXECUTE.EXECUTED_SUCCESSFULLY'),

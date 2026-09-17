@@ -771,7 +771,7 @@
     "COUNT": "{n} macro | {n} macros",
     "DESCRIPTION": "Una macro es un conjunto de acciones guardadas que ayudan a los agentes de servicio al cliente a completar fácilmente las tareas. Los agentes pueden definir un conjunto de acciones como etiquetar un chat con una etiqueta, enviar una transcripción de correo electrónico, actualizar un atributo personalizado, etc. y pueden ejecutar estas acciones en un solo clic.",
     "EXECUTE": {
-      "EXECUTED_SUCCESSFULLY": "Macro terminada: mensajes enviados",
+      "EXECUTED_SUCCESSFULLY": "Macro finalizada con éxito",
       "EXECUTED_WITHOUT_RESOLVING": "Macro terminada. El chat no se resolvió porque faltan atributos obligatorios.",
       "TURUTA_RUNNING": "Ejecutando la macro: los mensajes salen en orden. No cierres el chat…"
     },
@@ -920,7 +920,7 @@
         }
       },
       "PASSWORD": {
-        "ERROR": "La contraseña no cumple los requisitos de abajo."
+        "ERROR": "La contraseña todavía no cumple todos los requisitos."
       },
       "PUSH_NOTIFICATIONS_SECTION": {
         "ASSIGNED_CONVERSATION_NEW_MESSAGE": "Enviar notificaciones push cuando un nuevo mensaja es creadao en un chat asignado",
@@ -941,7 +941,7 @@
       "REQUIREMENTS_LENGTH": "Al menos {min} caracteres",
       "REQUIREMENTS_LOWERCASE": "Una letra minúscula",
       "REQUIREMENTS_NUMBER": "Un número",
-      "REQUIREMENTS_SPECIAL": "Un carácter especial, como ! @ # $ % . _ -",
+      "REQUIREMENTS_SPECIAL": "Un carácter especial, como ! # $ % . _ -",
       "REQUIREMENTS_UPPERCASE": "Una letra mayúscula"
     }
   },
@@ -1023,7 +1023,7 @@
       "ERROR_MESSAGE": "No se pudo conectar con el servidor. Inténtalo de nuevo en un momento."
     },
     "PASSWORD": {
-      "ERROR": "La contraseña no cumple los requisitos de abajo."
+      "ERROR": "La contraseña todavía no cumple todos los requisitos."
     }
   },
   "SIDEBAR": {

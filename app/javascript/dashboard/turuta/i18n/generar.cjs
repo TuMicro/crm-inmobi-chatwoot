@@ -176,6 +176,18 @@ Object.keys(nuevos).sort().forEach(r => {
 });
 fs.writeFileSync(path.join(__dirname, 'en.json'), JSON.stringify(ingles_nuestro, null, 2) + '\n');
 
+// vue-i18n reserva la arroba (enlaza otro mensaje). Suelta, no falla al
+// construir ni en desarrollo: falla en produccion al pintar el texto, y se
+// lleva por delante el componente entero. Para escribir una de verdad: {'@'}.
+// La prueba compila.spec.js lo comprueba tambien, con el motor real.
+const conArroba = Object.keys(planos).filter(r =>
+  String(planos[r]).replace(/\{'@'\}/g, '').includes('@')
+);
+if (conArroba.length) {
+  console.error("Textos con una arroba suelta (usar {'@'}):\n  " + conArroba.join('\n  '));
+  process.exit(1);
+}
+
 const salida = {};
 Object.keys(planos).sort().forEach(r => poner(salida, r, planos[r]));
 fs.writeFileSync(path.join(__dirname, 'es.json'), JSON.stringify(salida, null, 2) + '\n');
