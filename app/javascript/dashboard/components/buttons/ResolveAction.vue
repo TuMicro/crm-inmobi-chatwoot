@@ -48,9 +48,9 @@ const isSnoozed = computed(
   () => currentChat.value.status === wootConstants.STATUS_TYPE.SNOOZED
 );
 
-const showAdditionalActions = computed(
-  () => !isPending.value && !isSnoozed.value
-);
+// [turuta] Sin "posponer" ni "marcar como pendiente": en el CRM una
+// conversacion esta abierta o resuelta, y nada mas. La etapa del lead va aparte.
+const showAdditionalActions = computed(() => false);
 
 const showOpenButton = computed(() => {
   return isPending.value || isSnoozed.value;

@@ -38,28 +38,30 @@ const currentSortBy = computed(() => {
   );
 });
 
-const chatStatusOptions = computed(() => [
-  {
-    label: t('CHAT_LIST.CHAT_STATUS_FILTER_ITEMS.open.TEXT'),
-    value: 'open',
-  },
-  {
-    label: t('CHAT_LIST.CHAT_STATUS_FILTER_ITEMS.resolved.TEXT'),
-    value: 'resolved',
-  },
-  {
-    label: t('CHAT_LIST.CHAT_STATUS_FILTER_ITEMS.pending.TEXT'),
-    value: 'pending',
-  },
-  {
-    label: t('CHAT_LIST.CHAT_STATUS_FILTER_ITEMS.snoozed.TEXT'),
-    value: 'snoozed',
-  },
-  {
-    label: t('CHAT_LIST.CHAT_STATUS_FILTER_ITEMS.all.TEXT'),
-    value: 'all',
-  },
-]);
+const chatStatusOptions = computed(() =>
+  [
+    {
+      label: t('CHAT_LIST.CHAT_STATUS_FILTER_ITEMS.open.TEXT'),
+      value: 'open',
+    },
+    {
+      label: t('CHAT_LIST.CHAT_STATUS_FILTER_ITEMS.resolved.TEXT'),
+      value: 'resolved',
+    },
+    {
+      label: t('CHAT_LIST.CHAT_STATUS_FILTER_ITEMS.pending.TEXT'),
+      value: 'pending',
+    },
+    {
+      label: t('CHAT_LIST.CHAT_STATUS_FILTER_ITEMS.snoozed.TEXT'),
+      value: 'snoozed',
+    },
+    {
+      label: t('CHAT_LIST.CHAT_STATUS_FILTER_ITEMS.all.TEXT'),
+      value: 'all',
+    },
+  ].filter(option => !['pending', 'snoozed'].includes(option.value))
+); // [turuta] sin posponer ni pendiente
 
 const chatSortOptions = computed(() =>
   [
