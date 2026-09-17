@@ -82,7 +82,9 @@ const KNOWN_MODELS = GROUPS.map(({ model }) => model);
  * @returns {Object[]} Grouped list of header and icon-enriched entries.
  */
 export const groupFilterTypes = (filterTypes, t, i18nKey = 'FILTER') => {
-  const modelOf = type => type.attributeModel || 'standard';
+  // [turuta] grupoVisual deja pintar un atributo personalizado (la etapa) entre
+  // los estandar sin cambiar attributeModel, del que depende la consulta.
+  const modelOf = type => type.grupoVisual || type.attributeModel || 'standard';
   const withIcon = type => ({
     ...type,
     icon: type.icon || getAttributeIcon(type),

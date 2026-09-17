@@ -816,7 +816,8 @@ export const DEFAULT_TRIGGER_STATUS = 'pending';
 // trigger maps to the automation's event_name plus a preset condition: message_type for the two
 // unresponsive cases (reply-chase / awaiting-agent), or a chosen status for conversation_updated.
 export const DELAYED_TRIGGERS = [
-  { key: 'conversation_status', eventName: 'conversation_updated' },
+  // [turuta] Fuera "la conversacion permanece en un estado": sin pendientes
+  // ni pospuestas no tiene uso.
   {
     key: 'customer_unresponsive',
     eventName: 'message_created',
@@ -830,3 +831,37 @@ export const DELAYED_TRIGGERS = [
 ];
 
 export const DEFAULT_TRIGGER = DELAYED_TRIGGERS[0].key;
+
+// [turuta] Se quitan de TODOS los eventos las condiciones y acciones de cosas
+// que la interfaz ya no tiene: prioridad, equipos, idiomas, posponer,
+// pendiente, webhooks y correo al equipo.
+const TURUTA_CONDICIONES_OCULTAS = new Set([
+  'priority',
+  'team_id',
+  'conversation_language',
+  'browser_language',
+  'referer',
+  'campaign_id',
+]);
+const TURUTA_ACCIONES_OCULTAS = new Set([
+  'assign_team',
+  'remove_assigned_team',
+  'send_email_to_team',
+  'snooze_conversation',
+  'pending_conversation',
+  'send_webhook_event',
+  'change_priority',
+]);
+Object.values(AUTOMATIONS).forEach(evento => {
+  evento.conditions = evento.conditions.filter(
+    c => !TURUTA_CONDICIONES_OCULTAS.has(c.key)
+  );
+  evento.actions = evento.actions.filter(
+    a => !TURUTA_ACCIONES_OCULTAS.has(a.key)
+  );
+});
+for (let i = AUTOMATION_ACTION_TYPES.length - 1; i >= 0; i -= 1) {
+  if (TURUTA_ACCIONES_OCULTAS.has(AUTOMATION_ACTION_TYPES[i].key)) {
+    AUTOMATION_ACTION_TYPES.splice(i, 1);
+  }
+}

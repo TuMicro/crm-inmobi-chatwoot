@@ -79,7 +79,7 @@ onMounted(() => {
 <template>
   <div class="flex flex-col items-center md:flex-row gap-4">
     <div
-      class="flex-1 w-full max-w-full md:w-[65%] md:max-w-[65%] conversation-metric"
+      class="flex-1 w-full max-w-full conversation-metric"
     >
       <MetricCard
         :header="t(`${accounti18nKey}.HEADER`)"
@@ -122,7 +122,11 @@ onMounted(() => {
         </div>
       </MetricCard>
     </div>
-    <div class="flex-1 w-full max-w-full md:w-[35%] md:max-w-[35%]">
+    <!-- [turuta] "Estado del agente" oculto: ver docs/11. -->
+    <div
+      v-if="false"
+      class="flex-1 w-full max-w-full md:w-[35%] md:max-w-[35%]"
+    >
       <MetricCard :header="$t('OVERVIEW_REPORTS.AGENT_STATUS.HEADER')">
         <div
           v-for="(metric, name, index) in agentStatusMetrics"

@@ -38,12 +38,11 @@ const ORDEN_CHATWOOT = [
 
 /** Nuestro orden, pensado para un asesor inmobiliario en WhatsApp: primero
  *  lo que toca cada dia (asignar, etiquetas), luego lo que consulta sobre la
- *  persona (notas, conversaciones anteriores, fotos y documentos), y al final
+ *  persona (notas, fotos y documentos), y al final
  *  lo que casi nunca mira. El historial del lead, el ultimo. */
 export const ORDEN_TURUTA = [
   'conversation_actions',
   'contact_notes',
-  'previous_conversation',
   'shared_files',
   'macros',
   'contact_attributes',
@@ -59,6 +58,8 @@ export const ORDEN_TURUTA = [
 const SECCIONES_OCULTAS = new Set([
   'conversation_info',
   'conversation_participants',
+  // Un lead tiene UN chat de WhatsApp: la lista de anteriores sale vacia.
+  'previous_conversation',
 ]);
 
 /** True si esta Dashboard App es la nuestra: se reconoce por la ruta, no por

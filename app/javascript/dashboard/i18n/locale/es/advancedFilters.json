@@ -2,16 +2,16 @@
   "FILTER": {
     "TITLE": "Filtrar conversaciones",
     "SUBTITLE": "Añada sus filtros a continuación y pulse 'Aplicar filtros' para cortar el caos del chat.",
-    "EDIT_CUSTOM_FILTER": "Editar filtro",
-    "CUSTOM_VIEWS_SUBTITLE": "Agregar o quitar condiciones y actualizar el filtro.",
+    "EDIT_CUSTOM_FILTER": "Editar carpeta",
+    "CUSTOM_VIEWS_SUBTITLE": "Agregar o eliminar filtros y actualizar la carpeta.",
     "ADD_NEW_FILTER": "Añadir Filtro",
     "FILTER_DELETE_ERROR": "¡Vaya, parece que no podemos guardar nada! Por favor, añade al menos un filtro para guardarlo.",
     "SUBMIT_BUTTON_LABEL": "Aplicar filtros",
-    "UPDATE_BUTTON_LABEL": "Actualizar filtro",
+    "UPDATE_BUTTON_LABEL": "Actualizar carpeta",
     "CANCEL_BUTTON_LABEL": "Cancelar",
     "CLEAR_BUTTON_LABEL": "Limpiar filtros",
-    "FOLDER_LABEL": "Nombre del filtro",
-    "FOLDER_QUERY_LABEL": "Condiciones del filtro",
+    "FOLDER_LABEL": "Nombre de la carpeta",
+    "FOLDER_QUERY_LABEL": "Consulta de carpetas",
     "EMPTY_VALUE_ERROR": "El valor es requerido.",
     "TOOLTIP_LABEL": "Filtrar conversaciones",
     "QUERY_DROPDOWN_LABELS": {
@@ -87,8 +87,8 @@
         "SAVE_BUTTON": "Guardar filtro",
         "CANCEL_BUTTON": "Cancelar",
         "API_FOLDERS": {
-          "SUCCESS_MESSAGE": "Filtro guardado.",
-          "ERROR_MESSAGE": "Error al guardar el filtro."
+          "SUCCESS_MESSAGE": "Carpeta creada con éxito.",
+          "ERROR_MESSAGE": "Error al crear la carpeta."
         },
         "API_SEGMENTS": {
           "SUCCESS_MESSAGE": "Segmento creado con éxito.",
@@ -96,7 +96,7 @@
         }
       },
       "EDIT": {
-        "EDIT_BUTTON": "Editar filtro"
+        "EDIT_BUTTON": "Editar carpeta"
       },
       "DELETE": {
         "DELETE_BUTTON": "Eliminar filtro",
@@ -109,8 +109,8 @@
           }
         },
         "API_FOLDERS": {
-          "SUCCESS_MESSAGE": "Filtro eliminado.",
-          "ERROR_MESSAGE": "Error al eliminar el filtro."
+          "SUCCESS_MESSAGE": "Carpeta eliminada con éxito.",
+          "ERROR_MESSAGE": "Error al eliminar carpeta."
         },
         "API_SEGMENTS": {
           "SUCCESS_MESSAGE": "Segmento eliminado con éxito.",

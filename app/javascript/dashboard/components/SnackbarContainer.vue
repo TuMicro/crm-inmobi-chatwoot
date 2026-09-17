@@ -55,10 +55,11 @@ onUnmounted(() => {
 </script>
 
 <template>
+  <!-- [turuta] Avisos abajo, no arriba. -->
   <div
     ref="snackbarContainer"
     popover="manual"
-    class="fixed top-4 left-1/2 -translate-x-1/2 max-w-[25rem] w-[calc(100%-2rem)] text-center bg-transparent border-0 p-0 m-0 outline-none overflow-visible"
+    class="fixed top-auto bottom-6 left-1/2 -translate-x-1/2 max-w-[25rem] w-[calc(100%-2rem)] text-center bg-transparent border-0 p-0 m-0 outline-none overflow-visible"
   >
     <transition-group name="toast-fade" tag="div">
       <WootSnackbar

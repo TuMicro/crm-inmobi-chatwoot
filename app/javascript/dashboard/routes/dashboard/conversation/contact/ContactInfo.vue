@@ -306,7 +306,7 @@ export default {
         </div>
       </div>
       <div class="flex items-center w-full mt-0.5 gap-2">
-        <ComposeConversation :contact-id="String(contact.id)">
+        <ComposeConversation v-if="false" :contact-id="String(contact.id)">
           <template #trigger>
             <NextButton
               v-tooltip.top-end="$t('CONTACT_PANEL.NEW_MESSAGE')"

@@ -1,4 +1,4 @@
-export const MACRO_ACTION_TYPES = [
+const ACCIONES_DE_CHATWOOT = [
   {
     key: 'assign_team',
     label: 'ASSIGN_TEAM',
@@ -75,3 +75,15 @@ export const MACRO_ACTION_TYPES = [
     inputType: 'url',
   },
 ];
+
+// [turuta] Fuera las acciones de cosas que la interfaz ya no tiene.
+const TURUTA_ACCIONES_OCULTAS = new Set([
+  'assign_team',
+  'remove_assigned_team',
+  'snooze_conversation',
+  'change_priority',
+  'send_webhook_event',
+]);
+export const MACRO_ACTION_TYPES = ACCIONES_DE_CHATWOOT.filter(
+  accion => !TURUTA_ACCIONES_OCULTAS.has(accion.key)
+);

@@ -110,7 +110,10 @@ const shouldShowItem = child => {
 // set scrollEnd to true when the scroll reaches the end
 useEventListener(scrollableContainer, 'scroll', () => {
   const { scrollHeight, scrollTop, clientHeight } = scrollableContainer.value;
-  scrollEnd.value = scrollHeight - scrollTop === clientHeight;
+  // [turuta] Con zoom o pantallas de alta densidad scrollTop trae decimales y
+  // la igualdad exacta no se cumple nunca: el velo no se quitaba al llegar al
+  // final. Se compara con un pixel de margen.
+  scrollEnd.value = scrollHeight - scrollTop - clientHeight <= 1;
 });
 
 useEventListener(window, 'storage', event => {
@@ -153,7 +156,7 @@ watch([hasActiveChild, storageKey], expandSubGroupOnActiveChild, {
           ref="scrollableContainer"
           class="min-w-0"
           :class="{
-            'max-h-60 overflow-y-scroll no-scrollbar': isScrollable,
+            'max-h-60 overflow-y-scroll no-scrollbar pb-6': isScrollable,
           }"
         >
           <SidebarGroupLeaf

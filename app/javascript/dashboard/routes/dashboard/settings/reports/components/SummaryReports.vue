@@ -71,6 +71,8 @@ const defaulSpanRender = cellProps =>
     cellProps.getValue()
   );
 
+// [turuta] Sin columnas de resolucion: aqui un lead se cierra por ETAPA, no
+// resolviendo el chat.
 const columns = computed(() => [
   columnHelper.accessor('name', {
     header: t(`SUMMARY_REPORTS.${props.type.toUpperCase()}`),
@@ -87,18 +89,8 @@ const columns = computed(() => [
     width: 200,
     cell: defaulSpanRender,
   }),
-  columnHelper.accessor('avgResolutionTime', {
-    header: t('SUMMARY_REPORTS.AVG_RESOLUTION_TIME'),
-    width: 200,
-    cell: defaulSpanRender,
-  }),
   columnHelper.accessor('avgReplyTime', {
     header: t('SUMMARY_REPORTS.AVG_REPLY_TIME'),
-    width: 200,
-    cell: defaulSpanRender,
-  }),
-  columnHelper.accessor('resolutionsCount', {
-    header: t('SUMMARY_REPORTS.RESOLUTION_COUNT'),
     width: 200,
     cell: defaulSpanRender,
   }),

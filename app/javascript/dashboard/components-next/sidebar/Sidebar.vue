@@ -389,6 +389,10 @@ const TURUTA_HIDDEN_MENU = new Set([
   'Settings Security',
   'Reports SLA',
   'Reports Bot',
+  'Reports Team',
+  'Reports CSAT',
+  'Active',
+  'Conversation Workflow',
 ]);
 
 // [turuta] Quita los items ocultos a cualquier profundidad del menu.
@@ -625,14 +629,6 @@ const menuItems = computed(() => {
           },
         ]
       : []),
-    // [turuta] Nuestra pagina: leads por etapa y por asesor.
-    {
-      name: 'Embudo',
-      label: 'Embudo',
-      icon: 'i-lucide-filter',
-      to: accountScopedRoute('turuta_embudo'),
-      activeOn: ['turuta_embudo'],
-    },
     {
       name: 'Contacts',
       label: t('SIDEBAR.CONTACTS'),
@@ -722,6 +718,13 @@ const menuItems = computed(() => {
       label: t('SIDEBAR.REPORTS'),
       icon: 'i-lucide-chart-spline',
       children: [
+        // [turuta] Nuestra pagina: leads por etapa y por asesor. Solo admin
+        // (lo exige la ruta, e Informes entero ya es solo de administradores).
+        {
+          name: 'Reports Embudo',
+          label: 'Embudo',
+          to: accountScopedRoute('turuta_embudo'),
+        },
         {
           name: 'Report Overview',
           label: t('SIDEBAR.REPORTS_OVERVIEW'),

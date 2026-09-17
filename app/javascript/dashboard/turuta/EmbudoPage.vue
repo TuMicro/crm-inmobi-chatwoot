@@ -13,6 +13,10 @@ const store = useStore();
 const apps = useMapGetter('dashboardApps/getRecords');
 const config = computed(() => leadAppConfig(apps.value));
 
+// Periodo de la seccion "Cierres": el resto de la pagina es una foto de hoy.
+const PERIODOS = [7, 30, 90];
+const dias = ref(30);
+
 const datos = ref(null);
 const cargando = ref(false);
 const error = ref(null);
@@ -25,7 +29,7 @@ async function cargar() {
   cargando.value = true;
   error.value = null;
   try {
-    const url = `${config.value.api}/dashboard-app/funnel?accountId=${route.params.accountId}`;
+    const url = `${config.value.api}/dashboard-app/funnel?accountId=${route.params.accountId}&dias=${dias.value}`;
     const r = await fetch(url, {
       headers: { Authorization: `Bearer ${config.value.token}` },
     });
@@ -53,6 +57,13 @@ watch(config, (cfg, prev) => {
   if (cfg && !prev) cargar();
 });
 
+function cambiarPeriodo(n) {
+  if (dias.value === n) return;
+  dias.value = n;
+  cargar();
+}
+
+const cierres = computed(() => datos.value?.cierres || null);
 const etapas = computed(() => datos.value?.etapas || []);
 const asesores = computed(() => datos.value?.asesores || []);
 const maxEtapa = computed(() => Math.max(1, ...etapas.value.map(e => e.total)));
@@ -116,6 +127,47 @@ const perdidos = computed(() =>
           <div class="text-xs text-n-slate-11">Perdidos</div>
           <div class="text-2xl font-medium text-n-slate-11">{{ perdidos }}</div>
         </div>
+      </section>
+
+      <section v-if="cierres" class="max-w-3xl px-6 pb-6">
+        <div class="flex items-center justify-between gap-4 mb-2">
+          <h2
+            class="text-xs font-medium tracking-wide uppercase text-n-slate-10"
+          >
+            Cierres de los ultimos {{ cierres.dias }} dias:
+            <span class="text-n-teal-11">{{ cierres.total }}</span>
+          </h2>
+          <div class="flex gap-1">
+            <button
+              v-for="n in PERIODOS"
+              :key="n"
+              type="button"
+              class="px-2 py-1 text-xs border rounded-md border-n-weak"
+              :class="
+                n === dias
+                  ? 'bg-n-alpha-2 text-n-slate-12'
+                  : 'text-n-slate-11 hover:bg-n-alpha-1'
+              "
+              @click="cambiarPeriodo(n)"
+            >
+              {{ n }} dias
+            </button>
+          </div>
+        </div>
+        <ul class="flex flex-col gap-1 text-sm">
+          <li
+            v-for="c in cierres.porAsesor"
+            :key="c.id || 'sin-asesor'"
+            class="flex justify-between gap-4"
+          >
+            <span class="text-n-slate-12">{{ c.nombre }}</span>
+            <span class="tabular-nums text-n-slate-11">{{ c.total }}</span>
+          </li>
+        </ul>
+        <p class="mt-2 text-xs text-n-slate-10">
+          Leads que llegaron a Cierre en el periodo, contados al asesor que los
+          lleva hoy.
+        </p>
       </section>
 
       <section class="px-6 pb-4">

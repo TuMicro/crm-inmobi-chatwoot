@@ -1,0 +1,1090 @@
+{
+  "AGENT_BOTS": {
+    "BOT_CONFIGURATION": {
+      "DESC": "Asigne un bot de agente a su bandeja de entrada. Pueden manejar chats iniciales y transferirlas a un agente en vivo cuando sea necesario."
+    },
+    "WEBHOOK": {
+      "DESCRIPTION": "Configure el webhook del bot para integrarse con sus servicios personalizados. El bot recibirá y procesará eventos de chats y podrá responder a ellos."
+    }
+  },
+  "AGENT_MGMT": {
+    "COUNT": "{n} agente | {n} agentes",
+    "NO_RESULTS": "Ningún agente coincide con la búsqueda"
+  },
+  "AGENT_REPORTS": {
+    "DESCRIPTION": "Sigue el trabajo de cada asesor: chats atendidos, tiempo de primera respuesta y tiempo de espera del cliente. Pulsa un nombre para ver el detalle.",
+    "METRICS": {
+      "CONVERSATIONS": {
+        "DESC": "( Total )",
+        "NAME": "Chats"
+      },
+      "FIRST_RESPONSE_TIME": {
+        "INFO_TEXT": "Número total de chats utilizados en el cálculo:",
+        "TOOLTIP_TEXT": "Tiempo de primera respuesta es {metricValue} (basado en {conversationCount} chats)"
+      },
+      "INCOMING_MESSAGES": {
+        "DESC": "( Total )"
+      },
+      "OUTGOING_MESSAGES": {
+        "DESC": "( Total )"
+      },
+      "RESOLUTION_TIME": {
+        "INFO_TEXT": "Número total de chats utilizados en el cálculo:",
+        "TOOLTIP_TEXT": "El tiempo de resolución es {metricValue} (basado en {conversationCount} chats)"
+      }
+    }
+  },
+  "APP_GLOBAL": {
+    "NO_ACCOUNTS": {
+      "MESSAGE_SELF_HOSTED": "Ahora mismo no perteneces a ninguna cuenta. Habla con tu administrador.",
+      "TITLE": "No se encontró ninguna cuenta"
+    }
+  },
+  "ASSIGNMENT_POLICY": {
+    "AGENT_ASSIGNMENT_POLICY": {
+      "FORM": {
+        "EXCLUDE_OLDER_THAN": {
+          "DESCRIPTION": "Saltar chats no asignados más antiguos que esto. Por defecto es 7 días; borrar para desactivar.",
+          "LABEL": "Saltar chats obsoletas"
+        },
+        "FAIR_DISTRIBUTION": {
+          "DESCRIPTION": "Limita los chats por agente dentro de una ventana de tiempo para evitar sobrecargas. Por defecto es 100 por hora."
+        }
+      }
+    }
+  },
+  "ATTRIBUTES_MGMT": {
+    "ADD": {
+      "FORM": {
+        "REGEX_CUE": {
+          "LABEL": "Pista del formato"
+        }
+      }
+    },
+    "ATTRIBUTE_MODELS": {
+      "CONVERSATION": "Chat"
+    },
+    "COUNT": "{n} atributo | {n} atributos",
+    "DESCRIPTION": "Un atributo personalizado rastrea detalles adicionales sobre tus contactos o chats, como el plan de suscripción o la fecha de su primera compra. Puede agregar diferentes tipos de atributos personalizados, como textos, listas o números, para capturar la información específica que necesita.",
+    "LIST": {
+      "REGEX_CUE": {
+        "LABEL": "Pista del formato"
+      }
+    },
+    "NO_RESULTS": "Ningún atributo coincide con la búsqueda",
+    "TABS": {
+      "CONVERSATION": "Chat"
+    }
+  },
+  "AUDIT_LOGS": {
+    "CONVERSATION": {
+      "DELETE": "{agentName} ha eliminado el chat #{id}"
+    }
+  },
+  "AUTOMATION": {
+    "ACTION": {
+      "INSERT_CONTACT_EMAIL": "Usar el correo del contacto"
+    },
+    "ACTIONS": {
+      "MUTE_CONVERSATION": "Silenciar Chat",
+      "OPEN_CONVERSATION": "Abrir chat",
+      "PENDING_CONVERSATION": "Marca el chat como pendiente",
+      "REMOVE_ASSIGNED_AGENT": "Quitar el agente asignado",
+      "RESOLVE_CONVERSATION": "Resolver chat",
+      "SNOOZE_CONVERSATION": "Posponer chat"
+    },
+    "ADD": {
+      "FORM": {
+        "WAIT": {
+          "EXPLANATION": {
+            "CONVERSATION_STATUS": "El contador comienza cuando un chat pasa a este estado. Si continúa en él {duration} después, se ejecutan las acciones siguientes. Si el estado cambia antes, no ocurre nada."
+          },
+          "FOOTNOTE": "Solo la actividad nueva inicia un contador. Los chats que ya se encuentren en este estado se procesarán la próxima vez que ocurra algo en ellos.",
+          "OPTIONS": {
+            "CONVERSATION_STATUS": "El chat permanece en un estado"
+          }
+        }
+      }
+    },
+    "ATTRIBUTES": {
+      "CONVERSATION_LANGUAGE": "Idioma del chat"
+    },
+    "CONDITION": {
+      "CONVERSATION_CUSTOM_ATTR_LABEL": "Atributos personalizados del chat"
+    },
+    "COUNT": "{n} automatización | {n} automatizaciones",
+    "DESCRIPTION": "La automatización puede reemplazar y agilizar los procesos existentes que requieren esfuerzo manual, como añadir etiquetas y asignar chats al agente más adecuado. Esto permite al equipo concentrarse en sus fortalezas, mientras que reduce el tiempo dedicado a las tareas de rutina.",
+    "EVENTS": {
+      "CONVERSATION_CREATED": "Chat creado",
+      "CONVERSATION_OPENED": "Chat abierto",
+      "CONVERSATION_RESOLVED": "Chat Resuelto",
+      "CONVERSATION_UPDATED": "Chat actualizado"
+    },
+    "HEADER_BTN_TXT": "Crear automatización",
+    "NO_RESULTS": "Ninguna automatización coincide con la búsqueda",
+    "SEARCH_PLACEHOLDER": "Buscar automatizaciones..."
+  },
+  "BOT_REPORTS": {
+    "METRIC": {
+      "HANDOFF_RATE": {
+        "TOOLTIP": "Número total de chats transmitidos a agentes / Número total de chats manejados por el bot * 100"
+      },
+      "RESOLUTION_RATE": {
+        "TOOLTIP": "Número total de chats resueltos por el bot / Número total de chats manejados por el bot * 100"
+      },
+      "TOTAL_CONVERSATIONS": {
+        "LABEL": "Núm. de chats",
+        "TOOLTIP": "Número total de chats manejados por el bot"
+      }
+    }
+  },
+  "BULK_ACTION": {
+    "ALL_CONVERSATIONS_SELECTED_ALERT": "Los chats visibles en esta página sólo están seleccionados.",
+    "ASSIGN_AGENT_CONFIRMATION_LABEL": "¿Estás seguro de que quieres asignar {n} chat a {agentName}? | ¿Estás seguro de que quieres asignar {n} chats a {agentName}?",
+    "ASSIGN_FAILED": "Error al asignar chats, inténtelo de nuevo.",
+    "ASSIGN_SUCCESFUL": "Chats asignados con éxito.",
+    "CONVERSATIONS_SELECTED": "{conversationCount} chats seleccionados",
+    "RESOLVE": {
+      "ALL_MISSING_ATTRIBUTES": "No se pueden resolver los chats debido a la falta de atributos requeridos",
+      "PARTIAL_SUCCESS": "Algunas chats requieren atributos obligatorios antes de resolverse y se omitieron"
+    },
+    "RESOLVE_FAILED": "Error al resolver los chats, inténtelo de nuevo.",
+    "RESOLVE_SUCCESFUL": "Chats resueltos con éxito.",
+    "TEAMS": {
+      "ASSIGN_TEAM_CONFIRMATION_LABEL": "¿Estás seguro de que quieres asignar {n} chat a {teamName}? | ¿Estás seguro de que quieres asignar {n} chats a {teamName}?",
+      "UNASSIGN_TEAM_CONFIRMATION_LABEL": "¿Estás seguro de que quieres desasignar {n} chat? | ¿Estás seguro de que quieres desasignar los {n} chats?"
+    },
+    "UNASSIGN_AGENT_CONFIRMATION_LABEL": "¿Estás seguro de que quieres desasignar {n} chat? | ¿Estás seguro de que quieres desasignar los {n} chats?",
+    "UPDATE": {
+      "UPDATE_FAILED": "No se han podido actualizar los chats. Inténtalo de nuevo.",
+      "UPDATE_SUCCESFUL": "El estado del chat se actualizó con éxito."
+    }
+  },
+  "CANNED_MGMT": {
+    "ADD": {
+      "DESC": "Las respuestas predefinidas son plantillas de respuesta predefinidas que pueden ser utilizadas para enviar rápidamente respuestas a chats."
+    },
+    "COUNT": "{n} respuesta predefinida | {n} respuestas predefinidas",
+    "DESCRIPTION": "Las respuestas predefinidas son plantillas preconfiguradas que le ayudan a responder rápidamente a un chat. Los agentes pueden escribir el carácter '/' seguido por el código corto para insertar una respuesta predefinida durante un chat. ",
+    "LIST": {
+      "DESC": "Las respuestas predefinidas son plantillas de respuesta predefinidas que pueden ser utilizadas para enviar rápidamente respuestas a chats."
+    },
+    "NO_RESULTS": "Ninguna respuesta predefinida coincide con la búsqueda",
+    "SEARCH_PLACEHOLDER": "Buscar respuestas predefinidas..."
+  },
+  "CAPTAIN": {
+    "ASSISTANTS": {
+      "SETTINGS": {
+        "BASIC_SETTINGS": {
+          "DESCRIPTION": "Personaliza lo que dice el asistente al finalizar un chat o al transferirla a una persona."
+        },
+        "SYSTEM_SETTINGS": {
+          "DESCRIPTION": "Personaliza lo que dice el asistente al finalizar un chat o al transferirla a una persona."
+        }
+      }
+    },
+    "COPILOT": {
+      "KICK_OFF_MESSAGE": "¿Necesitas un resumen rápido, revisar chats anteriores o redactar una mejor respuesta? Copilot está aquí para agilizarlo.",
+      "PROMPTS": {
+        "HIGH_PRIORITY": {
+          "CONTENT": "Dame un resumen de todos los chats abiertos de alta prioridad. Incluye el ID del chat, el nombre del cliente (si está disponible), el contenido del último mensaje y el agente asignado. Agrupa por estado si es relevante.",
+          "LABEL": "Chats de alta prioridad"
+        },
+        "RATE": {
+          "CONTENT": "Revisa el chat para evaluar qué tan bien satisface las necesidades del cliente. Comparte una calificación sobre 5 basada en el tono, la claridad y la eficacia.",
+          "LABEL": "Califica este chat"
+        },
+        "SUMMARIZE": {
+          "LABEL": "Resume este chat"
+        }
+      }
+    },
+    "FAQ_SUGGESTIONS": {
+      "DETAILS": {
+        "DESCRIPTION": "Captain agrupó {count} chat en esta sugerencia. Revisa las pruebas y perfecciona la FAQ antes de aprobarla. | Captain agrupó {count} chats en esta sugerencia. Revisa las pruebas y perfecciona la FAQ antes de aprobarla.",
+        "NO_SOURCES": "No se encontraron chats de origen accesibles.",
+        "SOURCES": "Chats de origen"
+      },
+      "ERRORS": {
+        "LOAD_DETAILS": "Se produjo un error al cargar los chats de origen."
+      },
+      "SOURCE_COUNT": "{count} chat | {count} chats"
+    },
+    "OVERVIEW": {
+      "DRILLDOWN": {
+        "RESULT_COUNT_CONVERSATION": "{count} chat | {count} chats"
+      },
+      "INBOX_BANNER": {
+        "TEXT": "Este asistente aún no está conectado a ninguna bandeja de entrada, por lo que no responderá a los chats."
+      },
+      "METRICS": {
+        "AUTO_RESOLUTION": {
+          "HINT": "Compartido de chats manejados cerrados sin una respuesta humana."
+        },
+        "DEPTH": {
+          "HINT": "Promedio de respuestas que el asistente envía por chat.",
+          "LABEL": "Mensajes / chat"
+        },
+        "HANDLED": {
+          "HINT": "Distintas chats en las que respondió este asistente.",
+          "LABEL": "Chats manejados"
+        },
+        "HANDOFF": {
+          "HINT": "Comparte los chats manipulados escalados a un agente humano."
+        },
+        "REOPEN": {
+          "HINT": "Chats resueltos automáticamente que se reabrieron después."
+        }
+      }
+    }
+  },
+  "CHAT_LIST": {
+    "CHAT_SORT_BY_FILTER": {
+      "TITLE": "Ordenar chat"
+    },
+    "EOF": "Todos los chats cargados 🎉",
+    "FETCH_ERROR": "No se pudieron cargar los chats. Inténtalo de nuevo.",
+    "LIST": {
+      "404": "No hay chats activos en este grupo."
+    },
+    "LOADING": "Obteniendo chats",
+    "LOAD_MORE_CONVERSATIONS": "Cargar más chats",
+    "SORT_TOOLTIP_LABEL": "Ordenar chats",
+    "TAB_HEADING": "Chats"
+  },
+  "COMMAND_BAR": {
+    "COMMANDS": {
+      "ADD_LABELS_TO_CONVERSATION": "Añadir etiqueta al chat",
+      "GO_TO_CONVERSATION_DASHBOARD": "Ir al panel de chats",
+      "GO_TO_CONVERSATION_REPORTS": "Ir a Reportes de Chat",
+      "MUTE_CONVERSATION": "Silenciar chat",
+      "REMOVE_LABEL_FROM_CONVERSATION": "Eliminar etiqueta del chat",
+      "REOPEN_CONVERSATION": "Resolver chat",
+      "RESOLVE_CONVERSATION": "Resolver chat",
+      "SNOOZE_CONVERSATION": "Posponer chat",
+      "UNMUTE_CONVERSATION": "Quitar silencio de chat"
+    },
+    "SECTIONS": {
+      "ADD_LABEL": "Añadir etiqueta al chat",
+      "CONVERSATION": "Chat",
+      "REMOVE_LABEL": "Eliminar etiqueta del chat",
+      "SNOOZE_CONVERSATION": "Posponer chat"
+    }
+  },
+  "COMPANIES": {
+    "DETAIL": {
+      "HISTORY": {
+        "EMPTY": "Aún no se han encontrado chats para los contactos de esta empresa."
+      }
+    }
+  },
+  "COMPOSE_NEW_CONVERSATION": {
+    "FORM": {
+      "CONTACT_SELECTOR": {
+        "TAG_INPUT_PLACEHOLDER": "Escribe al menos 2 caracteres para buscar por nombre, correo o teléfono"
+      },
+      "ERROR_MESSAGE": "Se ha producido un error al crear el chat. Por favor, inténtalo de nuevo más tarde.",
+      "NO_INBOX_ALERT": "No hay bandejas de entrada disponibles para iniciar un chat con este contacto."
+    }
+  },
+  "CONTACTS_BULK_ACTIONS": {
+    "ASSIGN_LABELS_FAILED": "No se pudieron asignar las etiquetas",
+    "CLEAR_SELECTION": "Quitar selección",
+    "DELETE_DIALOG": {
+      "CONFIRM_MULTIPLE": "Eliminar contactos",
+      "DESCRIPTION": "Se eliminarán para siempre {count} contactos. Esta acción no se puede deshacer.",
+      "SINGULAR_DESCRIPTION": "Se eliminará para siempre el contacto seleccionado. Esta acción no se puede deshacer.",
+      "SINGULAR_TITLE": "Eliminar el contacto seleccionado",
+      "TITLE": "Eliminar los contactos seleccionados"
+    },
+    "DELETE_FAILED": "No se pudieron eliminar los contactos.",
+    "DELETE_SUCCESS": "Contactos eliminados.",
+    "DESCRIPTION": "Elige las etiquetas que quieres añadir a los contactos seleccionados.",
+    "NO_LABELS_FOUND": "Aún no hay etiquetas.",
+    "SELECTED_COUNT": "{count} seleccionados",
+    "SELECT_ALL": "Seleccionar todos ({count})"
+  },
+  "CONTACTS_LAYOUT": {
+    "SIDEBAR": {
+      "HISTORY": {
+        "EMPTY_STATE": "No hay chats previos asociados a este contacto"
+      },
+      "MERGE": {
+        "DESCRIPTION": "Combine dos perfiles en uno, incluyendo todos los atributos y chats. En caso de conflicto, los atributos del contacto principal tendrán prioridad."
+      },
+      "NOTES": {
+        "ADD_NOTE": "Añadir nota",
+        "CONVERSATION_EMPTY_STATE": "Aún no hay notas. Usa el botón Añadir nota para crear una."
+      },
+      "TABS": {
+        "MEDIA": "Archivos"
+      }
+    }
+  },
+  "CONTACT_FORM": {
+    "FORM": {
+      "SUBMIT": "Guardar"
+    }
+  },
+  "CONTACT_PANEL": {
+    "CLICK_TO_EDIT": "Pulsa para editar",
+    "CONVERSATIONS": {
+      "NO_RECORDS_FOUND": "No hay chats previos asociados a este contacto.",
+      "TITLE": "Chats anteriores"
+    },
+    "CONVERSATION_TITLE": "Detalles del chat",
+    "LABELS": {
+      "CONVERSATION": {
+        "TITLE": "Etiquetas de chat"
+      }
+    },
+    "MUTED_SUCCESS": "Este contacto está bloqueado con éxito. No se te notificará de ningún chat futura.",
+    "SIDEBAR_SECTIONS": {
+      "PREVIOUS_CONVERSATIONS": "Chats anteriores"
+    }
+  },
+  "CONVERSATION": {
+    "404": "Lo sentimos, no podemos encontrar el chat. Por favor, inténtalo de nuevo",
+    "API_HOURS_WINDOW": "Solo puedes responder a este chat dentro de {hours} horas",
+    "BOT_HANDOFF_MESSAGE": "Este chat está siendo gestionado por {assigneeName}.",
+    "CARD_CONTEXT_MENU": {
+      "API": {
+        "AGENT_ASSIGNMENT": {
+          "SUCCESFUL": "ID de chat {conversationId} asignado a \"{agentName}\""
+        },
+        "LABEL_ASSIGNMENT": {
+          "SUCCESFUL": "Etiqueta #{labelName} asignada al chat con id {conversationId}"
+        },
+        "LABEL_REMOVAL": {
+          "FAILED": "No se pudo quitar la etiqueta. Inténtalo de nuevo.",
+          "SUCCESFUL": "Etiqueta #{labelName} quitada del chat {conversationId}"
+        },
+        "TEAM_ASSIGNMENT": {
+          "SUCCESFUL": "Equipo asignado \"{team}\" al ID de chat {conversationId}"
+        }
+      },
+      "COPY_LINK": "Copiar enlace de chat",
+      "COPY_LINK_SUCCESS": "Enlace de chat copiado en portapapeles",
+      "DELETE": "Eliminar chat",
+      "REOPEN": "Resolver chat"
+    },
+    "CHANGE_AGENT": "Chat cambiado de asignatario",
+    "CHANGE_STATUS": "Estado del chat cambiado",
+    "CHANGE_STATUS_FAILED": "Error al cambiar el estado del chat",
+    "CHANGE_TEAM": "Equipo de chat cambiado",
+    "CSAT_REPLY_MESSAGE": "Por favor, valora el chat",
+    "DELETE_CONVERSATION": {
+      "DESCRIPTION": "¿Está seguro que desea eliminar este chat?",
+      "TITLE": "Eliminar chat #{conversationId}"
+    },
+    "FAIL_DELETE_CONVERSATION": "¡No se pudo eliminar el chat! Inténtalo de nuevo",
+    "FILE_TYPE_NOT_SUPPORTED": "El tipo de archivo de {fileName} no se admite en este chat",
+    "FOOTER": {
+      "MESSAGING_RESTRICTED": "No puedes responder a este chat",
+      "MESSAGING_RESTRICTED_API": "La ventana de mensajes está cerrada: solo puedes responder con una plantilla",
+      "MESSAGING_RESTRICTED_WHATSAPP": "Pasaron más de 24 horas desde el último mensaje del cliente: solo puedes responder con una plantilla"
+    },
+    "HEADER": {
+      "COPY_ID_SUCCESS": "ID de chat copiado al portapapeles"
+    },
+    "LOADING_CONVERSATIONS": "Cargando chats",
+    "NOT_ASSIGNED_TO_YOU": "Este chat no te está asignado. ¿Quieres asignártelo?",
+    "OLD_INSTAGRAM_INBOX_REPLY_BANNER": "Esta cuenta de Instagram fue migrada a la nueva bandeja de entrada del canal Instagram. Todos los nuevos mensajes aparecerán allí. Ya no podrás enviar mensajes de este chat.",
+    "PICKER": {
+      "EMOJI": {
+        "EMPTY_STATE": "Escribe para buscar emojis",
+        "SEARCH_PLACEHOLDER": "Buscar emojis"
+      },
+      "MACRO": {
+        "ACTION_COUNT": "1 acción | {count} acciones",
+        "SEARCH_PLACEHOLDER": "Buscar macros"
+      },
+      "MENTION": {
+        "AUTO_ASSIGN": "Asignación automática",
+        "AVAILABILITY": "Disponibilidad",
+        "DISABLED": "Desactivada",
+        "ENABLED": "Activada",
+        "ROLE": "Rol",
+        "SEARCH_PLACEHOLDER": "Buscar agentes"
+      },
+      "VARIABLE": {
+        "DESCRIPTION": "Descripción",
+        "NO_VALUE": "Sin valor en este chat",
+        "SEARCH_PLACEHOLDER": "Buscar variables",
+        "VALUE": "Valor"
+      }
+    },
+    "PRIORITY": {
+      "CHANGE_PRIORITY": {
+        "SUCCESSFUL": "Se ha cambiado la prioridad del id de chat {conversationId} a {priority}"
+      }
+    },
+    "REFERRAL": {
+      "POST_LABEL": "Publicación",
+      "REPLIED_BELOW": "El cliente respondió abajo",
+      "VIEW_AD": "Ver anuncio",
+      "WELCOME_MESSAGE_LABEL": "Mensaje precargado: "
+    },
+    "SEARCH_MESSAGES": "Buscar mensajes en chats",
+    "SELECT_A_CONVERSATION": "Por favor, selecciona un chat del panel izquierdo",
+    "SUCCESS_DELETE_CONVERSATION": "Chat eliminado con éxito",
+    "TWILIO_WHATSAPP_CAN_REPLY": "Sólo puede responder a este chat usando una plantilla de mensaje debido a",
+    "VIEW_ORIGINAL": "Ver original",
+    "VIEW_TRANSLATED": "Ver traducción",
+    "VOICE_WIDGET": {
+      "GO_TO_CONVERSATION": "Ir al hilo de chat"
+    }
+  },
+  "CONVERSATION_PARTICIPANTS": {
+    "SIDEBAR_TITLE": "Participantes del chat",
+    "WATCH_CONVERSATION": "Abrir chat"
+  },
+  "CONVERSATION_SIDEBAR": {
+    "ACCORDION": {
+      "CONVERSATION_ACTIONS": "Acciones de chat",
+      "CONVERSATION_INFO": "Información del chat",
+      "CONVERSATION_LABELS": "Etiquetas de chat",
+      "PREVIOUS_CONVERSATION": "Chats anteriores"
+    },
+    "SHARED_FILES": {
+      "MEDIA_HEADING": "Archivos"
+    }
+  },
+  "CONVERSATION_WORKFLOW": {
+    "REQUIRED_ATTRIBUTES": {
+      "MODAL": {
+        "ACTIONS": {
+          "RESOLVE": "Resolver chat"
+        },
+        "TITLE": "Resolver chat"
+      }
+    }
+  },
+  "CSAT": {
+    "TITLE": "Califica tu chat"
+  },
+  "CSAT_REPORTS": {
+    "TABLE": {
+      "HEADER": {
+        "CONVERSATION": "Chat"
+      }
+    }
+  },
+  "DATA_IMPORTS": {
+    "DESCRIPTION": "Trae tus contactos y chats pasados a esta cuenta desde otra herramienta de soporte. Cada importación se ejecuta en segundo plano, así que puedes seguir trabajando mientras termina, rastrea su progreso y revisa cualquier cosa que se haya omitido a lo largo del camino.",
+    "EXPORT": {
+      "DESCRIPTION": "Exporta tus contactos y chats desde esta cuenta. Este flujo de trabajo estará disponible pronto."
+    },
+    "MONITOR": {
+      "STAGES": {
+        "conversations": "Importando chats"
+      }
+    },
+    "TYPES": {
+      "CONVERSATIONS": "Chats"
+    }
+  },
+  "DATE_PICKER": {
+    "DATE_RANGE_OPTIONS": {
+      "MONTH_TO_DATE": "Este mes",
+      "THIS_WEEK": "Esta semana"
+    },
+    "NEXT_PERIOD": "Periodo siguiente",
+    "PREVIOUS_PERIOD": "Periodo anterior",
+    "WEEK_NUMBER": "Semana {weekNumber}"
+  },
+  "EMAIL_TRANSCRIPT": {
+    "TITLE": "Enviar transcripción del chat"
+  },
+  "FILTER": {
+    "ATTRIBUTES": {
+      "CONVERSATION_IDENTIFIER": "Identificador de chat"
+    },
+    "CUSTOM_VIEWS": {
+      "ADD": {
+        "API_FOLDERS": {
+          "ERROR_MESSAGE": "Error al guardar el filtro.",
+          "SUCCESS_MESSAGE": "Filtro guardado."
+        }
+      },
+      "DELETE": {
+        "API_FOLDERS": {
+          "ERROR_MESSAGE": "Error al eliminar el filtro.",
+          "SUCCESS_MESSAGE": "Filtro eliminado."
+        }
+      },
+      "EDIT": {
+        "EDIT_BUTTON": "Editar filtro"
+      }
+    },
+    "CUSTOM_VIEWS_SUBTITLE": "Agregar o quitar condiciones y actualizar el filtro.",
+    "EDIT_CUSTOM_FILTER": "Editar filtro",
+    "FOLDER_LABEL": "Nombre del filtro",
+    "FOLDER_QUERY_LABEL": "Condiciones del filtro",
+    "MULTI_VALUE_INPUT_PLACEHOLDER": "Escribe un valor y pulsa Enter para añadir más",
+    "MULTI_VALUE_INPUT_PLACEHOLDER_SHORT": "Escribe un valor",
+    "TITLE": "Filtrar chats",
+    "TOOLTIP_LABEL": "Filtrar chats",
+    "UPDATE_BUTTON_LABEL": "Actualizar filtro"
+  },
+  "GENERAL": {
+    "ACCEPT": "Aceptar",
+    "BETA_DESCRIPTION": "Esta función está en pruebas y puede cambiar.",
+    "PREFERRED": "Preferido"
+  },
+  "GENERAL_SETTINGS": {
+    "FORM": {
+      "FEATURES": {
+        "INBOUND_EMAIL_ENABLED": "Continuidad del chat con emails está habilitada para su cuenta."
+      }
+    }
+  },
+  "INBOX": {
+    "DISPLAY_MENU": {
+      "DISPLAY_OPTIONS": {
+        "CONVERSATION_ID": "ID de chat"
+      }
+    },
+    "TYPES": {
+      "ASSIGNED_CONVERSATION_NEW_MESSAGE": "Nuevo mensaje en un chat asignado",
+      "CONVERSATION_ASSIGNMENT": "Se te ha asignado un chat",
+      "CONVERSATION_CREATION": "Nuevo chat creado",
+      "CONVERSATION_MENTION": "Has sido mencionado en un chat",
+      "PARTICIPATING_CONVERSATION_NEW_MESSAGE": "Nuevo mensaje en un chat en la que estás participando",
+      "SLA_MISSED_FIRST_RESPONSE": "Falta la siguiente respuesta del SLA para el chat",
+      "SLA_MISSED_NEXT_RESPONSE": "Falta la siguiente respuesta del SLA para el chat",
+      "SLA_MISSED_RESOLUTION": "Falta la siguiente respuesta del SLA para el chat"
+    },
+    "TYPES_NEXT": {
+      "CONVERSATION_CREATION": "Nuevo chat"
+    }
+  },
+  "INBOX_MGMT": {
+    "ACCOUNT_HEALTH": {
+      "FIELDS": {
+        "MESSAGING_LIMIT_TIER": {
+          "TOOLTIP": "Número de clientes con los que este número de teléfono puede iniciar chats en 24 horas"
+        }
+      }
+    },
+    "ADD": {
+      "FINISH": {
+        "DESC": "Has terminado de integrar correctamente tu página de Facebook con Chatwoot. La próxima vez que un cliente envíe un mensaje a tu Página, el chat aparecerá automáticamente en tu bandeja de entrada.<br>También le estamos proporcionando un script de widget que puede agregar fácilmente a su sitio web. Una vez que esto está en vivo en tu sitio web, los clientes pueden enviarle mensajes directamente desde su sitio web sin la ayuda de ninguna herramienta externa y el chat aparecerá aquí, en Chatwoot.<br>¿Genial, eh? Bueno, estamos seguros de que intentaremos ser :)"
+      },
+      "TWITTER": {
+        "TWEETS": {
+          "ENABLE": "Crear chats de los Tweets mencionados"
+        }
+      },
+      "WEBSITE_CHANNEL": {
+        "CHANNEL_GREETING_TOGGLE": {
+          "HELP_TEXT": "Envía automáticamente un mensaje de saludo cuando se crea un nuevo chat."
+        }
+      }
+    },
+    "ASSIGNMENT": {
+      "TITLE": "Asignación de chat"
+    },
+    "AUTO_ASSIGNMENT": {
+      "MAX_ASSIGNMENT_LIMIT_SUB_TEXT": "Limite la cantidad máxima de chats de esta bandeja de entrada que se pueden asignar automáticamente a un agente"
+    },
+    "COUNT": "{n} bandeja | {n} bandejas",
+    "FEATURES": {
+      "ALLOW_END_CONVERSATION": "Permitir a los usuarios finalizar chats desde el widget"
+    },
+    "FINISH": {
+      "WEBSITE_SUCCESS": "Has terminado de crear un canal del sitio web. Copia el código que se muestra a continuación y pégalo en tu sitio web. La próxima vez que un cliente use el chat en vivo, el chat aparecerá automáticamente en su bandeja de entrada."
+    },
+    "NO_RESULTS": "Ninguna bandeja coincide con la búsqueda",
+    "PRE_CHAT_FORM": {
+      "DESCRIPTION": "Los formularios de Pre Chat le permiten capturar la información del usuario antes de que comiencen el chat con usted."
+    },
+    "SEARCH_PLACEHOLDER": "Buscar bandejas...",
+    "SETTINGS_POPUP": {
+      "AGENT_ASSIGNMENT": "Asignación de chat",
+      "AGENT_ASSIGNMENT_SUB_TEXT": "Actualizar configuración de la asignación de chat",
+      "ALLOW_MESSAGES_AFTER_RESOLVED": "Permitir mensajes después del chat resuelto",
+      "ALLOW_MESSAGES_AFTER_RESOLVED_SUB_TEXT": "Permitir a los usuarios finales enviar mensajes incluso después de que el chat sea resuelto.",
+      "AUTO_ASSIGNMENT_SUB_TEXT": "Activar o desactivar la asignación automática de nuevos chats a los agentes añadidos a esta bandeja de entrada.",
+      "ENABLE_CONTINUITY_VIA_EMAIL": "Habilitar continuidad de chat por correo electrónico",
+      "ENABLE_CONTINUITY_VIA_EMAIL_DISABLED_TEXT": "Esta función está disponible en un plan de pago. Actualiza para habilitar la continuidad del chat por correo electrónico.",
+      "ENABLE_CONTINUITY_VIA_EMAIL_SUB_TEXT": "Los chats continuarán por correo electrónico si la dirección de correo electrónico de contacto está disponible.",
+      "WHATSAPP_MANUAL_MIGRATION": {
+        "DIALOG": {
+          "PRESERVED_DESCRIPTION": "Chats, contactos, colaboradores, enrutamiento, horas de trabajo y ajustes de bandeja de entrada."
+        },
+        "STEPS": {
+          "BEFORE_YOU_START": {
+            "DESCRIPTION": "Esto vuelve a conectar los detalles de la API de WhatsApp para esta bandeja de entrada. Se conservarán los chats, colaboradores, enrutamiento, horas laborables, CSAT y configuración del bot."
+          }
+        }
+      }
+    },
+    "VOICE_CONFIGURATION": {
+      "INBOUND": {
+        "DESCRIPTION": "Permitir que los clientes llamen a este número. Cuando se desactivan, las llamadas entrantes son rechazadas automáticamente: los agentes no son notificados y no se crea ningún chat. Los agentes todavía pueden realizar llamadas salientes."
+      }
+    },
+    "WHATSAPP_CALLING": {
+      "PERMISSION_REQUEST_BODY": {
+        "PLACEHOLDER": "Nos gustaría llamarte en relación con tu chat."
+      }
+    },
+    "WIDGET_BUILDER": {
+      "FOOTER": {
+        "START_CONVERSATION_BUTTON_TEXT": "Iniciar chat"
+      }
+    }
+  },
+  "INBOX_REPORTS": {
+    "ALL_INBOXES": "Todas las bandejas",
+    "DESCRIPTION": "Rendimiento de cada bandeja de entrada: chats, tiempo de primera respuesta y tiempo de espera del cliente. Pulsa una bandeja para ver el detalle.",
+    "FILTERS": {
+      "INPUT_PLACEHOLDER": {
+        "INBOXES": "Buscar bandejas"
+      }
+    },
+    "METRICS": {
+      "CONVERSATIONS": {
+        "DESC": "( Total )",
+        "NAME": "Chats"
+      },
+      "FIRST_RESPONSE_TIME": {
+        "INFO_TEXT": "Número total de chats utilizados en el cálculo:",
+        "TOOLTIP_TEXT": "Tiempo de primera respuesta es {metricValue} (basado en {conversationCount} chats)"
+      },
+      "INCOMING_MESSAGES": {
+        "DESC": "( Total )"
+      },
+      "OUTGOING_MESSAGES": {
+        "DESC": "( Total )"
+      },
+      "RESOLUTION_TIME": {
+        "INFO_TEXT": "Número total de chats utilizados en el cálculo:",
+        "TOOLTIP_TEXT": "El tiempo de resolución es {metricValue} (basado en {conversationCount} chats)"
+      }
+    },
+    "SEARCH_INBOX": "Buscar bandeja"
+  },
+  "INTEGRATION_APPS": {
+    "SIDEBAR_DESCRIPTION": {
+      "DIALOGFLOW": "Dialogflow es una plataforma de procesamiento del lenguaje natural para construir interfaces de chat. Integrándolo con {installationName} permite a los bots gestionar consultas primero y transferirlas a los agentes cuando sea necesario. Ayuda a calificar a los clientes potenciales y a reducir la carga de trabajo de los agentes respondiendo a las preguntas frecuentes. Para añadir Dialogflow, cree una cuenta de servicio en la consola de Google y comparta las credenciales. Consulte la documentación para obtener más detalles"
+    }
+  },
+  "INTEGRATION_SETTINGS": {
+    "DASHBOARD_APPS": {
+      "SIDEBAR_TXT": "<p><b>Aplicaciones de panel</b></p><p>Aplicaciones de panel de control permiten a las organizaciones incrustar una aplicación dentro del panel de control de Chatwoot para proporcionar el contexto para los agentes de atención al cliente. Esta característica le permite crear una aplicación de forma independiente e incrustarla dentro del panel de control para proporcionar información de usuario, sus pedidos, o su historial de pagos anterior.</p><p>Cuando incrustas tu aplicación usando el panel de control en Chatwoot, tu aplicación obtendrá el contexto del chat y el contacto como un evento de ventana. Implementa un oyente para el evento del mensaje en tu página para recibir el contexto.</p><p>Para añadir una nueva aplicación de panel, haga clic en el botón 'Añadir una nueva aplicación de panel'.</p>"
+    },
+    "LINEAR": {
+      "ADD_OR_LINK": {
+        "DESCRIPTION": "Crear incidencias en Linear desde chats, o enlazar existentes para un seguimiento fluido."
+      },
+      "LINK": {
+        "LINK_TITLE": "Chat (#{conversationId}) con {name}"
+      }
+    },
+    "SLACK": {
+      "DELETE_CONFIRMATION": {
+        "MESSAGE": "¿Está seguro que desea eliminar la integración? Si lo hace, perderá el acceso a los chats en su espacio de trabajo Slack."
+      },
+      "HELP_TEXT": {
+        "BODY": "Con esta integración, todos tus chats entrantes serán sincronizados con el canal ***{selectedChannelName}*** en tu espacio de trabajo en Slack. Puedes administrar todos tus chats con los clientes directamente en tu canal y nunca perder un mensaje.\n\nEstas son las principales características de la integración:\n\n**Responda a chats desde Slack:** Para responder a un chat en el canal Slack ***{selectedChannelName}***, simplemente escriba el mensaje y envíalo como un hilo. Esto creará una respuesta que se enviará al cliente mediante Chatwoot. ¡Es así de simple!\n\n**Crea notas privadas:** Si quieres crear una nota privada en lugar de una respuesta, comience su mensaje con ***`note:`***. Esto asegurará que tu mensaje se mantenga privado y no será visible al cliente.\n\n**Asociar un perfil de agente:** Si la persona que responde en Slack tiene un agente de perfil en Chatwoot bajo el mismo correo electrónico, las respuestas serán asociadas con ese perfil de agente automáticamente. Esto quiere decir que puedes fácilmente estar al tanto de quién dijo qué y cuándo. Por el otro lado, cuando la persona que responde no tiene un perfil de agente, las respuestas aparecerán desde el perfil de bot al cliente."
+      }
+    },
+    "WEBHOOK": {
+      "FORM": {
+        "SUBSCRIPTIONS": {
+          "EVENTS": {
+            "CONVERSATION_CREATED": "Chat creado",
+            "CONVERSATION_STATUS_CHANGED": "Estado del chat cambiado",
+            "CONVERSATION_UPDATED": "Chat actualizado"
+          }
+        }
+      }
+    }
+  },
+  "KEYBOARD_SHORTCUTS": {
+    "TITLE": {
+      "GO_TO_CONVERSATION_DASHBOARD": "Ir al panel de chats",
+      "MOVE_TO_NEXT_TAB": "Mover a la siguiente pestaña en la lista de chats",
+      "OPEN_CONVERSATION": "Abrir chat",
+      "RESOLVE_CONVERSATION": "Resolver chat"
+    }
+  },
+  "LABEL_MGMT": {
+    "ADD": {
+      "DESC": "Las etiquetas permiten agrupar los chats."
+    },
+    "COUNT": "{n} etiqueta | {n} etiquetas",
+    "DESCRIPTION": "Las etiquetas le ayudan a clasificar y priorizar chats y clientes potenciales. Puede asignar una etiqueta a un chat o contacto usando el panel lateral.",
+    "LIST": {
+      "DESC": "Las etiquetas permiten agrupar los chats."
+    },
+    "NO_RESULTS": "Ninguna etiqueta coincide con la búsqueda",
+    "SUGGESTIONS": {
+      "TOOLTIP": {
+        "SINGLE_SUGGESTION": "Añadir etiqueta al chat"
+      }
+    }
+  },
+  "LABEL_REPORTS": {
+    "DESCRIPTION": "Sigue cada etiqueta: chats, tiempo de primera respuesta y tiempo de espera del cliente. Pulsa una etiqueta para ver el detalle.",
+    "METRICS": {
+      "CONVERSATIONS": {
+        "DESC": "( Total )",
+        "NAME": "Chats"
+      },
+      "FIRST_RESPONSE_TIME": {
+        "INFO_TEXT": "Número total de chats utilizados en el cálculo:",
+        "TOOLTIP_TEXT": "Tiempo de primera respuesta es {metricValue} (basado en {conversationCount} chats)"
+      },
+      "INCOMING_MESSAGES": {
+        "DESC": "( Total )"
+      },
+      "OUTGOING_MESSAGES": {
+        "DESC": "( Total )"
+      },
+      "RESOLUTION_TIME": {
+        "INFO_TEXT": "Número total de chats utilizados en el cálculo:",
+        "TOOLTIP_TEXT": "El tiempo de resolución es {metricValue} (basado en {conversationCount} chats)"
+      }
+    }
+  },
+  "MACROS": {
+    "ACTIONS": {
+      "ADD_PRIVATE_NOTE": "Añadir una nota privada",
+      "ASSIGN_AGENT": "Asignar un agente",
+      "CHANGE_STATUS": "Cambiar el estado",
+      "MUTE_CONVERSATION": "Silenciar Chat",
+      "REMOVE_ASSIGNED_AGENT": "Quitar el agente asignado",
+      "RESOLVE_CONVERSATION": "Resolver chat",
+      "SNOOZE_CONVERSATION": "Posponer chat"
+    },
+    "COUNT": "{n} macro | {n} macros",
+    "DESCRIPTION": "Una macro es un conjunto de acciones guardadas que ayudan a los agentes de servicio al cliente a completar fácilmente las tareas. Los agentes pueden definir un conjunto de acciones como etiquetar un chat con una etiqueta, enviar una transcripción de correo electrónico, actualizar un atributo personalizado, etc. y pueden ejecutar estas acciones en un solo clic.",
+    "EXECUTE": {
+      "EXECUTED_SUCCESSFULLY": "Macro en marcha: los mensajes se envían en orden, en unos segundos",
+      "EXECUTED_WITHOUT_RESOLVING": "Macro en marcha. El chat no se resolvió porque faltan atributos obligatorios."
+    },
+    "NO_RESULTS": "Ninguna macro coincide con la búsqueda",
+    "SEARCH_PLACEHOLDER": "Buscar macros..."
+  },
+  "MERGE_CONTACTS": {
+    "DESCRIPTION": "Fusionar los contactos para combinar dos perfiles en uno, incluyendo todos los atributos y chats.",
+    "SEARCH": {
+      "ERROR_MESSAGE": "Algo salió mal. Inténtalo de nuevo más tarde."
+    }
+  },
+  "NEW_CONVERSATION": {
+    "BUTTON_LABEL": "Iniciar chat",
+    "DESC": "Iniciar un chat enviando un mensaje nuevo.",
+    "NO_INBOX": "No se encontró la bandeja de entrada para iniciar un nuevo chat con este contacto.",
+    "TITLE": "Nuevo chat"
+  },
+  "NOTIFICATIONS_PAGE": {
+    "LIST": {
+      "TABLE_HEADER": {
+        "2": "Chats"
+      }
+    },
+    "TYPE_LABEL": {
+      "conversation_assignment": "Chat asignado",
+      "conversation_creation": "Nuevo chat"
+    }
+  },
+  "ONBOARDING": {
+    "ALL_CONVERSATION": {
+      "DESCRIPTION": "Ver todos los chats de sus clientes en un solo panel de control. Puede filtrar los chats por el canal entrante, etiqueta y estado.",
+      "TITLE": "Todos sus chats en un solo lugar"
+    },
+    "CANNED_RESPONSES": {
+      "DESCRIPTION": "Las respuestas predefinidas son plantillas preconfiguradas que le ayudan a responder rápidamente a un chat. Los agentes pueden escribir el carácter '/' seguido por el código corto para insertar una respuesta predefinida durante un chat."
+    },
+    "LABELS": {
+      "DESCRIPTION": "Las etiquetas proporcionan una forma fácil de clasificar su chat. Cree algunas etiquetas como #pregunta-soporte, #pregunta-dacturación etc., para que pueda usarlas en un chat más tarde.",
+      "TITLE": "Organice los chats con etiquetas"
+    }
+  },
+  "ONBOARDING_INBOX_SETUP": {
+    "CHANNELS": {
+      "TITLE": "Conecta todos tus canales de chat"
+    }
+  },
+  "OVERVIEW_REPORTS": {
+    "ACCOUNT_CONVERSATIONS": {
+      "HEADER": "Chats abiertos",
+      "LOADING_MESSAGE": "Cargando métricas de chat..."
+    },
+    "AGENT_CONVERSATIONS": {
+      "HEADER": "Chats por agentes",
+      "NO_AGENTS": "No hay chats por agentes"
+    },
+    "CONVERSATION_HEATMAP": {
+      "CONVERSATION": "{count} chat",
+      "CONVERSATIONS": "{count} chats",
+      "HEADER": "Tráfico de Chat",
+      "NO_CONVERSATIONS": "No hay chats"
+    },
+    "HEATMAP_ARIA_LABEL": "{metric} por día y hora",
+    "RESOLUTION_HEATMAP": {
+      "CONVERSATION": "{count} chat",
+      "CONVERSATIONS": "{count} chats",
+      "HEADER": "Resueltos",
+      "NO_CONVERSATIONS": "No hay chats"
+    }
+  },
+  "PROFILE_SETTINGS": {
+    "FORM": {
+      "ACCESS_TOKEN": {
+        "RESET": "Restablecer"
+      },
+      "AUDIO_NOTIFICATIONS_SECTION": {
+        "ALERT_COMBINATIONS": {
+          "ASSIGNED": "Recibirás alertas sobre los chats que se te hayan asignado.",
+          "ASSIGNED+NOTME": "Recibirás alertas sobre los chats que te han sido asignados a ti y a otros, pero no sobre los no asignados.",
+          "ASSIGNED+NOTME+UNASSIGNED": "Recibirás alertas de todos los chats.",
+          "ASSIGNED+UNASSIGNED": "Recibirás alertas de tus chats asignados y de los no atendidos.",
+          "NOTME": "Recibirás alertas sobre los chats asignados a otros.",
+          "NOTME+UNASSIGNED": "Recibirás alertas de chats desatendidos y de los asignados a otros.",
+          "UNASSIGNED": "Recibirás alertas sobre cualquier chat no asignado."
+        },
+        "ALERT_TYPE": {
+          "ALL_CONVERSATIONS": "Todos los chats",
+          "ASSIGNED": "Chats asignados",
+          "TITLE": "Eventos de alerta para chats"
+        },
+        "ALERT_TYPES": {
+          "ASSIGNED": "Chats asignados",
+          "NOTME": "Chats abiertos asignados a otros",
+          "UNASSIGNED": "Chats sin asignar"
+        },
+        "CONDITIONS": {
+          "CONDITION_TWO": "Enviar alertas cada 30s hasta que todos los chats asignados sean leídas"
+        },
+        "NOTE": "Active las notificaciones de sonido en el tablero para los mensajes nuevos y chats."
+      },
+      "DISPLAY_NAME": {
+        "PLACEHOLDER": "Introduzca un nombre a mostrar por favor, esto se mostrará en los chats"
+      },
+      "EMAIL": {
+        "PLACEHOLDER": "Por favor, introduzca su dirección de correo electrónico, esto se mostrará en los chats"
+      },
+      "EMAIL_NOTIFICATIONS_SECTION": {
+        "ASSIGNED_CONVERSATION_NEW_MESSAGE": "Envirar notificaciones por correo electrónico cuando un nuevo mensaje es creado en un chat asignado",
+        "CONVERSATION_ASSIGNMENT": "Enviar notificaciones por correo electrónico cuando se me ha asignado un chat",
+        "CONVERSATION_CREATION": "Enviar notificaciones por correo electrónico cuando se crea un nuevo chat",
+        "CONVERSATION_MENTION": "Enviar notificaciones por correo electrónico cuando sea mencionado en un chat",
+        "PARTICIPATING_CONVERSATION_NEW_MESSAGE": "Enviar notificaciones por correo electrónico cuando se crea un nuevo mensaje en un chat participante"
+      },
+      "INTERFACE_SECTION": {
+        "FONT_SIZE": {
+          "NOTE": "Cambia el tamaño del texto en todo el panel.",
+          "OPTIONS": {
+            "EXTRA_LARGE": "Enorme",
+            "LARGE": "Grande",
+            "LARGER": "Muy grande",
+            "SMALL": "Pequeña",
+            "SMALLER": "Muy pequeña"
+          },
+          "TITLE": "Tamaño de letra",
+          "UPDATE_ERROR": "No se pudo cambiar el tamaño de letra. Inténtalo de nuevo",
+          "UPDATE_SUCCESS": "Tamaño de letra actualizado"
+        },
+        "LANGUAGE": {
+          "NOTE": "Elige el idioma que quieres usar.",
+          "TITLE": "Idioma preferido",
+          "UPDATE_ERROR": "No se pudo cambiar el idioma. Inténtalo de nuevo",
+          "UPDATE_SUCCESS": "Idioma actualizado",
+          "USE_ACCOUNT_DEFAULT": "Usar el de la cuenta"
+        },
+        "NOTE": "Ajusta el aspecto del panel a tu gusto.",
+        "TITLE": "Interfaz"
+      },
+      "NOTIFICATIONS": {
+        "TYPES": {
+          "ASSIGNED_CONVERSATION_NEW_MESSAGE": "Un nuevo mensaje se ha creado en un chat asignado",
+          "CONVERSATION_ASSIGNED": "Se te ha asignado un chat",
+          "CONVERSATION_CREATED": "Se ha creado un nuevo chat",
+          "CONVERSATION_MENTION": "Has sido mencionado en un chat",
+          "PARTICIPATING_CONVERSATION_NEW_MESSAGE": "Un nuevo mensaje se ha creado en un chat en la que participas",
+          "SLA_MISSED_RESOLUTION": "Un chat carece de resolución SLA"
+        }
+      },
+      "PUSH_NOTIFICATIONS_SECTION": {
+        "ASSIGNED_CONVERSATION_NEW_MESSAGE": "Enviar notificaciones push cuando un nuevo mensaja es creadao en un chat asignado",
+        "CONVERSATION_ASSIGNMENT": "Enviar notificaciones push cuando se me ha asignado un chat",
+        "CONVERSATION_CREATION": "Enviar notificaciones push cuando se crea un nuevo chat",
+        "CONVERSATION_MENTION": "Enviar notificaciones push cuando sea mencionado en un chat",
+        "PARTICIPATING_CONVERSATION_NEW_MESSAGE": "Enviar notificaciones push cuando se crea un nuevo mensaje en un chat participante"
+      },
+      "SECURITY_SECTION": {
+        "MFA_BUTTON": "Gestionar la verificación en dos pasos",
+        "NOTE": "Opciones de seguridad adicionales para tu cuenta.",
+        "TITLE": "Seguridad"
+      }
+    }
+  },
+  "REPORT": {
+    "DATE_RANGE_OPTIONS": {
+      "LAST_MONTH": "El mes pasado",
+      "THIS_MONTH": "Este mes"
+    },
+    "DOWNLOAD_CONVERSATION_REPORTS": "Descargar informe de chats",
+    "DRILLDOWN": {
+      "RESULT_COUNT_CONVERSATION": "Chat {count} | Chats {count}"
+    },
+    "HEADER": "Chats",
+    "METRICS": {
+      "CONVERSATIONS": {
+        "DESC": "( Total )",
+        "NAME": "Chats"
+      },
+      "FIRST_RESPONSE_TIME": {
+        "INFO_TEXT": "Número total de chats utilizados en el cálculo:",
+        "TOOLTIP_DESCRIPTION": "Calculado con {count} chat | Calculado con {count} chats",
+        "TOOLTIP_TEXT": "Tiempo de primera respuesta es {metricValue} (basado en {conversationCount} chats)"
+      },
+      "INCOMING_MESSAGES": {
+        "DESC": "( Total )"
+      },
+      "OUTGOING_MESSAGES": {
+        "DESC": "( Total )"
+      },
+      "REPLY_TIME": {
+        "TOOLTIP_DESCRIPTION": "Calculado con {count} respuesta | Calculado con {count} respuestas",
+        "TOOLTIP_LABEL": "Tiempo de espera",
+        "TOOLTIP_TEXT": "El tiempo de espera es {metricValue} (basado en {conversationCount} chats)"
+      },
+      "RESOLUTION_TIME": {
+        "INFO_TEXT": "Número total de chats utilizados en el cálculo:",
+        "TOOLTIP_DESCRIPTION": "Calculado con {count} chat | Calculado con {count} chats",
+        "TOOLTIP_TEXT": "El tiempo de resolución es {metricValue} (basado en {conversationCount} chats)"
+      }
+    },
+    "PAGINATION": {
+      "PER_PAGE_TEMPLATE": "{size} / página"
+    }
+  },
+  "SEARCH": {
+    "DATE_RANGE": {
+      "AFTER_DATE": "Después del {date}",
+      "BEFORE_DATE": "Antes del {date}",
+      "CREATED_BETWEEN": "Creado entre",
+      "CUSTOM_RANGE": "Rango personalizado:",
+      "TIME_RANGE": "Filtrar por fecha"
+    },
+    "EMPTY_STATE_DEFAULT": "Buscar por Id de chat, correo electrónico, número de teléfono, mensajes para mejores resultados de búsqueda.",
+    "FILTERS": {
+      "FILTER_MESSAGE": "Filtrar mensajes por:",
+      "NO_CONTACTS": "Empieza a buscar para ver resultados",
+      "NO_INBOXES": "No se encontraron bandejas"
+    },
+    "INPUT_PLACEHOLDER": "Buscar mensajes, contactos o chats",
+    "MOST_RECENT": "Más recientes",
+    "PRIVATE": "Nota privada",
+    "READ_LESS": "Leer menos",
+    "RECENT_SEARCHES": "Búsquedas recientes",
+    "SECTION": {
+      "CONVERSATIONS": "Chats"
+    },
+    "SORT_BY": {
+      "RELEVANCE": "Relevancia"
+    },
+    "TABS": {
+      "ALL": "Todos los resultados",
+      "CONVERSATIONS": "Chats"
+    },
+    "TRANSCRIPT": "Transcripción",
+    "UPDATED_AT": "actualizado {time}"
+  },
+  "SIDEBAR": {
+    "AGENT_ASSIGNMENT": "Asignación de agentes",
+    "ALL_CONVERSATIONS": "Todos los chats",
+    "CONVERSATIONS": "Chats",
+    "CUSTOM_VIEWS_FOLDER": "Filtros",
+    "REPORTS_CONVERSATION": "Chats"
+  },
+  "SLASH_COMMANDS": {
+    "BOLD": "Negrita",
+    "BULLET_LIST": "Lista con viñetas",
+    "CODE": "Código",
+    "HEADING_1": "Título 1",
+    "HEADING_2": "Título 2",
+    "HEADING_3": "Título 3",
+    "ITALIC": "Cursiva",
+    "ORDERED_LIST": "Lista numerada",
+    "STRIKETHROUGH": "Tachado",
+    "TABLE": "Tabla"
+  },
+  "SLA_REPORTS": {
+    "METRICS": {
+      "NO_OF_CONVERSATIONS": {
+        "LABEL": "Número de chats"
+      }
+    },
+    "TABLE": {
+      "HEADER": {
+        "CONVERSATION": "Chat"
+      }
+    }
+  },
+  "SUMMARY_REPORTS": {
+    "AVG_FIRST_RESPONSE_TIME": "Tiempo medio de primera respuesta",
+    "AVG_REPLY_TIME": "Tiempo medio de espera del cliente",
+    "AVG_RESOLUTION_TIME": "Tiempo medio de resolución",
+    "CONVERSATIONS": "Núm. de chats"
+  },
+  "TEAMS_SETTINGS": {
+    "ADD": {
+      "DESC": "Añada agentes a su recién creado equipo. Le permitirá colaborar como un equipo en los chats, y ser notificado acerca de nuevos eventos en el mismo chat."
+    },
+    "CREATE_FLOW": {
+      "AGENTS": {
+        "DESC": "Añada agentes a su recién creado equipo. Le permitirá colaborar como un equipo en los chats, y ser notificado acerca de nuevos eventos en el mismo chat."
+      }
+    },
+    "DELETE": {
+      "CONFIRM": {
+        "MESSAGE": "Al borrar el equipo se quitara la asignación del equipo en los chats asignados a éste equipo."
+      }
+    },
+    "DESCRIPTION": "Los equipos te permiten organizar a los agentes en grupos basados en sus responsabilidades. Un agente puede pertenecer a varios equipos. Cuando trabajas en colaboración, puedes asignar chats a equipos específicos.",
+    "EDIT_FLOW": {
+      "AGENTS": {
+        "DESC": "Añada agentes a su recién creado equipo. Le permitirá colaborar como un equipo en los chats, y ser notificado acerca de nuevos eventos en el mismo chat."
+      }
+    },
+    "FINISH": {
+      "MESSAGE": "Usted ahora puede colaborar como un equipo en los chats. Feliz soporte "
+    }
+  },
+  "TEAM_REPORTS": {
+    "METRICS": {
+      "CONVERSATIONS": {
+        "NAME": "Chats"
+      },
+      "FIRST_RESPONSE_TIME": {
+        "INFO_TEXT": "Número total de chats utilizados en el cálculo:",
+        "TOOLTIP_TEXT": "Tiempo de primera respuesta es {metricValue} (basado en {conversationCount} chats)"
+      },
+      "RESOLUTION_TIME": {
+        "INFO_TEXT": "Número total de chats utilizados en el cálculo:",
+        "TOOLTIP_TEXT": "El tiempo de resolución es {metricValue} (basado en {conversationCount} chats)"
+      }
+    }
+  },
+  "YEAR_IN_REVIEW": {
+    "BUSIEST_DAY": {
+      "MESSAGE": "{count} chats aquel día."
+    },
+    "CONVERSATIONS": {
+      "COMPARISON": {
+        "50_100": "Mantuviste las respuestas fluyendo y los chats vivas."
+      },
+      "SUBTITLE": "chats"
+    },
+    "NAVIGATION": {
+      "SHARE": "Compartir el chat"
+    }
+  }
+}

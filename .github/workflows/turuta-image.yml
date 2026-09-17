@@ -44,6 +44,7 @@ jobs:
       - name: Sintaxis de los parches en Ruby
         run: |
           ruby -c app/models/account_user.rb
+          ruby -c app/services/macros/execution_service.rb
           ruby -rerb -e 'File.write("/tmp/layout.rb", ERB.new(File.read("app/views/layouts/vueapp.html.erb"), trim_mode: "-").src)'
           ruby -c /tmp/layout.rb
 

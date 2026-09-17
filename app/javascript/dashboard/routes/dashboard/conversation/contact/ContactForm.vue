@@ -375,7 +375,8 @@ export default {
       :label="$t('CONTACT_FORM.FORM.COMPANY_NAME.LABEL')"
       :placeholder="$t('CONTACT_FORM.FORM.COMPANY_NAME.PLACEHOLDER')"
     />
-    <div class="w-full mb-4">
+    <!-- [turuta] Pais oculto: todos los leads son de Peru. -->
+    <div v-if="false" class="w-full mb-4">
       <label>
         {{ $t('CONTACT_FORM.FORM.COUNTRY.LABEL') }}
       </label>

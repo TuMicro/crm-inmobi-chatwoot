@@ -42,7 +42,10 @@ import teamsSettings from './teamsSettings.json';
 import whatsappTemplates from './whatsappTemplates.json';
 import whatsappTemplateMgmt from './whatsappTemplateMgmt.json';
 
-export default {
+// [turuta] Nuestros textos por encima de los de Chatwoot (turuta/i18n).
+import { conTextosTuruta } from 'dashboard/turuta/i18n';
+
+export default conTextosTuruta({
   ...advancedFilters,
   ...agentBots,
   ...agentMgmt,
@@ -86,4 +89,4 @@ export default {
   ...teamsSettings,
   ...whatsappTemplates,
   ...whatsappTemplateMgmt,
-};
+});

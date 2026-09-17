@@ -11,38 +11,41 @@ const emit = defineEmits(['add', 'import', 'export']);
 const { t } = useI18n();
 const { checkPermissions } = usePolicy();
 
-const contactMenuItems = computed(() => [
-  {
-    label: t('CONTACTS_LAYOUT.HEADER.ACTIONS.CONTACT_CREATION.ADD_CONTACT'),
-    action: 'add',
-    value: 'add',
-    icon: 'i-lucide-plus',
-  },
-  ...(checkPermissions(['administrator', 'contact_manage'])
-    ? [
-        {
-          label: t(
-            'CONTACTS_LAYOUT.HEADER.ACTIONS.CONTACT_CREATION.EXPORT_CONTACT'
-          ),
-          action: 'export',
-          value: 'export',
-          icon: 'i-lucide-upload',
-        },
-      ]
-    : []),
-  ...(checkPermissions(['administrator', 'contact_manage'])
-    ? [
-        {
-          label: t(
-            'CONTACTS_LAYOUT.HEADER.ACTIONS.CONTACT_CREATION.IMPORT_CONTACT'
-          ),
-          action: 'import',
-          value: 'import',
-          icon: 'i-lucide-download',
-        },
-      ]
-    : []),
-]);
+const contactMenuItems = computed(() =>
+  [
+    {
+      label: t('CONTACTS_LAYOUT.HEADER.ACTIONS.CONTACT_CREATION.ADD_CONTACT'),
+      action: 'add',
+      value: 'add',
+      icon: 'i-lucide-plus',
+    },
+    ...(checkPermissions(['administrator', 'contact_manage'])
+      ? [
+          {
+            label: t(
+              'CONTACTS_LAYOUT.HEADER.ACTIONS.CONTACT_CREATION.EXPORT_CONTACT'
+            ),
+            action: 'export',
+            value: 'export',
+            icon: 'i-lucide-upload',
+          },
+        ]
+      : []),
+    ...(checkPermissions(['administrator', 'contact_manage'])
+      ? [
+          {
+            label: t(
+              'CONTACTS_LAYOUT.HEADER.ACTIONS.CONTACT_CREATION.IMPORT_CONTACT'
+            ),
+            action: 'import',
+            value: 'import',
+            icon: 'i-lucide-download',
+          },
+        ]
+      : []),
+    // [turuta] Sin importar contactos: los leads entran por WhatsApp.
+  ].filter(item => item.action !== 'import')
+);
 const showActionsDropdown = ref(false);
 
 const handleContactAction = ({ action }) => {

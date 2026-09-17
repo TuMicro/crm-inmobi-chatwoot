@@ -170,7 +170,9 @@ export default {
           class="grid gap-4"
           @submit.prevent="updateAccount"
         >
+          <!-- [turuta] El nombre de la cuenta lo pone TuRuta en el alta. -->
           <WithLabel
+            v-if="false"
             name="account-name"
             :has-error="v$.name.$error"
             :label="$t('GENERAL_SETTINGS.FORM.NAME.LABEL')"
@@ -247,11 +249,12 @@ export default {
 
       <woot-loading-state v-if="uiFlags.isFetchingItem" />
     </div>
-    <AudioTranscription v-if="showAudioTranscriptionConfig" />
-    <AccountId />
+    <!-- [turuta] De la cuenta solo se deja el idioma. -->
+    <AudioTranscription v-if="false && showAudioTranscriptionConfig" />
+    <AccountId v-if="false" />
     <div v-if="!uiFlags.isFetchingItem && isOnChatwootCloud">
       <AccountDelete />
     </div>
-    <BuildInfo />
+    <BuildInfo v-if="false" />
   </div>
 </template>

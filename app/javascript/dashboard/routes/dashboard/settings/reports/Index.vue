@@ -13,8 +13,7 @@ const REPORTS_KEYS = {
   INCOMING_MESSAGES: 'incoming_messages_count',
   OUTGOING_MESSAGES: 'outgoing_messages_count',
   FIRST_RESPONSE_TIME: 'avg_first_response_time',
-  RESOLUTION_TIME: 'avg_resolution_time',
-  RESOLUTION_COUNT: 'resolutions_count',
+  // [turuta] Sin metricas de resolucion.
   REPLY_TIME: 'reply_time',
 };
 
@@ -52,8 +51,6 @@ export default {
         'INCOMING_MESSAGES',
         'OUTGOING_MESSAGES',
         'FIRST_RESPONSE_TIME',
-        'RESOLUTION_TIME',
-        'RESOLUTION_COUNT',
         'REPLY_TIME',
       ].forEach(async key => {
         try {
