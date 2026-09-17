@@ -92,6 +92,54 @@ describe('withLeadItems', () => {
     expect(withLeadItems(order)).toEqual(order);
   });
 
+  it('adjuntos va justo debajo de los atributos de contacto', () => {
+    const i = ORDEN_TURUTA.indexOf('contact_attributes');
+    expect(ORDEN_TURUTA[i + 1]).toBe('shared_files');
+  });
+
+  it('quien tenia guardado nuestro orden anterior pasa al nuevo', () => {
+    const anterior = [
+      'conversation_actions',
+      'contact_notes',
+      'shared_files',
+      'macros',
+      'contact_attributes',
+      'linear_issues',
+      'shopify_orders',
+      LEAD_SIDEBAR_ITEM,
+    ];
+    // Tal cual lo guarda Chatwoot, y con las ocultas que el anade al final.
+    expect(nombres(withLeadItems(anterior.map(name => ({ name }))))).toEqual(
+      ORDEN_TURUTA
+    );
+    expect(
+      nombres(
+        withLeadItems(
+          [
+            ...anterior,
+            'conversation_info',
+            'previous_conversation',
+            'conversation_participants',
+          ].map(name => ({ name }))
+        )
+      )
+    ).toEqual(ORDEN_TURUTA);
+  });
+
+  it('quien movio algo a mano conserva su orden, adjuntos incluido', () => {
+    const suyo = [
+      'shared_files',
+      'conversation_actions',
+      'contact_notes',
+      'macros',
+      'contact_attributes',
+      'linear_issues',
+      'shopify_orders',
+      LEAD_SIDEBAR_ITEM,
+    ];
+    expect(nombres(withLeadItems(suyo.map(name => ({ name }))))).toEqual(suyo);
+  });
+
   it('no pinta nunca las secciones ocultas, ni con orden guardado', () => {
     const order = [
       { name: 'conversation_info' },

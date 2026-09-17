@@ -37,18 +37,36 @@ const ORDEN_CHATWOOT = [
 ];
 
 /** Nuestro orden, pensado para un asesor inmobiliario en WhatsApp: primero
- *  lo que toca cada dia (asignar, etiquetas), luego lo que consulta sobre la
- *  persona (notas, fotos y documentos), y al final
- *  lo que casi nunca mira. El historial del lead, el ultimo. */
+ *  lo que toca cada dia (asignar, etiquetas, notas, macros), luego lo que
+ *  sabe de la persona (atributos) y lo que se han mandado (adjuntos). El
+ *  historial del lead, el ultimo. */
 export const ORDEN_TURUTA = [
   'conversation_actions',
   'contact_notes',
-  'shared_files',
   'macros',
   'contact_attributes',
+  'shared_files',
   'linear_issues',
   'shopify_orders',
   LEAD_SIDEBAR_ITEM,
+];
+
+/** Ordenes que fueron NUESTRO valor de fabrica en imagenes anteriores. Chatwoot
+ *  guarda el orden entero en cuanto el asesor arrastra una seccion; quien tenga
+ *  guardado exactamente uno de estos no lo eligio, se lo dimos nosotros, y le
+ *  toca el nuevo. Con cualquier otro orden guardado, se respeta el suyo. */
+const ORDENES_TURUTA_ANTERIORES = [
+  // Hasta 4.17.1-20: los adjuntos iban encima de las macros.
+  [
+    'conversation_actions',
+    'contact_notes',
+    'shared_files',
+    'macros',
+    'contact_attributes',
+    'linear_issues',
+    'shopify_orders',
+    LEAD_SIDEBAR_ITEM,
+  ],
 ];
 
 /** Secciones de Chatwoot que no se pintan nunca, ni aunque el asesor las
@@ -92,9 +110,17 @@ export function withLeadItems(order) {
     item => item && item.name
   );
   const nombres = crudo.map(item => item.name);
-  const deFabrica =
-    nombres.length === ORDEN_CHATWOOT.length &&
-    nombres.every((name, i) => name === ORDEN_CHATWOOT[i]);
+  const igualA = orden =>
+    nombres.length === orden.length && nombres.every((n, i) => n === orden[i]);
+  // Chatwoot anade al final las secciones de fabrica que falten en lo guardado,
+  // y aqui son justo las ocultas: se comparan solo las visibles.
+  const visibles = nombres.filter(n => !SECCIONES_OCULTAS.has(n));
+  const eraNuestro = ORDENES_TURUTA_ANTERIORES.some(
+    orden =>
+      visibles.length === orden.length &&
+      visibles.every((n, i) => n === orden[i])
+  );
+  const deFabrica = igualA(ORDEN_CHATWOOT) || eraNuestro;
   const base = deFabrica ? ORDEN_TURUTA.map(name => ({ name })) : crudo;
   const list = base.filter(
     item =>
