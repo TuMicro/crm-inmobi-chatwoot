@@ -13,7 +13,6 @@ import { groupFilterTypes } from './helper/filterAttributeIcons';
 import languages from 'dashboard/components/widgets/conversation/advancedFilterItems/languages.js';
 import { ordenarFiltros } from 'dashboard/turuta/filtros';
 import { comoFiltrosDeContacto } from 'dashboard/turuta/filtrosDeContacto';
-import { estadosDeChat } from 'dashboard/turuta/estados';
 
 /**
  * @typedef {Object} FilterOption
@@ -114,9 +113,6 @@ export function useConversationFilterContext() {
   /**
    * @type {import('vue').ComputedRef<FilterType[]>}
    */
-  // [turuta] El rol se lee con useMapGetter y no con useAdmin porque es lo que
-  // simula la prueba de Chatwoot de este fichero, y asi no se la rompemos.
-  const rolActual = useMapGetter('getCurrentRole');
   const filtrosDeChatwoot = computed(() => [
     {
       attributeKey: CONVERSATION_ATTRIBUTES.STATUS,
@@ -124,8 +120,8 @@ export function useConversationFilterContext() {
       attributeName: t('FILTER.ATTRIBUTES.STATUS'),
       label: t('FILTER.ATTRIBUTES.STATUS'),
       inputType: 'multiSelect',
-      // [turuta] Sin pospuestas; "pendiente" (con la IA) solo para administradores.
-      options: estadosDeChat(rolActual.value).map(id => {
+      // [turuta] Sin pendientes ni pospuestas: aqui no se usan.
+      options: ['open', 'resolved', 'all'].map(id => {
         return {
           id,
           name: t(`CHAT_LIST.CHAT_STATUS_FILTER_ITEMS.${id}.TEXT`),
@@ -308,7 +304,10 @@ export function useConversationFilterContext() {
     ...customFilterTypes.value,
   ]);
 
-  // [turuta] Lo que se ofrece y en que orden lo decide turuta/filtros.js.
+  // [turuta] Lo que se ofrece y en que orden lo decide turuta/filtros.js. El rol
+  // se lee con useMapGetter y no con useAdmin porque es lo que simula la
+  // prueba de Chatwoot de este fichero, y asi no se la rompemos.
+  const rolActual = useMapGetter('getCurrentRole');
   // [turuta] Los atributos de CONTACTO tambien filtran chats. Chatwoot solo
   // ofrece los de conversacion. Ver turuta/filtrosDeContacto.js.
   const atributosDeContacto = useMapGetter('attributes/getContactAttributes');

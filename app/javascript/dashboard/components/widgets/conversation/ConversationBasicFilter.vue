@@ -8,7 +8,6 @@ import { useMapGetter, useStore } from 'dashboard/composables/store.js';
 import wootConstants from 'dashboard/constants/globals';
 import SelectMenu from 'dashboard/components-next/selectmenu/SelectMenu.vue';
 import NextButton from 'dashboard/components-next/button/Button.vue';
-import { opcionDeEstadoVisible } from 'dashboard/turuta/estados';
 
 defineProps({
   isOnExpandedLayout: {
@@ -25,7 +24,6 @@ const { t } = useI18n();
 const { updateUISettings } = useUISettings();
 
 const chatStatusFilter = useMapGetter('getChatStatusFilter');
-const rolActual = useMapGetter('getCurrentRole'); // [turuta]
 const chatSortFilter = useMapGetter('getChatSortFilter');
 
 const [showActionsDropdown, toggleDropdown] = useToggle();
@@ -62,8 +60,8 @@ const chatStatusOptions = computed(() =>
       label: t('CHAT_LIST.CHAT_STATUS_FILTER_ITEMS.all.TEXT'),
       value: 'all',
     },
-  ].filter(option => opcionDeEstadoVisible(option, rolActual.value))
-); // [turuta] sin posponer; "pendiente" (con la IA) solo para administradores: turuta/estados.js
+  ].filter(option => !['pending', 'snoozed'].includes(option.value))
+); // [turuta] sin posponer ni pendiente
 
 const chatSortOptions = computed(() =>
   [

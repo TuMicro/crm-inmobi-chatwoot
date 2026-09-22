@@ -286,6 +286,5 @@
   "ONBOARDING_NEXT.CONTINUE": "Continuar",
   "CONVERSATION.BOT_HANDOFF_SUCCESS": "El chat ha pasado a ti",
   "CONVERSATION.BOT_HANDOFF_ERROR": "No se pudo tomar el chat. Inténtalo de nuevo.",
-  "FILTER.GROUPS.CUSTOM_ATTRIBUTES": "Atributos del chat",
-  "CHAT_LIST.CHAT_STATUS_FILTER_ITEMS.pending.TEXT": "Con la IA"
+  "FILTER.GROUPS.CUSTOM_ATTRIBUTES": "Atributos del chat"
 }
