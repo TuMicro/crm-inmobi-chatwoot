@@ -16,14 +16,6 @@ export const esAgenteRestringido = rol => rol === 'agent' && !agentesVenTodo();
 
 export function esMioOSinAsignar(conversation, miId) {
   const asignado = conversation?.meta?.assignee;
-  // Lo atiende la IA (el Agent Bot es el asignado): no es de nadie ni esta
-  // sin asignar. El id del bot no es el de un usuario, aunque coincida.
-  if (
-    conversation?.meta?.assignee_type === 'AgentBot' ||
-    asignado?.type === 'agent_bot'
-  ) {
-    return false;
-  }
   return !asignado || asignado.id === miId;
 }
 

@@ -50,8 +50,6 @@ jobs:
           ruby -c app/services/conversations/filter_service.rb
           ruby -c app/services/turuta/contact_attribute_filters.rb
           for f in app/services/turuta/own_conversations.rb app/services/turuta/own_conversations/*.rb; do ruby -c "$f"; done
-          ruby -c app/services/turuta/keep_ai_assignee.rb
-          ruby -c app/controllers/api/v1/accounts/conversations_controller.rb
           ruby -c app/services/conversations/permission_filter_service.rb
           ruby -c app/policies/conversation_policy.rb
           ruby -c app/services/search_service.rb
