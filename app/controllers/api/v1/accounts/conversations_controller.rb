@@ -1,4 +1,7 @@
 class Api::V1::Accounts::ConversationsController < Api::V1::Accounts::BaseController
+  # [turuta] Abrir un chat sin quitarle el bot de la IA: app/services/turuta/keep_ai_assignee.rb
+  prepend Turuta::KeepAiAssignee
+
   include Events::Types
   include DateRangeHelper
   include HmacConcern

@@ -45,6 +45,10 @@ module Turuta::OwnConversations::CableScope
     # Lo recibe quien podia verlo ANTES o puede verlo DESPUES del cambio. Sin
     # asignar lo ven todos los miembros: si lo esta ahora, o lo estaba hasta este
     # evento (asi desaparece de la pestana "Sin asignar" de los demas), van todos.
+    # Lo atiende la IA (el bot es el asignado): solo los administradores. Los
+    # agentes no lo ven en su lista, asi que tampoco deben recibir su contenido.
+    return super(account, agents.none) if scope[:assignee_id].nil? && scope[:bot] && !scope[:was_unassigned]
+
     return super if scope[:assignee_id].nil? || scope[:was_unassigned]
 
     ids = [scope[:assignee_id], scope[:previous_assignee_id]].compact.uniq
@@ -61,6 +65,7 @@ module Turuta::OwnConversations::CableScope
     previous = change.is_a?(Array) ? change.first : nil
     {
       assignee_id: conversation.assignee_id,
+      bot: conversation.assignee_agent_bot_id.present?,
       previous_assignee_id: previous,
       was_unassigned: change.is_a?(Array) && previous.nil?
     }

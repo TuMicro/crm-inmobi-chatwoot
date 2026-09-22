@@ -32,6 +32,32 @@ describe('chatsPropios', () => {
     expect(esAgenteRestringido('custom_role')).toBe(false);
   });
 
+  it('un chat que atiende la IA no es de nadie ni esta sin asignar', () => {
+    expect(
+      esMioOSinAsignar({ meta: { assignee: { id: 7, type: 'agent_bot' } } }, 7)
+    ).toBe(false);
+    expect(
+      esMioOSinAsignar(
+        { meta: { assignee: { id: 7 }, assignee_type: 'AgentBot' } },
+        7
+      )
+    ).toBe(false);
+    expect(
+      puedeVerChat(
+        { meta: { assignee: { id: 7, type: 'agent_bot' } } },
+        'agent',
+        7
+      )
+    ).toBe(false);
+    expect(
+      puedeVerChat(
+        { meta: { assignee: { id: 7, type: 'agent_bot' } } },
+        'administrator',
+        7
+      )
+    ).toBe(true);
+  });
+
   it('sin datos de asignacion cuenta como sin asignar', () => {
     expect(esMioOSinAsignar({}, 7)).toBe(true);
     expect(esMioOSinAsignar({ meta: { assignee: null } }, 7)).toBe(true);

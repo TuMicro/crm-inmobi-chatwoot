@@ -13,7 +13,6 @@ import { groupFilterTypes } from './helper/filterAttributeIcons';
 import languages from 'dashboard/components/widgets/conversation/advancedFilterItems/languages.js';
 import { ordenarFiltros } from 'dashboard/turuta/filtros';
 import { comoFiltrosDeContacto } from 'dashboard/turuta/filtrosDeContacto';
-import { estadosDeChat } from 'dashboard/turuta/estados';
 
 /**
  * @typedef {Object} FilterOption
@@ -124,8 +123,8 @@ export function useConversationFilterContext() {
       attributeName: t('FILTER.ATTRIBUTES.STATUS'),
       label: t('FILTER.ATTRIBUTES.STATUS'),
       inputType: 'multiSelect',
-      // [turuta] Sin pospuestas; "pendiente" (con la IA) solo para administradores.
-      options: estadosDeChat(rolActual.value).map(id => {
+      // [turuta] Sin pendientes ni pospuestas: los chats de la IA estan abiertos.
+      options: ['open', 'resolved', 'all'].map(id => {
         return {
           id,
           name: t(`CHAT_LIST.CHAT_STATUS_FILTER_ITEMS.${id}.TEXT`),
