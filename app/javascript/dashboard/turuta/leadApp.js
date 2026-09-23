@@ -226,3 +226,22 @@ export function textoError(kind) {
   }
   return 'No se pudo cargar la ficha del lead.';
 }
+
+/**
+ * La fila "IA" de la ficha: si la IA atiende este chat, si esta en pausa y
+ * por que (lo dice nuestra API: /dashboard-app/lead -> ia).
+ */
+export function textoIa(ia) {
+  if (!ia) return '';
+  if (ia.estado === 'atendiendo') return 'atendiendo este chat';
+  if (ia.estado === 'en_pausa') {
+    return ia.motivo ? `en pausa: ${ia.motivo}` : 'en pausa';
+  }
+  return 'no ha atendido este chat';
+}
+
+/** La fila IA solo se enseña cuando la IA pinta algo en esta bandeja. */
+export function muestraIa(ia) {
+  if (!ia) return false;
+  return ia.estado !== 'no' || !!ia.puedeReanudar;
+}

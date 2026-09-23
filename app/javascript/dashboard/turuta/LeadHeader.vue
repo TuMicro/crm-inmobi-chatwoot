@@ -16,6 +16,8 @@ import {
   fechaInput,
   horaInput,
   isoDesdeInputs,
+  textoIa,
+  muestraIa,
 } from './leadApp';
 
 const props = defineProps({
@@ -29,7 +31,7 @@ const props = defineProps({
   },
 });
 
-const { state, cambiarEtapa, agendarVisita, quitarVisita } = useLead(
+const { state, cambiarEtapa, agendarVisita, quitarVisita, cambiarIa } = useLead(
   computed(() => props.conversationId),
   computed(() => props.contact)
 );
@@ -194,6 +196,52 @@ const claseEtapa = computed(() => {
         <span class="text-sm truncate text-n-slate-12">
           {{ lead.asesor || 'sin asignar' }}
         </span>
+      </div>
+      <!-- La IA en este chat: es como sabe el asesor si sigue respondiendo
+           ella o si ya es cosa suya, y por que (docs/12 del repo crm-inmobi). -->
+      <div
+        v-if="muestraIa(lead.ia)"
+        class="flex items-center justify-between gap-2 mt-1"
+        data-turuta="lead-ia"
+      >
+        <span class="text-xs text-n-slate-11">IA</span>
+        <span
+          class="text-sm truncate"
+          :class="
+            lead.ia.estado === 'atendiendo'
+              ? 'text-n-teal-11'
+              : 'text-n-slate-12'
+          "
+        >
+          {{ textoIa(lead.ia) }}
+        </span>
+      </div>
+      <div
+        v-if="lead.ia && (lead.ia.puedePausar || lead.ia.puedeReanudar)"
+        class="mt-2"
+      >
+        <Button
+          v-if="lead.ia.puedePausar"
+          label="Pausar la IA en este chat"
+          icon="i-lucide-pause"
+          variant="faded"
+          color="slate"
+          size="sm"
+          class="w-full"
+          :disabled="state.busy"
+          @click="cambiarIa(false)"
+        />
+        <Button
+          v-else
+          label="Que la IA siga con este chat"
+          icon="i-lucide-play"
+          variant="faded"
+          color="slate"
+          size="sm"
+          class="w-full"
+          :disabled="state.busy"
+          @click="cambiarIa(true)"
+        />
       </div>
 
       <div

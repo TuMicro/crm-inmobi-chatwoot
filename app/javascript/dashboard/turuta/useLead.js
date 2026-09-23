@@ -140,6 +140,10 @@ export function useLead(conversationId, contact) {
   const quitarVisita = () =>
     act(`/leads/${state.lead.id}/visit`, undefined, 'DELETE');
 
+  /** Pausar (false) o reanudar (true) la IA en este chat. Quien pulsa va como actor. */
+  const cambiarIa = activa =>
+    act(`/dashboard-app/lead/${state.lead.id}/ai`, { activa, ...actor() });
+
   // Las Dashboard Apps las carga ConversationBox al montarse; si entramos por
   // URL directa puede que aun no esten. Se piden una vez.
   if (!pedidas && !(apps.value || []).length) {
@@ -211,5 +215,6 @@ export function useLead(conversationId, contact) {
     transferir,
     agendarVisita,
     quitarVisita,
+    cambiarIa,
   };
 }

@@ -3,7 +3,9 @@ class Api::V1::Accounts::AssignableAgentsController < Api::V1::Accounts::BaseCon
 
   def index
     # TODO: Remove this opt-in once mobile clients support AgentBot assignees in this payload.
-    @include_agent_bots = params[:include_agent_bots].present?
+    # [turuta] Nunca: el bot de la IA es la firma de sus mensajes, no un
+    # asesor, y no debe salir en "Agente asignado" (docs/11 de crm-inmobi).
+    @include_agent_bots = false
     agent_ids = @inboxes.map do |inbox|
       authorize inbox, :show?
       member_ids = inbox.members.pluck(:user_id)

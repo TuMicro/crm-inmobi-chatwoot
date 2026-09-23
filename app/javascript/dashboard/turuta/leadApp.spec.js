@@ -10,6 +10,8 @@ import {
   textoVisita,
   LEAD_SIDEBAR_ITEM,
   ORDEN_TURUTA,
+  textoIa,
+  muestraIa,
 } from './leadApp';
 
 const app = url => ({
@@ -228,5 +230,24 @@ describe('visita', () => {
       })
     ).toMatch(/fallo: x/);
     expect(textoVisita(null)).toBe('');
+  });
+});
+
+describe('textoIa y muestraIa', () => {
+  it('dice si atiende, si esta en pausa y por que', () => {
+    expect(textoIa({ estado: 'atendiendo' })).toBe('atendiendo este chat');
+    expect(
+      textoIa({ estado: 'en_pausa', motivo: 'un asesor se lo asignó' })
+    ).toBe('en pausa: un asesor se lo asignó');
+    expect(textoIa({ estado: 'en_pausa' })).toBe('en pausa');
+    expect(textoIa({ estado: 'no' })).toBe('no ha atendido este chat');
+    expect(textoIa(null)).toBe('');
+  });
+
+  it('la fila solo sale si la IA pinta algo en la bandeja', () => {
+    expect(muestraIa({ estado: 'no', puedeReanudar: false })).toBe(false);
+    expect(muestraIa({ estado: 'no', puedeReanudar: true })).toBe(true);
+    expect(muestraIa({ estado: 'atendiendo' })).toBe(true);
+    expect(muestraIa(undefined)).toBe(false);
   });
 });
