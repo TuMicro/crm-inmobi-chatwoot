@@ -20,7 +20,14 @@ const attachment = computed(() => {
   return attachments.value[0];
 });
 
-const { isLoaded, hasError, loadWithRetry } = useLoadWithRetry();
+// [turuta] La imagen de un WhatsApp entrante llega al navegador antes de que
+// Chatwoot termine de subirla al almacen (GCS): con tres intentos en tres
+// segundos salia "imagen no disponible" hasta recargar. Se espera hasta unos
+// cuarenta segundos. Ver docs/11 del repo crm-inmobi.
+const { isLoaded, hasError, loadWithRetry } = useLoadWithRetry({
+  max_retry: 8,
+  backoff: 1500,
+});
 
 const showGallery = ref(false);
 const isDownloading = ref(false);
