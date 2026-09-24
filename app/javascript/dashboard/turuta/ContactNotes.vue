@@ -105,6 +105,27 @@ watch(
   },
   { immediate: true }
 );
+
+// Nuestra API deja notas en el contacto (la IA, al calificar o al entregar)
+// y Chatwoot no las avisa por websocket: se veian solo al recargar. Cada
+// nota de la IA viene con un mensaje en la conversacion (su nota privada),
+// asi que se vuelven a pedir cuando llega un mensaje nuevo al chat abierto.
+const currentChat = useMapGetter('getSelectedChat');
+watch(
+  () => {
+    const mensajes = currentChat.value?.messages;
+    return mensajes?.length ? mensajes[mensajes.length - 1].id : null;
+  },
+  (id, prev) => {
+    if (!id || id === prev || !props.contactId) return;
+    const contacto = props.contactId;
+    setTimeout(() => {
+      if (props.contactId === contacto) {
+        store.dispatch('contactNotes/get', { contactId: contacto });
+      }
+    }, 2000);
+  }
+);
 </script>
 
 <template>
