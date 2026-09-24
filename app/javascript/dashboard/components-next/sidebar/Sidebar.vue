@@ -629,6 +629,14 @@ const menuItems = computed(() => {
           },
         ]
       : []),
+    // [turuta] Nuestra pagina: lo que la IA manda y sabe de cada propiedad.
+    {
+      name: 'Turuta Propiedades',
+      label: 'Propiedades',
+      icon: 'i-lucide-building-2',
+      to: accountScopedRoute('turuta_propiedades'),
+      activeOn: ['turuta_propiedades'],
+    },
     {
       name: 'Contacts',
       label: t('SIDEBAR.CONTACTS'),
