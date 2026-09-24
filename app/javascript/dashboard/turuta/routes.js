@@ -3,6 +3,7 @@
 import { frontendURL } from 'dashboard/helper/URLHelper';
 import EmbudoPage from './EmbudoPage.vue';
 import PropiedadesPage from './PropiedadesPage.vue';
+import IaPage from './IaPage.vue';
 
 export const routes = [
   {
@@ -20,5 +21,13 @@ export const routes = [
     // Tambien los asesores: la ficha, el video y el horario de visitas los
     // llena el equipo, no solo el administrador.
     meta: { permissions: ['administrator', 'agent'] },
+  },
+  {
+    path: frontendURL('accounts/:accountId/turuta/ia'),
+    name: 'turuta_ia',
+    component: IaPage,
+    // Solo administradores: el interruptor y lo que la IA dice de la empresa
+    // no son cosa de un asesor. El item del menu se esconde solo.
+    meta: { permissions: ['administrator'] },
   },
 ];

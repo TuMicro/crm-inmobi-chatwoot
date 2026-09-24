@@ -637,6 +637,14 @@ const menuItems = computed(() => {
       to: accountScopedRoute('turuta_propiedades'),
       activeOn: ['turuta_propiedades'],
     },
+    // [turuta] Nuestra pagina: metricas de la IA, interruptor y configuracion.
+    {
+      name: 'Turuta IA',
+      label: 'IA',
+      icon: 'i-lucide-bot',
+      to: accountScopedRoute('turuta_ia'),
+      activeOn: ['turuta_ia'],
+    },
     {
       name: 'Contacts',
       label: t('SIDEBAR.CONTACTS'),
