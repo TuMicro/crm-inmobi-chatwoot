@@ -32,22 +32,7 @@
       <link rel="manifest" href="/manifest.json">
     <% end %>
     <link rel="icon" type="image/png" sizes="512x512" href="<%= @global_config['LOGO_THUMBNAIL'] %>">
-    <%# [turuta] La pestana la pinta el navegador, no el CRM: su icono sigue el tema del NAVEGADOR (prefers-color-scheme), no el que se elija en "Cambiar apariencia". El del menu lateral si sigue el del CRM: ver components-next/icon/Logo.vue. %>
-    <% if @global_config['LOGO_THUMBNAIL_DARK'].present? %>
-      <script>
-        (function () {
-          var enlace = document.querySelector('link[rel="icon"][sizes="512x512"]');
-          if (!enlace || !window.matchMedia) return;
-          var claro = <%= raw @global_config['LOGO_THUMBNAIL'].to_json %>;
-          var oscuro = <%= raw @global_config['LOGO_THUMBNAIL_DARK'].to_json %>;
-          var consulta = window.matchMedia('(prefers-color-scheme: dark)');
-          var poner = function () { enlace.href = consulta.matches ? oscuro : claro; };
-          poner();
-          if (consulta.addEventListener) consulta.addEventListener('change', poner);
-          else if (consulta.addListener) consulta.addListener(poner);
-        })();
-      </script>
-    <% end %>
+    <%# [turuta] La pestana lleva SIEMPRE el icono para fondo claro (LOGO_THUMBNAIL): lo pidio el cliente el 25/09. Antes seguia el tema del navegador con LOGO_THUMBNAIL_DARK. El icono del menu lateral si sigue el tema del CRM: components-next/icon/Logo.vue. %>
     <%= csrf_meta_tags %>
     <script>
       window.chatwootConfig = {
