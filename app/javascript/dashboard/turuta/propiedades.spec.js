@@ -1,7 +1,6 @@
 import {
   adjuntosDe,
   estadoMacroAsesores,
-  avisoDelEnlace,
   cuerpoDe,
   datosALista,
   fichaEsGenerada,
@@ -45,7 +44,7 @@ const prop = (extra = {}) => ({
   fichaGenerada: 'FICHA GENERADA',
   fichaPorDefecto: true,
   archivos: [],
-  enlace: null,
+  piezas: [],
   mapsUrl: 'https://maps.google.com/?q=1,2',
   mapsUrlWeb: 'https://maps.google.com/?q=1,2',
   mapsUrlEquipo: null,
@@ -90,14 +89,14 @@ describe('indicadores', () => {
       prop({
         fichaPorDefecto: false,
         archivos: [{ id: 'a', tipo: 'video', nombre: 'v.mp4' }],
-        enlace: 'https://youtu.be/x',
+        piezas: [{ id: 't', tipo: 'texto', texto: 'https://youtu.be/x' }],
         horarioVisitas: '11 a 13',
       })
     );
     expect(i.map(x => x.ok)).toEqual([true, true, true]);
-    expect(i[1].titulo).toBe('Con un video y un enlace');
+    expect(i[1].titulo).toBe('Con un video y un mensaje');
     expect(i[2].titulo).toBe('Visitas: 11 a 13');
-    expect(indicadores(prop())[1].titulo).toBe('Sin fotos, videos ni enlace');
+    expect(indicadores(prop())[1].titulo).toBe('Sin fotos, videos ni mensajes');
   });
 
   it('con macro, ficha y archivos cuentan como resueltos', () => {
@@ -203,10 +202,10 @@ describe('el formulario', () => {
     ).toBe('La mía');
   });
 
-  it('estado y ubicacion siguen a la web salvo que el equipo los haya puesto', () => {
+  it('el estado sigue a la web salvo que el equipo lo haya puesto', () => {
     const f = formularioDe(prop());
     expect(f.availability).toBe('');
-    expect(f.mapsUrl).toBe('');
+    expect(f).not.toHaveProperty('mapsUrl');
     expect(
       formularioDe(prop({ disponibilidadEquipo: 'reservado' })).availability
     ).toBe('reservado');
@@ -259,8 +258,6 @@ describe('el formulario', () => {
       site: 'madhouse',
       propertyId: 'p1',
       ficha: '',
-      videoUrl: '',
-      mapsUrl: '',
       visitHours: '11 a 13',
       availability: '',
       negotiable: '',
@@ -284,43 +281,52 @@ describe('el formulario', () => {
 });
 
 describe('vistaPrevia', () => {
-  it('en modo ficha: la ficha, los archivos, el enlace y la ubicacion', () => {
+  it('en modo ficha: la ficha y lo que va detras, en su orden', () => {
     const p = prop({
-      archivos: [
+      piezas: [
+        { id: 'u', tipo: 'ubicacion' },
         { id: 'a', tipo: 'imagen', nombre: 'sala.jpg', url: 'https://f/1' },
+        { id: 't', tipo: 'texto', texto: 'https://youtu.be/abc' },
+        { id: 'v', tipo: 'texto', texto: '  ' },
         { id: 'b', tipo: 'documento', nombre: 'plano.pdf', url: null },
       ],
     });
-    const v = vistaPrevia(
-      { ...formularioDe(p), videoUrl: 'https://youtu.be/abc' },
-      p
-    );
-    expect(v).toEqual([
+    expect(vistaPrevia(formularioDe(p), p)).toEqual([
       { tipo: 'texto', texto: 'FICHA GENERADA' },
+      { tipo: 'texto', texto: 'Ubicación: https://maps.google.com/?q=1,2' },
       {
         tipo: 'archivo',
         clase: 'imagen',
         nombre: 'sala.jpg',
         url: 'https://f/1',
       },
-      { tipo: 'archivo', clase: 'documento', nombre: 'plano.pdf', url: null },
       { tipo: 'texto', texto: 'https://youtu.be/abc' },
-      { tipo: 'texto', texto: 'Ubicación: https://maps.google.com/?q=1,2' },
+      { tipo: 'archivo', clase: 'documento', nombre: 'plano.pdf', url: null },
     ]);
   });
 
-  it('un enlace directo a un mp4 va como archivo', () => {
-    const p = prop();
-    const v = vistaPrevia(
-      { ...formularioDe(p), videoUrl: 'https://x/tour%20dia.mp4' },
-      p
-    );
-    expect(v[1]).toEqual({
+  it('con lo que se esta escribiendo, y un enlace directo a un mp4 como archivo', () => {
+    const p = prop({
+      piezas: [{ id: 't', tipo: 'texto', texto: 'viejo' }],
+      mapsUrl: null,
+    });
+    expect(
+      vistaPrevia(formularioDe(p), p, null, {
+        t: 'https://x/tour%20dia.mp4',
+      })[1]
+    ).toEqual({
       tipo: 'archivo',
       clase: 'video',
       nombre: 'tour dia.mp4',
       url: null,
     });
+    // Sin mapa, la ubicacion no se manda.
+    expect(
+      vistaPrevia(formularioDe(p), {
+        ...p,
+        piezas: [{ id: 'u', tipo: 'ubicacion' }],
+      })
+    ).toHaveLength(1);
   });
 
   it('en modo macro: sus pasos', () => {
@@ -343,13 +349,6 @@ describe('vistaPrevia', () => {
 });
 
 describe('los archivos', () => {
-  it('el formulario lleva el enlace pegado', () => {
-    expect(formularioDe(prop({ enlace: 'https://youtu.be/x' })).videoUrl).toBe(
-      'https://youtu.be/x'
-    );
-    expect(formularioDe(prop()).videoUrl).toBe('');
-  });
-
   it('cuenta lo que va con la ficha', () => {
     expect(adjuntosDe(prop())).toEqual([]);
     expect(
@@ -361,10 +360,14 @@ describe('los archivos', () => {
             { tipo: 'video' },
             { tipo: 'documento' },
           ],
-          enlace: 'https://y',
+          piezas: [
+            { id: 't', tipo: 'texto', texto: 'https://y' },
+            { id: 'v', tipo: 'texto', texto: ' ' },
+            { id: 'u', tipo: 'ubicacion' },
+          ],
         })
       )
-    ).toEqual(['2 fotos', 'un video', 'un PDF', 'un enlace']);
+    ).toEqual(['2 fotos', 'un video', 'un PDF', 'un mensaje']);
   });
 
   it('fotos, videos y PDF; un video pesado si, porque se comprime', () => {
@@ -398,47 +401,39 @@ describe('los archivos', () => {
   });
 });
 
-describe('avisoDelEnlace', () => {
-  it('cualquier web vale, YouTube tambien: va como texto', () => {
-    expect(avisoDelEnlace('')).toBe('');
-    expect(avisoDelEnlace('https://youtu.be/abc')).toBe('');
-    expect(avisoDelEnlace('https://my.matterport.com/show/?m=x')).toBe('');
-    expect(avisoDelEnlace('youtu.be/abc')).toMatch(/https/);
-  });
-});
-
 describe('estadoMacroAsesores', () => {
   const macros = [{ id: 12, nombre: 'JR-001 · Dúplex' }];
+  const claves = e => e.acciones.map(a => a.clave);
 
-  it('sin macro, invita a guardarla', () => {
-    expect(estadoMacroAsesores(prop(), { macros })).toMatchObject({
-      boton: 'Guardar como macro',
-      destacado: true,
-      motivo: '',
-    });
+  it('sin macro, invita a guardarla; con cambios sin guardar, avisa que se guardan', () => {
+    const e = estadoMacroAsesores(prop(), { macros });
+    expect(claves(e)).toEqual(['crear']);
+    expect(e.motivo).toBe('');
+    expect(
+      estadoMacroAsesores(prop(), { macros, sinGuardar: true }).detalle
+    ).toMatch(/se guardan antes/);
   });
 
-  it('al dia o desactualizada, con su nombre', () => {
+  it('al dia: solo crear otra; desactualizada: actualizar esta o crear otra', () => {
     const alDia = prop({ macroAsesoresId: 12, macroAsesoresAlDia: true });
-    expect(estadoMacroAsesores(alDia, { macros })).toMatchObject({
-      titulo: 'Macro «JR-001 · Dúplex»',
-      boton: 'Actualizar',
-      destacado: false,
-    });
+    const e = estadoMacroAsesores(alDia, { macros });
+    expect(e.titulo).toBe('Macro «JR-001 · Dúplex»');
+    expect(claves(e)).toEqual(['nueva']);
     const vieja = prop({ macroAsesoresId: 12, macroAsesoresAlDia: false });
-    expect(estadoMacroAsesores(vieja, { macros })).toMatchObject({
-      boton: 'Actualizar la macro',
-      destacado: true,
-    });
+    expect(claves(estadoMacroAsesores(vieja, { macros }))).toEqual([
+      'actualizar',
+      'nueva',
+    ]);
+    // Al dia pero con cambios sin guardar: tambien pregunta.
+    expect(
+      claves(estadoMacroAsesores(alDia, { macros, sinGuardar: true }))
+    ).toEqual(['actualizar', 'nueva']);
     expect(estadoMacroAsesores(vieja, { macros: [] }).titulo).toBe(
       'Macro para los asesores'
     );
   });
 
-  it('no deja guardarla con cambios sin guardar o archivos subiendo', () => {
-    expect(
-      estadoMacroAsesores(prop(), { macros, sinGuardar: true }).motivo
-    ).toMatch(/Guarda los cambios/);
+  it('con archivos subiendo, espera', () => {
     expect(
       estadoMacroAsesores(prop(), { macros, subiendo: true }).motivo
     ).toMatch(/terminen de subir/);

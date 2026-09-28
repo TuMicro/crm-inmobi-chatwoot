@@ -108,7 +108,7 @@ export function enumerar(partes) {
 
 const cuantos = (n, uno, varios) => (n === 1 ? uno : `${n} ${varios}`);
 
-/** Lo que va con la ficha, contado: ['3 fotos', 'un video', 'un enlace']. */
+/** Lo que va con la ficha, contado: ['3 fotos', 'un video', 'un mensaje']. */
 export function adjuntosDe(p) {
   const archivos = p?.archivos || [];
   const de = tipo => archivos.filter(a => a.tipo === tipo).length;
@@ -116,7 +116,10 @@ export function adjuntosDe(p) {
   if (de('imagen')) partes.push(cuantos(de('imagen'), 'una foto', 'fotos'));
   if (de('video')) partes.push(cuantos(de('video'), 'un video', 'videos'));
   if (de('documento')) partes.push(cuantos(de('documento'), 'un PDF', 'PDF'));
-  if (p?.enlace) partes.push('un enlace');
+  const textos = (p?.piezas || []).filter(
+    x => x.tipo === 'texto' && String(x.texto || '').trim()
+  ).length;
+  if (textos) partes.push(cuantos(textos, 'un mensaje', 'mensajes'));
   return partes;
 }
 
@@ -126,7 +129,7 @@ function tituloDeArchivos(p, conMacro) {
   const partes = adjuntosDe(p);
   return partes.length
     ? `Con ${enumerar(partes)}`
-    : 'Sin fotos, videos ni enlace';
+    : 'Sin fotos, videos ni mensajes';
 }
 
 /**
@@ -244,11 +247,8 @@ export function formularioDe(p) {
   return {
     modo: p?.macroId ? 'macro' : 'ficha',
     ficha: p?.ficha || p?.fichaGenerada || '',
-    // El enlace pegado (YouTube, un recorrido). Los archivos subidos van
-    // aparte: se guardan al subirlos, no con Guardar.
-    videoUrl: p?.enlace || '',
-    // Vacio: el mapa sale de la web. Asi guardar no congela la ubicacion.
-    mapsUrl: p?.mapsUrlEquipo || '',
+    // Lo que va tras la ficha (archivos, textos, la ubicacion) no esta aqui:
+    // se guarda al momento, pieza a pieza.
     visitHours: p?.horarioVisitas || '',
     // Vacio: sigue a la web. Asi guardar otro campo no congela el estado.
     availability: p?.disponibilidadEquipo || '',
@@ -271,8 +271,6 @@ export function hayCambios(form, p) {
   const campos = [
     'modo',
     'ficha',
-    'videoUrl',
-    'mapsUrl',
     'visitHours',
     'availability',
     'negotiable',
@@ -308,8 +306,6 @@ export function cuerpoDe(form, p, accountId, quien) {
     propertyId: p.id,
     // Igual que la generada: no se guarda como propia, sigue a la web.
     ficha: ficha === limpio(p.fichaGenerada) ? '' : ficha,
-    videoUrl: limpio(form.videoUrl),
-    mapsUrl: limpio(form.mapsUrl),
     visitHours: limpio(form.visitHours),
     availability: limpio(form.availability),
     negotiable: limpio(form.negotiable),
@@ -346,10 +342,11 @@ function claseDeEnlace(url) {
 
 /**
  * Lo que vera el lead, en orden, para la vista previa: en modo ficha, la
- * ficha, sus archivos, el enlace y la ubicacion; en modo macro, sus mensajes
- * y archivos. Como lo manda la IA (ai.service.ts).
+ * ficha y lo que va detras (archivos, textos, la ubicacion); en modo macro,
+ * sus mensajes y archivos. Como lo manda la IA (pasosTrasLaFicha en la API).
+ * `borradores` son los textos que se estan escribiendo, por id.
  */
-export function vistaPrevia(form, p, macro) {
+export function vistaPrevia(form, p, macro, borradores = {}) {
   if (form?.modo === 'macro') {
     return (macro?.pasos || []).map(paso =>
       paso.tipo === 'texto'
@@ -360,32 +357,39 @@ export function vistaPrevia(form, p, macro) {
   const burbujas = [];
   const ficha = limpio(form?.ficha) || limpio(p?.fichaGenerada);
   if (ficha) burbujas.push({ tipo: 'texto', texto: ficha });
-  (p?.archivos || []).forEach(a => {
-    burbujas.push({
-      tipo: 'archivo',
-      clase: a.tipo,
-      nombre: a.nombre,
-      url: a.url || null,
-    });
+  (p?.piezas || []).forEach(pieza => {
+    if (pieza.tipo === 'texto') {
+      const texto = limpio(borradores[pieza.id] ?? pieza.texto);
+      if (!texto) return;
+      if (/^https?:\/\/\S+$/i.test(texto) && esArchivoDirecto(texto)) {
+        burbujas.push({
+          tipo: 'archivo',
+          clase: claseDeEnlace(texto),
+          nombre: nombreDeArchivo(texto),
+          url: null,
+        });
+      } else {
+        burbujas.push({ tipo: 'texto', texto });
+      }
+    } else if (pieza.tipo === 'ubicacion') {
+      if (p.mapsUrl)
+        burbujas.push({ tipo: 'texto', texto: `Ubicación: ${p.mapsUrl}` });
+    } else {
+      burbujas.push({
+        tipo: 'archivo',
+        clase: pieza.tipo,
+        nombre: pieza.nombre,
+        url: pieza.url || null,
+      });
+    }
   });
-  const enlace = limpio(form?.videoUrl);
-  if (enlace && esArchivoDirecto(enlace)) {
-    burbujas.push({
-      tipo: 'archivo',
-      clase: claseDeEnlace(enlace),
-      nombre: nombreDeArchivo(enlace),
-      url: null,
-    });
-  } else if (enlace) {
-    burbujas.push({ tipo: 'texto', texto: enlace });
-  }
-  const mapa = limpio(form?.mapsUrl) || limpio(p?.mapsUrlWeb);
-  if (mapa) burbujas.push({ tipo: 'texto', texto: `Ubicación: ${mapa}` });
   return burbujas;
 }
 
 /** El icono de un archivo segun su clase. */
 export const ICONO_DE_ARCHIVO = {
+  texto: 'i-lucide-message-square',
+  ubicacion: 'i-lucide-map-pin',
   video: 'i-lucide-video',
   imagen: 'i-lucide-image',
   audio: 'i-lucide-audio-lines',
@@ -401,6 +405,8 @@ export function tamanoLegible(bytes) {
 
 /** Archivos por propiedad. El mismo limite que la API (medios.logic.ts). */
 export const MAX_ARCHIVOS = 10;
+/** Todo lo que va tras la ficha (archivos, textos, la ubicacion). Como la API. */
+export const MAX_PIEZAS = 15;
 
 const MB = 1024 * 1024;
 const SUBIDA_MAX = { imagen: 25 * MB, video: 500 * MB, documento: 40 * MB };
@@ -464,52 +470,44 @@ export function problemaConElArchivo(archivo, yaHay = 0) {
   return '';
 }
 
-/** Un aviso si el enlace no es una URL. Cualquier web vale: va como texto. */
-export function avisoDelEnlace(url) {
-  const v = limpio(url);
-  if (!v) return '';
-  if (!/^https?:\/\//i.test(v))
-    return 'El enlace tiene que empezar por https://';
-  return '';
-}
-
 /**
  * La caja «Macro para los asesores» de la pestaña Ficha y archivos: lo que
- * dice y si se puede pulsar. `macros` es la lista de la cuenta (para el
- * nombre); `sinGuardar` y `subiendo`, lo que impide guardarla ahora.
+ * dice y los botones. `macros` es la lista de la cuenta (para el nombre). Con
+ * cambios sin guardar se puede pulsar igual: se guardan antes. Si la macro ya
+ * no está al día, el equipo elige: actualizar esa o crear otra.
  */
 export function estadoMacroAsesores(p, { macros = [], sinGuardar, subiendo }) {
-  let motivo = '';
-  if (sinGuardar) motivo = 'Guarda los cambios antes.';
-  else if (subiendo) motivo = 'Espera a que terminen de subir los archivos.';
+  const motivo = subiendo ? 'Espera a que terminen de subir los archivos.' : '';
+  const antes = sinGuardar ? ' Los cambios sin guardar se guardan antes.' : '';
   if (!p?.macroAsesoresId) {
     return {
       titulo: 'Macro para los asesores',
-      detalle:
-        'Guarda esto mismo como una macro de Chatwoot, para mandarlo a mano desde un chat.',
-      boton: 'Guardar como macro',
-      destacado: true,
+      detalle: `Guarda esto mismo como una macro de Chatwoot, para mandarlo a mano desde un chat.${antes}`,
+      acciones: [
+        { clave: 'crear', label: 'Guardar como macro', destacado: true },
+      ],
       motivo,
     };
   }
   const macro = macros.find(m => String(m.id) === String(p.macroAsesoresId));
   const titulo = macro ? `Macro «${macro.nombre}»` : 'Macro para los asesores';
-  if (p.macroAsesoresAlDia) {
+  if (p.macroAsesoresAlDia && !sinGuardar) {
     return {
       titulo,
-      detalle:
-        'Al día: manda lo mismo que la IA. Actualizar reemplaza sus pasos con lo de aquí.',
-      boton: 'Actualizar',
-      destacado: false,
+      detalle: 'Al día: manda lo mismo que la IA.',
+      acciones: [{ clave: 'nueva', label: 'Crear otra', destacado: false }],
       motivo,
     };
   }
   return {
     titulo,
-    detalle:
-      'Cambió la ficha, los archivos, el enlace o la ubicación: actualízala para que los asesores manden lo mismo.',
-    boton: 'Actualizar la macro',
-    destacado: true,
+    detalle: sinGuardar
+      ? 'Hay cambios sin guardar. ¿Los pasas a esta macro o creas otra? Se guardan antes.'
+      : 'Cambió la ficha o lo que va detrás. ¿Actualizas esta macro o creas otra?',
+    acciones: [
+      { clave: 'actualizar', label: 'Actualizar esta macro', destacado: true },
+      { clave: 'nueva', label: 'Crear otra', destacado: false },
+    ],
     motivo,
   };
 }

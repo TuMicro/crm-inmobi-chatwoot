@@ -28,8 +28,8 @@ import {
   ICONO_DE_ARCHIVO,
   MAX_ARCHIVOS,
   NEGOCIABLES,
+  MAX_PIEZAS,
   QUE_HACE_EL_ESTADO,
-  avisoDelEnlace,
   cuerpoDe,
   estadoMacroAsesores,
   fichaEsGenerada,
@@ -123,14 +123,26 @@ const sinGuardar = computed(() => hayCambios(form.value, elegida.value));
 const motivo = computed(() =>
   form.value ? motivoParaNoGuardar(form.value) : ''
 );
-const avisoEnlace = computed(() => avisoDelEnlace(form.value?.videoUrl));
+// Lo que va tras la ficha: archivos, textos y la ubicacion. Se guarda al
+// momento, pieza a pieza; los textos, al salir del campo.
+const piezas = computed(() => elegida.value?.piezas || []);
 const archivos = computed(() => elegida.value?.archivos || []);
+const borradores = ref({});
+const nuevoTexto = ref(null);
+const hayUbicacion = computed(() =>
+  piezas.value.some(x => x.tipo === 'ubicacion')
+);
 const deLaElegida = x =>
   x.site === elegida.value?.site && x.propertyId === elegida.value?.id;
 const subidasDeEsta = computed(() => subidas.value.filter(deLaElegida));
 const erroresDeEsta = computed(() => erroresSubida.value.filter(deLaElegida));
+const cabePieza = computed(
+  () => piezas.value.length + subidasDeEsta.value.length < MAX_PIEZAS
+);
 const cabeMas = computed(
-  () => archivos.value.length + subidasDeEsta.value.length < MAX_ARCHIVOS
+  () =>
+    cabePieza.value &&
+    archivos.value.length + subidasDeEsta.value.length < MAX_ARCHIVOS
 );
 
 // La macro para los asesores: lo mismo que manda la IA, como macro de Chatwoot.
@@ -148,7 +160,14 @@ const macroElegida = computed(
     macros.value.find(m => String(m.id) === String(form.value?.macroId)) || null
 );
 const burbujas = computed(() =>
-  form.value ? vistaPrevia(form.value, elegida.value, macroElegida.value) : []
+  form.value
+    ? vistaPrevia(
+        form.value,
+        elegida.value,
+        macroElegida.value,
+        borradores.value
+      )
+    : []
 );
 const websConectadas = computed(() => webs.value.filter(w => w.conectada));
 
@@ -191,6 +210,10 @@ const enlaceMacro = macroId =>
 
 function abrir(p) {
   if (!p) return;
+  if (p.id !== elegidaId.value) {
+    borradores.value = {};
+    nuevoTexto.value = null;
+  }
   elegidaId.value = p.id;
   form.value = formularioDe(p);
 }
@@ -309,7 +332,10 @@ function enviarArchivo(s) {
     datosForm.append('updatedBy', currentUser.value?.name || '');
     datosForm.append('archivo', s.archivo);
     const xhr = new XMLHttpRequest();
-    xhr.open('POST', `${config.value.api}/dashboard-app/properties/archivos`);
+    xhr.open(
+      'POST',
+      `${config.value.api}/dashboard-app/properties/piezas/archivo`
+    );
     xhr.setRequestHeader('Authorization', `Bearer ${config.value.token}`);
     xhr.upload.onprogress = e => {
       if (!e.lengthComputable) return;
@@ -410,24 +436,39 @@ function soltarArchivo(evento) {
   anadirArchivos(evento.dataTransfer?.files);
 }
 
-/** Sube o baja un archivo en el orden en que se manda. */
-async function moverArchivo(i, paso) {
+/** Lo comun a las peticiones sobre lo que va tras la ficha. */
+function cuerpoPieza(p, extra = {}) {
+  return JSON.stringify({
+    accountId: Number(route.params.accountId),
+    site: p.site,
+    propertyId: p.id,
+    updatedBy: currentUser.value?.name || '',
+    ...extra,
+  });
+}
+
+function escribirBorrador(id, texto) {
+  borradores.value = { ...borradores.value, [id]: texto };
+}
+
+function sinBorrador(id) {
+  borradores.value = Object.fromEntries(
+    Object.entries(borradores.value).filter(([clave]) => clave !== id)
+  );
+}
+
+/** Sube o baja una pieza en el orden en que se manda. */
+async function moverPieza(i, paso) {
   const p = elegida.value;
-  const ids = archivos.value.map(a => a.id);
+  const ids = piezas.value.map(x => x.id);
   const j = i + paso;
   if (!p || j < 0 || j >= ids.length || moviendo.value) return;
   [ids[i], ids[j]] = [ids[j], ids[i]];
   moviendo.value = true;
   try {
-    const r = await pedir('/dashboard-app/properties/archivos/orden', {
+    const r = await pedir('/dashboard-app/properties/piezas/orden', {
       method: 'PUT',
-      body: JSON.stringify({
-        accountId: Number(route.params.accountId),
-        site: p.site,
-        propertyId: p.id,
-        ids,
-        updatedBy: currentUser.value?.name || '',
-      }),
+      body: cuerpoPieza(p, { ids }),
     });
     actualizarPropiedad(r.propiedad);
   } catch (e) {
@@ -437,53 +478,80 @@ async function moverArchivo(i, paso) {
   }
 }
 
-async function quitarArchivo(a) {
+function preguntaAlQuitar(pieza) {
+  if (pieza.tipo === 'ubicacion') return '';
+  if (pieza.tipo === 'texto')
+    return '¿Quitar este mensaje? La IA dejará de mandarlo.';
+  return `¿Quitar «${pieza.nombre}»? La IA dejará de mandarlo.`;
+}
+
+async function quitarPieza(pieza) {
+  const pregunta = preguntaAlQuitar(pieza);
   // eslint-disable-next-line no-alert
-  if (!window.confirm(`¿Quitar «${a.nombre}»? La IA dejará de mandarlo.`))
-    return;
+  if (pregunta && !window.confirm(pregunta)) return;
   const p = elegida.value;
   try {
     const q = new URLSearchParams({
       accountId: String(route.params.accountId),
       site: p.site,
       propertyId: p.id,
-      id: a.id,
+      id: pieza.id,
       updatedBy: currentUser.value?.name || '',
     });
-    const r = await pedir(`/dashboard-app/properties/archivos?${q}`, {
+    const r = await pedir(`/dashboard-app/properties/piezas?${q}`, {
       method: 'DELETE',
     });
     actualizarPropiedad(r.propiedad);
+    sinBorrador(pieza.id);
   } catch (e) {
     useAlert(`No se pudo quitar: ${e.message}`);
   }
 }
 
-async function guardarMacroAsesores() {
-  const p = elegida.value;
-  if (!p || guardandoMacro.value || cajaMacro.value.motivo) return;
-  guardandoMacro.value = true;
+/** Guarda un texto al salir del campo, si cambió. */
+async function guardarTexto(pieza) {
+  const texto = borradores.value[pieza.id];
+  if (texto === undefined || texto.trim() === pieza.texto.trim()) {
+    sinBorrador(pieza.id);
+    return;
+  }
   try {
-    const r = await pedir('/dashboard-app/properties/macro', {
-      method: 'POST',
-      body: JSON.stringify({
-        accountId: Number(route.params.accountId),
-        site: p.site,
-        propertyId: p.id,
-        updatedBy: currentUser.value?.name || '',
-      }),
+    const r = await pedir('/dashboard-app/properties/piezas/texto', {
+      method: 'PATCH',
+      body: cuerpoPieza(elegida.value, { id: pieza.id, texto }),
     });
     actualizarPropiedad(r.propiedad);
-    await recargarMacros();
-    useAlert(
-      r.macro?.creada
-        ? `Macro «${r.macro.nombre}» creada: los asesores ya la tienen.`
-        : `Macro «${r.macro?.nombre}» actualizada.`
-    );
+    sinBorrador(pieza.id);
   } catch (e) {
-    useAlert(`No se pudo guardar la macro: ${e.message}`);
-  } finally {
-    guardandoMacro.value = false;
+    useAlert(`No se pudo guardar el mensaje: ${e.message}`);
+  }
+}
+
+async function anadirTexto() {
+  const texto = String(nuevoTexto.value || '').trim();
+  if (!elegida.value || !texto) return;
+  try {
+    const r = await pedir('/dashboard-app/properties/piezas/texto', {
+      method: 'POST',
+      body: cuerpoPieza(elegida.value, { texto }),
+    });
+    actualizarPropiedad(r.propiedad);
+    nuevoTexto.value = null;
+  } catch (e) {
+    useAlert(`No se pudo añadir el mensaje: ${e.message}`);
+  }
+}
+
+async function anadirUbicacion() {
+  if (!elegida.value) return;
+  try {
+    const r = await pedir('/dashboard-app/properties/piezas/ubicacion', {
+      method: 'POST',
+      body: cuerpoPieza(elegida.value),
+    });
+    actualizarPropiedad(r.propiedad);
+  } catch (e) {
+    useAlert(`No se pudo añadir la ubicación: ${e.message}`);
   }
 }
 
@@ -495,8 +563,12 @@ function quitarDato(i) {
   form.value.datos.splice(i, 1);
 }
 
-async function guardar() {
-  if (!elegida.value || guardando.value || motivo.value) return;
+/**
+ * Guarda el formulario. Devuelve si se guardo. `callado`: sin el aviso (lo
+ * usa la macro de los asesores, que guarda antes de pasarse a Chatwoot).
+ */
+async function guardar({ callado = false } = {}) {
+  if (!elegida.value || guardando.value || motivo.value) return false;
   guardando.value = true;
   try {
     await pedir('/dashboard-app/properties/playbook', {
@@ -511,15 +583,54 @@ async function guardar() {
       ),
     });
     await cargar();
-    useAlert('Guardado. La IA lo usa desde el próximo mensaje.');
+    const macroVieja =
+      elegida.value?.macroAsesoresId && !elegida.value.macroAsesoresAlDia;
+    if (!callado) {
+      useAlert(
+        macroVieja
+          ? 'Guardado. La macro de los asesores ya no está al día: actualízala o crea otra, abajo.'
+          : 'Guardado. La IA lo usa desde el próximo mensaje.'
+      );
+    }
+    return true;
   } catch (e) {
     useAlert(
       e.message === 'auth'
         ? 'No se pudo autenticar contra el CRM'
         : `No se pudo guardar: ${e.message}`
     );
+    return false;
   } finally {
     guardando.value = false;
+  }
+}
+
+/**
+ * La macro de los asesores: la crea, la actualiza o crea otra (`clave`:
+ * crear, actualizar, nueva). Sale de lo guardado: con cambios a medias, se
+ * guardan antes.
+ */
+async function guardarMacroAsesores(clave) {
+  const p = elegida.value;
+  if (!p || guardandoMacro.value || cajaMacro.value.motivo) return;
+  guardandoMacro.value = clave;
+  try {
+    if (sinGuardar.value && !(await guardar({ callado: true }))) return;
+    const r = await pedir('/dashboard-app/properties/macro', {
+      method: 'POST',
+      body: cuerpoPieza(p, { nueva: clave === 'nueva' }),
+    });
+    actualizarPropiedad(r.propiedad);
+    await recargarMacros();
+    useAlert(
+      r.macro?.creada
+        ? `Macro «${r.macro.nombre}» creada: los asesores ya la tienen.`
+        : `Macro «${r.macro?.nombre}» actualizada.`
+    );
+  } catch (e) {
+    useAlert(`No se pudo guardar la macro: ${e.message}`);
+  } finally {
+    guardandoMacro.value = false;
   }
 }
 
@@ -998,38 +1109,44 @@ const TITULO = 'mb-0 text-base font-medium text-n-slate-12';
                       descripción.
                     </p>
                   </div>
-                  <!-- Fotos, videos y PDF: se suben desde la PC -->
+                  <!-- Lo que va tras la ficha: archivos, mensajes y la ubicacion -->
                   <div class="flex flex-col gap-2">
                     <div
                       class="flex flex-wrap items-baseline justify-between gap-2"
                     >
                       <span class="text-heading-3 text-n-slate-12">
-                        Fotos, videos y PDF
+                        Después de la ficha
                       </span>
                       <span class="text-xs text-n-slate-10">
-                        Van tras la ficha, en este orden ·
-                        {{ archivos.length }} de {{ MAX_ARCHIVOS }}
+                        En este orden · se guarda al momento ·
+                        {{ archivos.length }} de {{ MAX_ARCHIVOS }} archivos
                       </span>
                     </div>
 
+                    <p
+                      v-if="!piezas.length"
+                      class="px-3 py-2 mb-0 text-xs rounded-lg bg-n-alpha-1 text-n-slate-10"
+                    >
+                      Nada: la IA solo manda la ficha.
+                    </p>
                     <ul
-                      v-if="archivos.length"
+                      v-else
                       class="flex flex-col gap-1.5 mb-0 list-none ltr:ml-0 rtl:mr-0"
                     >
                       <li
-                        v-for="(a, i) in archivos"
-                        :key="a.id"
+                        v-for="(pieza, i) in piezas"
+                        :key="pieza.id"
                         class="flex items-center gap-3 p-2 rounded-lg outline outline-1 outline-n-weak bg-n-alpha-1"
                       >
                         <img
-                          v-if="a.tipo === 'imagen' && a.url"
-                          :src="a.url"
+                          v-if="pieza.tipo === 'imagen' && pieza.url"
+                          :src="pieza.url"
                           alt=""
                           class="flex-none object-cover w-16 h-12 rounded-md bg-n-alpha-2"
                         />
                         <video
-                          v-else-if="a.tipo === 'video' && a.url"
-                          :src="a.url"
+                          v-else-if="pieza.tipo === 'video' && pieza.url"
+                          :src="pieza.url"
                           class="flex-none object-cover w-16 h-12 rounded-md bg-n-slate-12"
                           muted
                           playsinline
@@ -1041,37 +1158,75 @@ const TITULO = 'mb-0 text-base font-medium text-n-slate-12';
                         >
                           <Icon
                             :icon="
-                              ICONO_DE_ARCHIVO[a.tipo] ||
+                              ICONO_DE_ARCHIVO[pieza.tipo] ||
                               ICONO_DE_ARCHIVO.documento
                             "
                             class="size-5 text-n-slate-10"
                           />
                         </span>
+
                         <div class="min-w-0 grow">
-                          <p
-                            class="mb-0 text-sm font-medium truncate text-n-slate-12"
-                            :title="a.nombre"
-                          >
-                            {{ a.nombre }}
-                          </p>
-                          <p class="mb-0 text-xs text-n-slate-10">
-                            {{ ETIQUETA_TIPO[a.tipo] }}
-                            <template v-if="a.bytes">
-                              · {{ tamanoLegible(a.bytes) }}
-                            </template>
-                            <template v-if="a.url">
-                              ·
+                          <textarea
+                            v-if="pieza.tipo === 'texto'"
+                            :value="borradores[pieza.id] ?? pieza.texto"
+                            rows="2"
+                            placeholder="Escribe el mensaje…"
+                            :class="AREA"
+                            class="!h-auto resize-y"
+                            @input="
+                              escribirBorrador(pieza.id, $event.target.value)
+                            "
+                            @change="guardarTexto(pieza)"
+                          />
+                          <template v-else-if="pieza.tipo === 'ubicacion'">
+                            <p class="mb-0 text-sm font-medium text-n-slate-12">
+                              Ubicación
+                            </p>
+                            <p
+                              v-if="elegida.mapsUrl"
+                              class="mb-0 text-xs truncate text-n-slate-10"
+                            >
+                              {{ elegida.mapsUrlEquipo ? '' : 'De la web · ' }}
                               <a
-                                :href="a.url"
+                                :href="elegida.mapsUrl"
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 class="text-n-blue-11 hover:underline"
                               >
-                                Ver
+                                {{ elegida.mapsUrl }}
                               </a>
-                            </template>
-                          </p>
+                            </p>
+                            <p v-else class="mb-0 text-xs text-n-slate-10">
+                              La web no tiene la ubicación: no se manda.
+                            </p>
+                          </template>
+                          <template v-else>
+                            <p
+                              class="mb-0 text-sm font-medium truncate text-n-slate-12"
+                              :title="pieza.nombre"
+                            >
+                              {{ pieza.nombre }}
+                            </p>
+                            <p class="mb-0 text-xs text-n-slate-10">
+                              {{ ETIQUETA_TIPO[pieza.tipo] }}
+                              <template v-if="pieza.bytes">
+                                · {{ tamanoLegible(pieza.bytes) }}
+                              </template>
+                              <template v-if="pieza.url">
+                                ·
+                                <a
+                                  :href="pieza.url"
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  class="text-n-blue-11 hover:underline"
+                                >
+                                  Ver
+                                </a>
+                              </template>
+                            </p>
+                          </template>
                         </div>
+
                         <div class="flex items-center flex-none">
                           <Button
                             v-tooltip="'Antes'"
@@ -1080,7 +1235,7 @@ const TITULO = 'mb-0 text-base font-medium text-n-slate-12';
                             color="slate"
                             size="xs"
                             :disabled="i === 0 || moviendo"
-                            @click="moverArchivo(i, -1)"
+                            @click="moverPieza(i, -1)"
                           />
                           <Button
                             v-tooltip="'Después'"
@@ -1088,8 +1243,8 @@ const TITULO = 'mb-0 text-base font-medium text-n-slate-12';
                             variant="ghost"
                             color="slate"
                             size="xs"
-                            :disabled="i === archivos.length - 1 || moviendo"
-                            @click="moverArchivo(i, 1)"
+                            :disabled="i === piezas.length - 1 || moviendo"
+                            @click="moverPieza(i, 1)"
                           />
                           <Button
                             v-tooltip="'Quitar'"
@@ -1097,7 +1252,7 @@ const TITULO = 'mb-0 text-base font-medium text-n-slate-12';
                             variant="ghost"
                             color="ruby"
                             size="xs"
-                            @click="quitarArchivo(a)"
+                            @click="quitarPieza(pieza)"
                           />
                         </div>
                       </li>
@@ -1127,6 +1282,56 @@ const TITULO = 'mb-0 text-base font-medium text-n-slate-12';
                       </div>
                     </div>
 
+                    <!-- Un mensaje nuevo -->
+                    <div
+                      v-if="nuevoTexto !== null"
+                      class="flex flex-col gap-2 p-2 rounded-lg outline outline-1 outline-n-brand"
+                    >
+                      <textarea
+                        v-model="nuevoTexto"
+                        rows="3"
+                        placeholder="Un enlace de YouTube, un recorrido virtual, una aclaración…"
+                        :class="AREA"
+                        class="!h-auto resize-y"
+                      />
+                      <div class="flex justify-end gap-2">
+                        <Button
+                          label="Cancelar"
+                          variant="ghost"
+                          color="slate"
+                          size="sm"
+                          @click="nuevoTexto = null"
+                        />
+                        <Button
+                          label="Añadir"
+                          size="sm"
+                          :disabled="!nuevoTexto.trim()"
+                          @click="anadirTexto"
+                        />
+                      </div>
+                    </div>
+
+                    <div v-if="cabePieza" class="flex flex-wrap gap-2">
+                      <Button
+                        v-if="nuevoTexto === null"
+                        label="Mensaje de texto"
+                        icon="i-lucide-message-square-plus"
+                        variant="faded"
+                        color="slate"
+                        size="sm"
+                        @click="nuevoTexto = ''"
+                      />
+                      <Button
+                        v-if="!hayUbicacion && elegida.mapsUrl"
+                        label="Ubicación"
+                        icon="i-lucide-map-pin"
+                        variant="faded"
+                        color="slate"
+                        size="sm"
+                        @click="anadirUbicacion"
+                      />
+                    </div>
+
                     <label
                       v-if="cabeMas"
                       class="flex flex-col items-center justify-center gap-1 px-4 py-5 mb-0 text-center transition-colors border-2 border-dashed rounded-lg cursor-pointer"
@@ -1154,8 +1359,8 @@ const TITULO = 'mb-0 text-base font-medium text-n-slate-12';
                         Sube fotos, videos o PDF desde tu PC
                       </span>
                       <span class="text-xs text-n-slate-10">
-                        o arrástralos aquí · se guardan al subirlos · los videos
-                        pesados se comprimen solos para WhatsApp
+                        o arrástralos aquí · los videos pesados se comprimen
+                        solos para WhatsApp
                       </span>
                     </label>
 
@@ -1166,29 +1371,6 @@ const TITULO = 'mb-0 text-base font-medium text-n-slate-12';
                     >
                       {{ e.nombre }}: {{ e.mensaje }}
                     </p>
-                  </div>
-
-                  <div class="grid gap-4 md:grid-cols-2">
-                    <Input
-                      v-model="form.videoUrl"
-                      label="Enlace"
-                      type="url"
-                      placeholder="https://youtu.be/... o un recorrido virtual"
-                      :message="
-                        avisoEnlace ||
-                        'Va como mensaje, con su vista previa: un video de YouTube, un recorrido 360, una carpeta.'
-                      "
-                      :message-type="avisoEnlace ? 'error' : 'info'"
-                    />
-                    <Input
-                      v-model="form.mapsUrl"
-                      label="Ubicación"
-                      type="url"
-                      :placeholder="
-                        elegida.mapsUrlWeb || 'https://maps.google.com/...'
-                      "
-                      message="Vacío: se arma con la ubicación de la web."
-                    />
                   </div>
 
                   <!-- La macro para los asesores -->
@@ -1224,14 +1406,16 @@ const TITULO = 'mb-0 text-base font-medium text-n-slate-12';
                         Abrir
                       </a>
                       <Button
+                        v-for="accion in cajaMacro.acciones"
+                        :key="accion.clave"
                         v-tooltip="cajaMacro.motivo"
-                        :label="cajaMacro.boton"
-                        :variant="cajaMacro.destacado ? 'solid' : 'faded'"
+                        :label="accion.label"
+                        :variant="accion.destacado ? 'solid' : 'faded'"
                         color="blue"
                         size="sm"
-                        :is-loading="guardandoMacro"
-                        :disabled="!!cajaMacro.motivo || guardandoMacro"
-                        @click="guardarMacroAsesores"
+                        :is-loading="guardandoMacro === accion.clave"
+                        :disabled="!!cajaMacro.motivo || !!guardandoMacro"
+                        @click="guardarMacroAsesores(accion.clave)"
                       />
                     </div>
                   </div>
