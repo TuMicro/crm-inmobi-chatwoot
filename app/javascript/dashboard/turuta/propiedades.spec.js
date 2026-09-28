@@ -1,5 +1,6 @@
 import {
-  avisoDelVideo,
+  adjuntosDe,
+  avisoDelEnlace,
   cuerpoDe,
   datosALista,
   fichaEsGenerada,
@@ -14,7 +15,7 @@ import {
   ordenar,
   origen,
   precioTexto,
-  problemaConElVideo,
+  problemaConElArchivo,
   resumen,
   subtitulo,
   tamanoLegible,
@@ -42,7 +43,8 @@ const prop = (extra = {}) => ({
   ficha: 'FICHA GENERADA',
   fichaGenerada: 'FICHA GENERADA',
   fichaPorDefecto: true,
-  videoUrl: null,
+  archivos: [],
+  enlace: null,
   mapsUrl: 'https://maps.google.com/?q=1,2',
   mapsUrlWeb: 'https://maps.google.com/?q=1,2',
   mapsUrlEquipo: null,
@@ -82,16 +84,19 @@ describe('indicadores', () => {
     expect(indicadores(prop()).map(i => i.ok)).toEqual([false, false, false]);
   });
 
-  it('con ficha propia, video y horario, encendidos', () => {
+  it('con ficha propia, archivos y horario, encendidos', () => {
     const i = indicadores(
       prop({
         fichaPorDefecto: false,
-        videoUrl: 'https://x/v.mp4',
+        archivos: [{ id: 'a', tipo: 'video', nombre: 'v.mp4' }],
+        enlace: 'https://youtu.be/x',
         horarioVisitas: '11 a 13',
       })
     );
     expect(i.map(x => x.ok)).toEqual([true, true, true]);
+    expect(i[1].titulo).toBe('Con un video y un enlace');
     expect(i[2].titulo).toBe('Visitas: 11 a 13');
+    expect(indicadores(prop())[1].titulo).toBe('Sin fotos, videos ni enlace');
   });
 
   it('con macro, ficha y archivos cuentan como resueltos', () => {
@@ -162,13 +167,13 @@ describe('filtrar, ordenar y resumir', () => {
     expect(ordenar(lista).map(p => p.id)).toEqual(['a', 'c', 'b']);
   });
 
-  it('el resumen cuenta disponibles, no disponibles, fichas propias y macros o videos', () => {
+  it('el resumen cuenta disponibles, no disponibles, fichas propias y macros o archivos', () => {
     expect(resumen([...lista, prop({ macroId: 3 })])).toEqual({
       total: 4,
       disponibles: 3,
       noDisponibles: 1,
       conFichaPropia: 2,
-      conMacroOVideo: 1,
+      conMacroOArchivos: 1,
     });
   });
 });
@@ -278,17 +283,43 @@ describe('el formulario', () => {
 });
 
 describe('vistaPrevia', () => {
-  it('en modo ficha: la ficha, el video y la ubicacion de la web', () => {
+  it('en modo ficha: la ficha, los archivos, el enlace y la ubicacion', () => {
+    const p = prop({
+      archivos: [
+        { id: 'a', tipo: 'imagen', nombre: 'sala.jpg', url: 'https://f/1' },
+        { id: 'b', tipo: 'documento', nombre: 'plano.pdf', url: null },
+      ],
+    });
+    const v = vistaPrevia(
+      { ...formularioDe(p), videoUrl: 'https://youtu.be/abc' },
+      p
+    );
+    expect(v).toEqual([
+      { tipo: 'texto', texto: 'FICHA GENERADA' },
+      {
+        tipo: 'archivo',
+        clase: 'imagen',
+        nombre: 'sala.jpg',
+        url: 'https://f/1',
+      },
+      { tipo: 'archivo', clase: 'documento', nombre: 'plano.pdf', url: null },
+      { tipo: 'texto', texto: 'https://youtu.be/abc' },
+      { tipo: 'texto', texto: 'Ubicación: https://maps.google.com/?q=1,2' },
+    ]);
+  });
+
+  it('un enlace directo a un mp4 va como archivo', () => {
     const p = prop();
     const v = vistaPrevia(
       { ...formularioDe(p), videoUrl: 'https://x/tour%20dia.mp4' },
       p
     );
-    expect(v).toEqual([
-      { tipo: 'texto', texto: 'FICHA GENERADA' },
-      { tipo: 'archivo', clase: 'video', nombre: 'tour dia.mp4' },
-      { tipo: 'texto', texto: 'Ubicación: https://maps.google.com/?q=1,2' },
-    ]);
+    expect(v[1]).toEqual({
+      tipo: 'archivo',
+      clase: 'video',
+      nombre: 'tour dia.mp4',
+      url: null,
+    });
   });
 
   it('en modo macro: sus pasos', () => {
@@ -310,54 +341,54 @@ describe('vistaPrevia', () => {
   });
 });
 
-describe('el video subido', () => {
-  it('el formulario lleva el enlace pegado, no la URL firmada del subido', () => {
-    const p = prop({
-      videoUrl: 'https://storage/firmada?X-Amz-Signature=abc',
-      videoEnlace: null,
-      videoSubido: {
-        clave: 'crm/v.mp4',
-        nombre: 'recorrido.mp4',
-        bytes: 4_000_000,
-      },
-    });
-    expect(formularioDe(p).videoUrl).toBe('');
-  });
-
-  it('en la vista previa manda el subido sobre el enlace', () => {
-    const p = prop({
-      videoSubido: { clave: 'k', nombre: 'recorrido.mp4', bytes: 1 },
-    });
-    const v = vistaPrevia(
-      { ...formularioDe(p), videoUrl: 'https://x/otro.mp4' },
-      p
+describe('los archivos', () => {
+  it('el formulario lleva el enlace pegado', () => {
+    expect(formularioDe(prop({ enlace: 'https://youtu.be/x' })).videoUrl).toBe(
+      'https://youtu.be/x'
     );
-    expect(v[1]).toEqual({
-      tipo: 'archivo',
-      clase: 'video',
-      nombre: 'recorrido.mp4',
-    });
+    expect(formularioDe(prop()).videoUrl).toBe('');
   });
 
-  it('solo MP4 o 3GP hasta 16 MB, antes de subir nada', () => {
+  it('cuenta lo que va con la ficha', () => {
+    expect(adjuntosDe(prop())).toEqual([]);
+    expect(
+      adjuntosDe(
+        prop({
+          archivos: [
+            { tipo: 'imagen' },
+            { tipo: 'imagen' },
+            { tipo: 'video' },
+            { tipo: 'documento' },
+          ],
+          enlace: 'https://y',
+        })
+      )
+    ).toEqual(['2 fotos', 'un video', 'un PDF', 'un enlace']);
+  });
+
+  it('fotos, videos y PDF; un video pesado si, porque se comprime', () => {
     const mb = n => n * 1024 * 1024;
-    expect(
-      problemaConElVideo({ name: 'a.mp4', type: 'video/mp4', size: mb(5) })
-    ).toBe('');
-    expect(problemaConElVideo({ name: 'a.3gp', type: '', size: mb(1) })).toBe(
-      ''
+    const f = (name, type, size) => ({ name, type, size });
+    expect(problemaConElArchivo(f('a.mp4', 'video/mp4', mb(82)))).toBe('');
+    expect(problemaConElArchivo(f('a.MOV', 'video/quicktime', mb(5)))).toBe('');
+    expect(problemaConElArchivo(f('a.jpg', 'image/jpeg', mb(3)))).toBe('');
+    expect(problemaConElArchivo(f('a.pdf', '', mb(3)))).toBe('');
+    expect(problemaConElArchivo(f('a.mp4', 'video/mp4', mb(600)))).toMatch(
+      /500 MB.*YouTube/
     );
-    expect(
-      problemaConElVideo({
-        name: 'a.mov',
-        type: 'video/quicktime',
-        size: mb(5),
-      })
-    ).toMatch(/MP4 o 3GP/);
-    expect(
-      problemaConElVideo({ name: 'a.mp4', type: 'video/mp4', size: mb(20) })
-    ).toMatch(/Pesa 20.0 MB/);
-    expect(problemaConElVideo(null)).toMatch(/ningún archivo/);
+    expect(problemaConElArchivo(f('a.pdf', 'application/pdf', mb(41)))).toMatch(
+      /40 MB/
+    );
+    expect(problemaConElArchivo(f('IMG.HEIC', 'image/heic', mb(2)))).toMatch(
+      /HEIC/
+    );
+    expect(problemaConElArchivo(f('a.zip', 'application/zip', 10))).toMatch(
+      /fotos \(JPG, PNG\), videos y PDF/
+    );
+    expect(problemaConElArchivo(f('a.jpg', 'image/jpeg', 10), 10)).toMatch(
+      /Ya hay 10/
+    );
+    expect(problemaConElArchivo(null)).toMatch(/ningún archivo/);
   });
 
   it('tamanoLegible', () => {
@@ -366,12 +397,11 @@ describe('el video subido', () => {
   });
 });
 
-describe('avisoDelVideo', () => {
-  it('avisa de los enlaces que WhatsApp no acepta', () => {
-    expect(avisoDelVideo('')).toBe('');
-    expect(avisoDelVideo('https://x.com/v.mp4')).toBe('');
-    expect(avisoDelVideo('v.mp4')).toMatch(/empiece por https/);
-    expect(avisoDelVideo('https://youtu.be/abc')).toMatch(/YouTube/);
-    expect(avisoDelVideo('https://x.com/v.avi')).toMatch(/\.mp4/);
+describe('avisoDelEnlace', () => {
+  it('cualquier web vale, YouTube tambien: va como texto', () => {
+    expect(avisoDelEnlace('')).toBe('');
+    expect(avisoDelEnlace('https://youtu.be/abc')).toBe('');
+    expect(avisoDelEnlace('https://my.matterport.com/show/?m=x')).toBe('');
+    expect(avisoDelEnlace('youtu.be/abc')).toMatch(/https/);
   });
 });

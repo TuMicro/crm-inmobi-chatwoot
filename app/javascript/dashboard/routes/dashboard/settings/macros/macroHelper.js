@@ -3,7 +3,8 @@ export const emptyMacro = {
   name: '',
   actions: [
     {
-      action_name: 'assign_team',
+      // [turuta] La primera de la lista: assign_team esta oculta.
+      action_name: 'send_message',
       action_params: [],
     },
   ],

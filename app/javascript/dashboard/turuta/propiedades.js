@@ -100,15 +100,38 @@ export function origen(p) {
     .join(' · ');
 }
 
-/** El texto del aviso del video en la lista. */
-function tituloDelVideo(p, conMacro) {
+/** "a, b y c". */
+export function enumerar(partes) {
+  if (partes.length <= 1) return partes.join('');
+  return `${partes.slice(0, -1).join(', ')} y ${partes[partes.length - 1]}`;
+}
+
+const cuantos = (n, uno, varios) => (n === 1 ? uno : `${n} ${varios}`);
+
+/** Lo que va con la ficha, contado: ['3 fotos', 'un video', 'un enlace']. */
+export function adjuntosDe(p) {
+  const archivos = p?.archivos || [];
+  const de = tipo => archivos.filter(a => a.tipo === tipo).length;
+  const partes = [];
+  if (de('imagen')) partes.push(cuantos(de('imagen'), 'una foto', 'fotos'));
+  if (de('video')) partes.push(cuantos(de('video'), 'un video', 'videos'));
+  if (de('documento')) partes.push(cuantos(de('documento'), 'un PDF', 'PDF'));
+  if (p?.enlace) partes.push('un enlace');
+  return partes;
+}
+
+/** El texto del aviso de los archivos en la lista. */
+function tituloDeArchivos(p, conMacro) {
   if (conMacro) return 'Los archivos van en la macro';
-  return p?.videoUrl ? 'Con video' : 'Sin video';
+  const partes = adjuntosDe(p);
+  return partes.length
+    ? `Con ${enumerar(partes)}`
+    : 'Sin fotos, videos ni enlace';
 }
 
 /**
  * Los tres avisos de la lista, como iconos: que manda la IA (ficha propia o
- * macro), si lleva video o macro, y si tiene horario de visitas.
+ * macro), si lleva archivos o macro, y si tiene horario de visitas.
  */
 export function indicadores(p) {
   const conMacro = !!p?.macroId;
@@ -123,10 +146,10 @@ export function indicadores(p) {
       titulo: conMacro ? 'Manda una macro' : fichaGenerada,
     },
     {
-      clave: 'video',
-      icono: 'i-lucide-video',
-      ok: conMacro || !!p?.videoUrl,
-      titulo: tituloDelVideo(p, conMacro),
+      clave: 'archivos',
+      icono: 'i-lucide-images',
+      ok: conMacro || adjuntosDe(p).length > 0,
+      titulo: tituloDeArchivos(p, conMacro),
     },
     {
       clave: 'visitas',
@@ -183,7 +206,8 @@ export function resumen(propiedades) {
     disponibles: lista.filter(p => p.disponibilidad === 'disponible').length,
     noDisponibles: lista.filter(p => p.disponibilidad !== 'disponible').length,
     conFichaPropia: lista.filter(p => !p.fichaPorDefecto || p.macroId).length,
-    conMacroOVideo: lista.filter(p => p.videoUrl || p.macroId).length,
+    conMacroOArchivos: lista.filter(p => adjuntosDe(p).length || p.macroId)
+      .length,
   };
 }
 
@@ -220,8 +244,9 @@ export function formularioDe(p) {
   return {
     modo: p?.macroId ? 'macro' : 'ficha',
     ficha: p?.ficha || p?.fichaGenerada || '',
-    // El enlace pegado a mano; el video subido va aparte (videoSubido).
-    videoUrl: p?.videoEnlace || '',
+    // El enlace pegado (YouTube, un recorrido). Los archivos subidos van
+    // aparte: se guardan al subirlos, no con Guardar.
+    videoUrl: p?.enlace || '',
     // Vacio: el mapa sale de la web. Asi guardar no congela la ubicacion.
     mapsUrl: p?.mapsUrlEquipo || '',
     visitHours: p?.horarioVisitas || '',
@@ -269,7 +294,7 @@ export function hayCambios(form, p) {
 /** Lo que impide guardar, o '' si se puede. */
 export function motivoParaNoGuardar(form) {
   if (form?.modo === 'macro' && !(Number(form.macroId) > 0)) {
-    return 'Elige una macro, o vuelve a «Ficha y video».';
+    return 'Elige una macro, o vuelve a «Ficha y archivos».';
   }
   return '';
 }
@@ -308,9 +333,21 @@ export const nombreDeArchivo = url =>
       .pop() || 'archivo'
   );
 
+/** Si un enlace apunta directo a un archivo: entonces se manda como archivo. */
+export const esArchivoDirecto = url =>
+  /\.(mp4|3gp|jpe?g|png|pdf)$/i.test(String(url || '').split(/[?#]/)[0]);
+
+function claseDeEnlace(url) {
+  const ruta = String(url || '').split(/[?#]/)[0];
+  if (/\.(mp4|3gp)$/i.test(ruta)) return 'video';
+  if (/\.(jpe?g|png)$/i.test(ruta)) return 'imagen';
+  return 'documento';
+}
+
 /**
  * Lo que vera el lead, en orden, para la vista previa: en modo ficha, la
- * ficha, el video y la ubicacion; en modo macro, sus mensajes y archivos.
+ * ficha, sus archivos, el enlace y la ubicacion; en modo macro, sus mensajes
+ * y archivos. Como lo manda la IA (ai.service.ts).
  */
 export function vistaPrevia(form, p, macro) {
   if (form?.modo === 'macro') {
@@ -323,19 +360,24 @@ export function vistaPrevia(form, p, macro) {
   const burbujas = [];
   const ficha = limpio(form?.ficha) || limpio(p?.fichaGenerada);
   if (ficha) burbujas.push({ tipo: 'texto', texto: ficha });
-  // El video subido manda sobre el enlace pegado, como en la API.
-  if (p?.videoSubido) {
+  (p?.archivos || []).forEach(a => {
     burbujas.push({
       tipo: 'archivo',
-      clase: 'video',
-      nombre: p.videoSubido.nombre,
+      clase: a.tipo,
+      nombre: a.nombre,
+      url: a.url || null,
     });
-  } else if (limpio(form?.videoUrl)) {
+  });
+  const enlace = limpio(form?.videoUrl);
+  if (enlace && esArchivoDirecto(enlace)) {
     burbujas.push({
       tipo: 'archivo',
-      clase: 'video',
-      nombre: nombreDeArchivo(form.videoUrl),
+      clase: claseDeEnlace(enlace),
+      nombre: nombreDeArchivo(enlace),
+      url: null,
     });
+  } else if (enlace) {
+    burbujas.push({ tipo: 'texto', texto: enlace });
   }
   const mapa = limpio(form?.mapsUrl) || limpio(p?.mapsUrlWeb);
   if (mapa) burbujas.push({ tipo: 'texto', texto: `Ubicación: ${mapa}` });
@@ -350,9 +392,6 @@ export const ICONO_DE_ARCHIVO = {
   documento: 'i-lucide-file-text',
 };
 
-/** El limite de WhatsApp para un video: 16 MB. El mismo que la API. */
-export const VIDEO_MAX_BYTES = 16 * 1024 * 1024;
-
 /** 850 KB, 4.2 MB */
 export function tamanoLegible(bytes) {
   const b = Number(bytes) || 0;
@@ -360,38 +399,76 @@ export function tamanoLegible(bytes) {
   return `${(b / 1024 / 1024).toFixed(1)} MB`;
 }
 
+/** Archivos por propiedad. El mismo limite que la API (medios.logic.ts). */
+export const MAX_ARCHIVOS = 10;
+
+const MB = 1024 * 1024;
+const SUBIDA_MAX = { imagen: 25 * MB, video: 500 * MB, documento: 40 * MB };
+
+/** Lo que deja elegir el selector de archivos. */
+export const ACEPTA_ARCHIVOS =
+  'image/jpeg,image/png,image/webp,video/*,.mov,.mkv,application/pdf,.pdf';
+
+export const ETIQUETA_TIPO = {
+  imagen: 'Foto',
+  video: 'Video',
+  documento: 'PDF',
+};
+
+/** imagen, video o documento (PDF); null si WhatsApp no lo acepta. */
+export function tipoDeArchivo(archivo) {
+  const nombre = String(archivo?.name || '');
+  const t = String(archivo?.type || '').toLowerCase();
+  if (/\.pdf$/i.test(nombre) || t === 'application/pdf') return 'documento';
+  if (
+    /\.(jpe?g|png|webp)$/i.test(nombre) ||
+    ['image/jpeg', 'image/png', 'image/webp'].includes(t)
+  )
+    return 'imagen';
+  if (
+    /\.(mp4|m4v|mov|3gp|webm|mkv|avi)$/i.test(nombre) ||
+    t.startsWith('video/')
+  )
+    return 'video';
+  return null;
+}
+
 /**
- * Si un archivo elegido en la PC sirve como video de WhatsApp, o por que no.
- * Lo mismo que comprueba la API, antes de subir nada.
+ * Si un archivo elegido en la PC se puede subir, o por que no. Lo mismo que
+ * comprueba la API, antes de subir nada. Un video pesado si se puede: la API
+ * lo comprime por debajo de los 16 MB de WhatsApp.
  */
-export function problemaConElVideo(archivo) {
+export function problemaConElArchivo(archivo, yaHay = 0) {
   if (!archivo) return 'No se eligió ningún archivo.';
   const nombre = String(archivo.name || '');
-  const tipo = String(archivo.type || '').toLowerCase();
-  const valido =
-    tipo === 'video/mp4' ||
-    tipo === 'video/3gpp' ||
-    /\.(mp4|3gp)$/i.test(nombre);
-  if (!valido) {
-    return 'WhatsApp solo acepta videos MP4 o 3GP. Conviértelo a MP4 y vuelve a subirlo.';
+  if (
+    /\.(heic|heif)$/i.test(nombre) ||
+    /image\/hei[cf]/i.test(archivo.type || '')
+  ) {
+    return 'Las fotos HEIC del iPhone no se pueden mandar por WhatsApp: expórtala como JPG y súbela otra vez.';
   }
+  const tipo = tipoDeArchivo(archivo);
+  if (!tipo)
+    return 'Por WhatsApp se pueden mandar fotos (JPG, PNG), videos y PDF. Ese archivo no.';
   if (!archivo.size) return 'El archivo está vacío.';
-  if (archivo.size > VIDEO_MAX_BYTES) {
-    return `Pesa ${tamanoLegible(archivo.size)} y WhatsApp acepta hasta 16 MB. Comprímelo y vuelve a subirlo.`;
+  if (yaHay >= MAX_ARCHIVOS)
+    return `Ya hay ${MAX_ARCHIVOS} archivos: quita alguno antes de subir otro.`;
+  if (archivo.size > SUBIDA_MAX[tipo]) {
+    const pesa = `Pesa ${tamanoLegible(archivo.size)}`;
+    if (tipo === 'video')
+      return `${pesa} y el máximo es 500 MB. Recórtalo, o súbelo a YouTube y pega el enlace.`;
+    if (tipo === 'documento')
+      return `${pesa} y el máximo para un PDF es 40 MB.`;
+    return `${pesa} y el máximo para una foto es 25 MB.`;
   }
   return '';
 }
 
-/** Un aviso si la URL del video no parece un fichero que WhatsApp acepte. */
-export function avisoDelVideo(url) {
+/** Un aviso si el enlace no es una URL. Cualquier web vale: va como texto. */
+export function avisoDelEnlace(url) {
   const v = limpio(url);
   if (!v) return '';
   if (!/^https?:\/\//i.test(v))
-    return 'El video tiene que ser una URL que empiece por https.';
-  if (/youtube\.com|youtu\.be|vimeo\.com|drive\.google\.com/i.test(v)) {
-    return 'WhatsApp no acepta enlaces de YouTube, Vimeo o Drive: hace falta el enlace directo a un archivo .mp4.';
-  }
-  if (!/\.(mp4|3gp|mov)(\?|$)/i.test(v))
-    return 'Lo normal es que acabe en .mp4.';
+    return 'El enlace tiene que empezar por https://';
   return '';
 }

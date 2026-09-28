@@ -133,12 +133,21 @@ class Whatsapp::Providers::WhatsappCloudService < Whatsapp::Providers::BaseServi
         messaging_product: 'whatsapp',
         context: whatsapp_reply_context(message),
         **recipient_params(phone_number),
-        text: { body: message.outgoing_content },
+        text: text_body(message.outgoing_content),
         type: 'text'
       }.to_json
     )
 
     process_response(response, message)
+  end
+
+  # [turuta] Con un enlace, WhatsApp ensena su vista previa, como en la app: el
+  # video de YouTube o el mapa que manda la IA se ven sin abrirlos. Sin enlace,
+  # el cuerpo queda como el de Chatwoot.
+  def text_body(content)
+    body = { body: content }
+    body[:preview_url] = true if content.to_s.match?(%r{https?://})
+    body
   end
 
   def send_attachment_message(phone_number, message)

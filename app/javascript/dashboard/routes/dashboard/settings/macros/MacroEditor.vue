@@ -92,7 +92,9 @@ const initNewMacro = () => {
     name: '',
     actions: [
       {
-        action_name: 'assign_team',
+        // [turuta] La primera de la lista. La de Chatwoot (assign_team) esta
+        // oculta y el editor se rompia al buscarla.
+        action_name: 'send_message',
         action_params: [],
       },
     ],

@@ -78,8 +78,9 @@ export default {
       },
     },
     inputType() {
+      // [turuta] ?. : una accion oculta (o vacia) no rompe el editor.
       return this.actionTypes.find(action => action.key === this.action_name)
-        .inputType;
+        ?.inputType;
     },
     actionNameAsSelectModel: {
       get() {

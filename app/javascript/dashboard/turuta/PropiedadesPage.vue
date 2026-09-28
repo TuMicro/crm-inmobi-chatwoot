@@ -1,8 +1,9 @@
 <script setup>
 // [turuta] Pagina "Propiedades": lo que la IA manda y sabe de cada propiedad.
 // La lista sale de las webs del cliente (nuestra API la lee de Supabase) y por
-// cada una el equipo decide que manda la IA (la ficha con su video y
-// ubicacion, o una macro de Chatwoot) y lo que sabe para responder (estado,
+// cada una el equipo decide que manda la IA (la ficha con sus fotos, videos,
+// PDF, enlace y ubicacion, o una macro de Chatwoot) y lo que sabe para
+// responder (estado,
 // negociacion, horario, condiciones, notas y datos confirmados).
 //
 // Misma envoltura que la pagina Embudo (cabecera de informe, tarjetas) y los
@@ -20,12 +21,15 @@ import ReportHeader from 'dashboard/routes/dashboard/settings/reports/components
 import CampoSelect from './CampoSelect.vue';
 import { leadAppConfig, textoError } from './leadApp';
 import {
+  ACEPTA_ARCHIVOS,
   ESTADOS,
   ETIQUETA_ESTADO,
+  ETIQUETA_TIPO,
   ICONO_DE_ARCHIVO,
+  MAX_ARCHIVOS,
   NEGOCIABLES,
   QUE_HACE_EL_ESTADO,
-  avisoDelVideo,
+  avisoDelEnlace,
   cuerpoDe,
   fichaEsGenerada,
   filtrar,
@@ -40,8 +44,9 @@ import {
   resumen,
   subtitulo,
   textoDeWeb,
-  problemaConElVideo,
+  problemaConElArchivo,
   tamanoLegible,
+  tipoDeArchivo,
   vistaPrevia,
   websParaElegir,
 } from './propiedades';
@@ -62,14 +67,14 @@ const guardando = ref(false);
 
 const busqueda = ref('');
 
-// El video que se sube desde la PC.
-const subiendo = ref(false);
-const progreso = ref(0);
-const nombreSubiendo = ref('');
-const textoSubida = computed(() => `Subiendo ${nombreSubiendo.value}`);
-const errorVideo = ref('');
+// Las fotos, videos y PDF que se suben desde la PC: una cola, de uno en uno.
+// Cada subida recuerda su propiedad: si el equipo cambia de propiedad, sigue.
+const subidas = ref([]);
+const erroresSubida = ref([]);
 const arrastrando = ref(false);
-const verEnlace = ref(false);
+const moviendo = ref(false);
+let siguienteSubida = 0;
+let procesando = false;
 const web = ref('');
 const estado = ref('');
 const elegidaId = ref(null);
@@ -117,7 +122,15 @@ const sinGuardar = computed(() => hayCambios(form.value, elegida.value));
 const motivo = computed(() =>
   form.value ? motivoParaNoGuardar(form.value) : ''
 );
-const avisoVideo = computed(() => avisoDelVideo(form.value?.videoUrl));
+const avisoEnlace = computed(() => avisoDelEnlace(form.value?.videoUrl));
+const archivos = computed(() => elegida.value?.archivos || []);
+const deLaElegida = x =>
+  x.site === elegida.value?.site && x.propertyId === elegida.value?.id;
+const subidasDeEsta = computed(() => subidas.value.filter(deLaElegida));
+const erroresDeEsta = computed(() => erroresSubida.value.filter(deLaElegida));
+const cabeMas = computed(
+  () => archivos.value.length + subidasDeEsta.value.length < MAX_ARCHIVOS
+);
 const generada = computed(() => fichaEsGenerada(form.value, elegida.value));
 const macroElegida = computed(
   () =>
@@ -129,7 +142,7 @@ const burbujas = computed(() =>
 const websConectadas = computed(() => webs.value.filter(w => w.conectada));
 
 // Pestañas: que manda la IA, y el filtro por web.
-const PESTANAS_ENVIO = [{ label: 'Ficha y video' }, { label: 'Macro' }];
+const PESTANAS_ENVIO = [{ label: 'Ficha y archivos' }, { label: 'Macro' }];
 const pestanaEnvio = computed(() => (form.value?.modo === 'macro' ? 1 : 0));
 const pestanasWeb = computed(() => [
   { label: textoDeWeb(''), site: '' },
@@ -167,10 +180,6 @@ const enlaceMacro = macroId =>
 
 function abrir(p) {
   if (!p) return;
-  if (p.id !== elegidaId.value) {
-    errorVideo.value = '';
-    verEnlace.value = false;
-  }
   elegidaId.value = p.id;
   form.value = formularioDe(p);
 }
@@ -275,86 +284,167 @@ function actualizarPropiedad(nueva) {
 }
 
 /**
- * Sube el video a nuestra API, que lo guarda en el almacen. Con
- * XMLHttpRequest y no fetch para poder enseñar el progreso.
+ * Sube un archivo a nuestra API, que lo prepara para WhatsApp (un video
+ * pesado lo comprime) y lo guarda en el almacen. Con XMLHttpRequest y no
+ * fetch para poder enseñar el progreso. Se resuelve siempre, con la respuesta.
  */
-function subirVideo(archivo) {
-  errorVideo.value = problemaConElVideo(archivo);
-  if (errorVideo.value || !elegida.value || !config.value) return;
-  const p = elegida.value;
-  const datosForm = new FormData();
-  // Los campos antes que el archivo: asi el servidor los tiene al leerlo.
-  datosForm.append('accountId', String(route.params.accountId));
-  datosForm.append('site', p.site);
-  datosForm.append('propertyId', p.id);
-  datosForm.append('updatedBy', currentUser.value?.name || '');
-  datosForm.append('archivo', archivo);
+function enviarArchivo(s) {
+  return new Promise(resolve => {
+    const datosForm = new FormData();
+    // Los campos antes que el archivo: asi el servidor los tiene al leerlo.
+    datosForm.append('accountId', String(route.params.accountId));
+    datosForm.append('site', s.site);
+    datosForm.append('propertyId', s.propertyId);
+    datosForm.append('updatedBy', currentUser.value?.name || '');
+    datosForm.append('archivo', s.archivo);
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', `${config.value.api}/dashboard-app/properties/archivos`);
+    xhr.setRequestHeader('Authorization', `Bearer ${config.value.token}`);
+    xhr.upload.onprogress = e => {
+      if (!e.lengthComputable) return;
+      s.progreso = Math.round((e.loaded * 100) / e.total);
+      // Subido: ahora el servidor lo prepara (un video, un par de minutos).
+      if (s.progreso >= 100) s.fase = 'preparando';
+    };
+    xhr.onload = () => {
+      let cuerpo = {};
+      try {
+        cuerpo = JSON.parse(xhr.responseText || '{}');
+      } catch (e) {
+        cuerpo = {};
+      }
+      resolve({ status: xhr.status, cuerpo });
+    };
+    xhr.onerror = () => resolve({ status: 0, cuerpo: {} });
+    xhr.send(datosForm);
+  });
+}
 
-  subiendo.value = true;
-  progreso.value = 0;
-  nombreSubiendo.value = archivo.name;
-  const xhr = new XMLHttpRequest();
-  xhr.open('POST', `${config.value.api}/dashboard-app/properties/video`);
-  xhr.setRequestHeader('Authorization', `Bearer ${config.value.token}`);
-  xhr.upload.onprogress = e => {
-    if (e.lengthComputable)
-      progreso.value = Math.round((e.loaded * 100) / e.total);
-  };
-  xhr.onload = () => {
-    subiendo.value = false;
-    let cuerpo = {};
-    try {
-      cuerpo = JSON.parse(xhr.responseText || '{}');
-    } catch (e) {
-      cuerpo = {};
+/** Sube la siguiente de la cola, y al acabar la siguiente. */
+async function procesarSubidas() {
+  if (procesando || !config.value) return;
+  const s = subidas.value.find(x => x.fase === 'esperando');
+  if (!s) return;
+  procesando = true;
+  s.fase = 'subiendo';
+  const { status, cuerpo } = await enviarArchivo(s);
+  if (status >= 200 && status < 300 && cuerpo.propiedad) {
+    actualizarPropiedad(cuerpo.propiedad);
+  } else {
+    erroresSubida.value.push({
+      site: s.site,
+      propertyId: s.propertyId,
+      nombre: s.nombre,
+      mensaje:
+        status === 0
+          ? 'No se pudo subir: revisa la conexión.'
+          : cuerpo.message || 'No se pudo subir.',
+    });
+  }
+  subidas.value = subidas.value.filter(x => x.uid !== s.uid);
+  procesando = false;
+  procesarSubidas();
+}
+
+/** Pone en la cola los archivos elegidos o soltados, con sus avisos. */
+function anadirArchivos(elegidos) {
+  const p = elegida.value;
+  if (!p) return;
+  erroresSubida.value = erroresSubida.value.filter(e => !deLaElegida(e));
+  let yaHay = archivos.value.length + subidasDeEsta.value.length;
+  Array.from(elegidos || []).forEach(archivo => {
+    const problema = problemaConElArchivo(archivo, yaHay);
+    if (problema) {
+      erroresSubida.value.push({
+        site: p.site,
+        propertyId: p.id,
+        nombre: archivo.name,
+        mensaje: problema,
+      });
+      return;
     }
-    if (xhr.status >= 200 && xhr.status < 300 && cuerpo.propiedad) {
-      actualizarPropiedad(cuerpo.propiedad);
-      useAlert('Video subido. La IA lo manda después de la ficha.');
-    } else if (xhr.status === 413) {
-      errorVideo.value =
-        'Pesa más de 16 MB, el límite de WhatsApp. Comprímelo y vuelve a subirlo.';
-    } else {
-      errorVideo.value = cuerpo.message || 'No se pudo subir el video.';
-    }
-  };
-  xhr.onerror = () => {
-    subiendo.value = false;
-    errorVideo.value = 'No se pudo subir el video: revisa la conexión.';
-  };
-  xhr.send(datosForm);
+    yaHay += 1;
+    siguienteSubida += 1;
+    subidas.value.push({
+      uid: siguienteSubida,
+      site: p.site,
+      propertyId: p.id,
+      archivo,
+      nombre: archivo.name,
+      tipo: tipoDeArchivo(archivo),
+      progreso: 0,
+      fase: 'esperando',
+    });
+  });
+  procesarSubidas();
+}
+
+function textoDeSubida(s) {
+  if (s.fase === 'esperando') return 'En cola';
+  if (s.fase === 'subiendo') return `Subiendo ${s.progreso} %`;
+  return s.tipo === 'video'
+    ? 'Preparando para WhatsApp… un video pesado tarda un par de minutos'
+    : 'Preparando…';
 }
 
 function elegirArchivo(evento) {
-  const archivo = evento.target.files?.[0];
+  // Se copian antes de vaciar el campo (vaciarlo vacia la lista).
+  const elegidos = Array.from(evento.target.files || []);
   evento.target.value = '';
-  if (archivo) subirVideo(archivo);
+  anadirArchivos(elegidos);
 }
 
 function soltarArchivo(evento) {
   arrastrando.value = false;
-  const archivo = evento.dataTransfer?.files?.[0];
-  if (archivo) subirVideo(archivo);
+  anadirArchivos(evento.dataTransfer?.files);
 }
 
-async function quitarVideo() {
+/** Sube o baja un archivo en el orden en que se manda. */
+async function moverArchivo(i, paso) {
+  const p = elegida.value;
+  const ids = archivos.value.map(a => a.id);
+  const j = i + paso;
+  if (!p || j < 0 || j >= ids.length || moviendo.value) return;
+  [ids[i], ids[j]] = [ids[j], ids[i]];
+  moviendo.value = true;
+  try {
+    const r = await pedir('/dashboard-app/properties/archivos/orden', {
+      method: 'PUT',
+      body: JSON.stringify({
+        accountId: Number(route.params.accountId),
+        site: p.site,
+        propertyId: p.id,
+        ids,
+        updatedBy: currentUser.value?.name || '',
+      }),
+    });
+    actualizarPropiedad(r.propiedad);
+  } catch (e) {
+    useAlert(`No se pudo cambiar el orden: ${e.message}`);
+  } finally {
+    moviendo.value = false;
+  }
+}
+
+async function quitarArchivo(a) {
   // eslint-disable-next-line no-alert
-  if (!window.confirm('¿Quitar el video? La IA dejará de mandarlo.')) return;
+  if (!window.confirm(`¿Quitar «${a.nombre}»? La IA dejará de mandarlo.`))
+    return;
   const p = elegida.value;
   try {
     const q = new URLSearchParams({
       accountId: String(route.params.accountId),
       site: p.site,
       propertyId: p.id,
+      id: a.id,
       updatedBy: currentUser.value?.name || '',
     });
-    const r = await pedir(`/dashboard-app/properties/video?${q}`, {
+    const r = await pedir(`/dashboard-app/properties/archivos?${q}`, {
       method: 'DELETE',
     });
     actualizarPropiedad(r.propiedad);
-    errorVideo.value = '';
   } catch (e) {
-    useAlert(`No se pudo quitar el video: ${e.message}`);
+    useAlert(`No se pudo quitar: ${e.message}`);
   }
 }
 
@@ -499,11 +589,11 @@ const TITULO = 'mb-0 text-base font-medium text-n-slate-12';
                 color: 'text-n-teal-11 bg-n-teal-3',
               },
               {
-                id: 'video',
-                titulo: 'Con macro o video',
-                valor: cifras.conMacroOVideo,
-                nota: 'se mandan con la ficha',
-                icono: 'i-lucide-video',
+                id: 'archivos',
+                titulo: 'Con macro o archivos',
+                valor: cifras.conMacroOArchivos,
+                nota: 'fotos, videos, PDF o enlace',
+                icono: 'i-lucide-images',
                 color: 'text-n-amber-11 bg-n-amber-3',
               },
               {
@@ -732,7 +822,7 @@ const TITULO = 'mb-0 text-base font-medium text-n-slate-12';
                 <Icon icon="i-lucide-file-text" class="size-3" /> ficha propia
               </span>
               <span class="flex items-center gap-1">
-                <Icon icon="i-lucide-video" class="size-3" /> video
+                <Icon icon="i-lucide-images" class="size-3" /> archivos
               </span>
               <span class="flex items-center gap-1">
                 <Icon icon="i-lucide-calendar-clock" class="size-3" /> horario
@@ -818,12 +908,12 @@ const TITULO = 'mb-0 text-base font-medium text-n-slate-12';
                 />
               </div>
               <p class="mt-1 mb-4 text-sm text-n-slate-10">
-                Solo una de las dos: la ficha con su video y ubicación, o una
-                macro de Chatwoot con varios mensajes y archivos.
+                Solo una de las dos: la ficha con sus fotos, videos, PDF, enlace
+                y ubicación, o una macro de Chatwoot.
               </p>
 
               <div class="grid gap-5 xl:grid-cols-[minmax(0,1fr)_17rem]">
-                <!-- Ficha y video -->
+                <!-- Ficha y archivos -->
                 <div
                   v-if="form.modo === 'ficha'"
                   class="flex flex-col gap-4 min-w-0"
@@ -869,76 +959,137 @@ const TITULO = 'mb-0 text-base font-medium text-n-slate-12';
                       descripción.
                     </p>
                   </div>
-                  <!-- Video: subido desde la PC, o un enlace pegado -->
-                  <div class="flex flex-col gap-1.5">
-                    <span class="text-heading-3 text-n-slate-12">Video</span>
-
+                  <!-- Fotos, videos y PDF: se suben desde la PC -->
+                  <div class="flex flex-col gap-2">
                     <div
-                      v-if="elegida.videoSubido"
-                      class="flex items-center gap-3 p-2 rounded-lg outline outline-1 outline-n-weak bg-n-alpha-1"
+                      class="flex flex-wrap items-baseline justify-between gap-2"
                     >
-                      <video
-                        :src="elegida.videoUrl"
-                        class="flex-none object-cover w-24 h-16 rounded-md bg-n-slate-12"
-                        muted
-                        playsinline
-                        preload="metadata"
-                      />
-                      <div class="min-w-0 grow">
-                        <p
-                          class="mb-0 text-sm font-medium truncate text-n-slate-12"
-                        >
-                          {{ elegida.videoSubido.nombre }}
-                        </p>
-                        <p class="mb-0 text-xs text-n-slate-10">
-                          {{
-                            elegida.videoSubido.bytes
-                              ? `${tamanoLegible(elegida.videoSubido.bytes)} · `
-                              : ''
-                          }}se manda después de la ficha
-                        </p>
-                        <a
-                          v-if="elegida.videoUrl"
-                          :href="elegida.videoUrl"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          class="text-xs text-n-blue-11 hover:underline"
-                        >
-                          Verlo
-                        </a>
-                      </div>
-                      <Button
-                        label="Quitar"
-                        icon="i-lucide-trash-2"
-                        variant="ghost"
-                        color="ruby"
-                        size="sm"
-                        @click="quitarVideo"
-                      />
+                      <span class="text-heading-3 text-n-slate-12">
+                        Fotos, videos y PDF
+                      </span>
+                      <span class="text-xs text-n-slate-10">
+                        Van tras la ficha, en este orden ·
+                        {{ archivos.length }} de {{ MAX_ARCHIVOS }}
+                      </span>
                     </div>
 
+                    <ul
+                      v-if="archivos.length"
+                      class="flex flex-col gap-1.5 mb-0 list-none ltr:ml-0 rtl:mr-0"
+                    >
+                      <li
+                        v-for="(a, i) in archivos"
+                        :key="a.id"
+                        class="flex items-center gap-3 p-2 rounded-lg outline outline-1 outline-n-weak bg-n-alpha-1"
+                      >
+                        <img
+                          v-if="a.tipo === 'imagen' && a.url"
+                          :src="a.url"
+                          alt=""
+                          class="flex-none object-cover w-16 h-12 rounded-md bg-n-alpha-2"
+                        />
+                        <video
+                          v-else-if="a.tipo === 'video' && a.url"
+                          :src="a.url"
+                          class="flex-none object-cover w-16 h-12 rounded-md bg-n-slate-12"
+                          muted
+                          playsinline
+                          preload="metadata"
+                        />
+                        <span
+                          v-else
+                          class="flex items-center justify-center flex-none w-16 h-12 rounded-md bg-n-alpha-2"
+                        >
+                          <Icon
+                            :icon="
+                              ICONO_DE_ARCHIVO[a.tipo] ||
+                              ICONO_DE_ARCHIVO.documento
+                            "
+                            class="size-5 text-n-slate-10"
+                          />
+                        </span>
+                        <div class="min-w-0 grow">
+                          <p
+                            class="mb-0 text-sm font-medium truncate text-n-slate-12"
+                            :title="a.nombre"
+                          >
+                            {{ a.nombre }}
+                          </p>
+                          <p class="mb-0 text-xs text-n-slate-10">
+                            {{ ETIQUETA_TIPO[a.tipo] }}
+                            <template v-if="a.bytes">
+                              · {{ tamanoLegible(a.bytes) }}
+                            </template>
+                            <template v-if="a.url">
+                              ·
+                              <a
+                                :href="a.url"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                class="text-n-blue-11 hover:underline"
+                              >
+                                Ver
+                              </a>
+                            </template>
+                          </p>
+                        </div>
+                        <div class="flex items-center flex-none">
+                          <Button
+                            v-tooltip="'Antes'"
+                            icon="i-lucide-arrow-up"
+                            variant="ghost"
+                            color="slate"
+                            size="xs"
+                            :disabled="i === 0 || moviendo"
+                            @click="moverArchivo(i, -1)"
+                          />
+                          <Button
+                            v-tooltip="'Después'"
+                            icon="i-lucide-arrow-down"
+                            variant="ghost"
+                            color="slate"
+                            size="xs"
+                            :disabled="i === archivos.length - 1 || moviendo"
+                            @click="moverArchivo(i, 1)"
+                          />
+                          <Button
+                            v-tooltip="'Quitar'"
+                            icon="i-lucide-trash-2"
+                            variant="ghost"
+                            color="ruby"
+                            size="xs"
+                            @click="quitarArchivo(a)"
+                          />
+                        </div>
+                      </li>
+                    </ul>
+
                     <div
-                      v-else-if="subiendo"
+                      v-for="sub in subidasDeEsta"
+                      :key="sub.uid"
                       class="p-3 rounded-lg outline outline-1 outline-n-weak bg-n-alpha-1"
                     >
                       <p
-                        class="flex justify-between gap-2 mb-2 text-xs text-n-slate-11"
+                        class="flex justify-between gap-3 mb-2 text-xs text-n-slate-11"
                       >
-                        <span class="truncate">{{ textoSubida }}</span>
-                        <span class="tabular-nums">{{ progreso }} %</span>
+                        <span class="truncate">{{ sub.nombre }}</span>
+                        <span class="text-right">{{ textoDeSubida(sub) }}</span>
                       </p>
                       <div
                         class="h-1.5 overflow-hidden rounded-full bg-n-alpha-2"
                       >
                         <div
                           class="h-full transition-all duration-200 rounded-full bg-n-brand"
-                          :style="{ width: `${progreso}%` }"
+                          :class="{
+                            'animate-pulse': sub.fase === 'preparando',
+                          }"
+                          :style="{ width: `${sub.progreso}%` }"
                         />
                       </div>
                     </div>
 
                     <label
-                      v-else
+                      v-if="cabeMas"
                       class="flex flex-col items-center justify-center gap-1 px-4 py-5 mb-0 text-center transition-colors border-2 border-dashed rounded-lg cursor-pointer"
                       :class="
                         arrastrando
@@ -951,7 +1102,8 @@ const TITULO = 'mb-0 text-base font-medium text-n-slate-12';
                     >
                       <input
                         type="file"
-                        accept="video/mp4,video/3gpp,.mp4,.3gp"
+                        multiple
+                        :accept="ACEPTA_ARCHIVOS"
                         class="hidden"
                         @change="elegirArchivo"
                       />
@@ -960,42 +1112,35 @@ const TITULO = 'mb-0 text-base font-medium text-n-slate-12';
                         class="size-5 text-n-slate-10"
                       />
                       <span class="text-sm font-medium text-n-slate-12">
-                        Sube el video desde tu PC
+                        Sube fotos, videos o PDF desde tu PC
                       </span>
                       <span class="text-xs text-n-slate-10">
-                        o arrástralo aquí · MP4 hasta 16 MB, el límite de
-                        WhatsApp
+                        o arrástralos aquí · se guardan al subirlos · los videos
+                        pesados se comprimen solos para WhatsApp
                       </span>
                     </label>
 
-                    <p v-if="errorVideo" class="mb-0 text-xs text-n-ruby-11">
-                      {{ errorVideo }}
+                    <p
+                      v-for="(e, i) in erroresDeEsta"
+                      :key="`error-${i}`"
+                      class="mb-0 text-xs text-n-ruby-11"
+                    >
+                      {{ e.nombre }}: {{ e.mensaje }}
                     </p>
-
-                    <template v-if="!elegida.videoSubido && !subiendo">
-                      <Input
-                        v-if="verEnlace || form.videoUrl"
-                        v-model="form.videoUrl"
-                        type="url"
-                        placeholder="https://.../recorrido.mp4"
-                        :message="
-                          avisoVideo ||
-                          'Enlace directo a un .mp4 que ya esté en internet.'
-                        "
-                        :message-type="avisoVideo ? 'error' : 'info'"
-                      />
-                      <button
-                        v-else
-                        type="button"
-                        class="self-start text-xs text-n-blue-11 hover:underline"
-                        @click="verEnlace = true"
-                      >
-                        ¿El video ya está en internet? Pega el enlace
-                      </button>
-                    </template>
                   </div>
 
                   <div class="grid gap-4 md:grid-cols-2">
+                    <Input
+                      v-model="form.videoUrl"
+                      label="Enlace"
+                      type="url"
+                      placeholder="https://youtu.be/... o un recorrido virtual"
+                      :message="
+                        avisoEnlace ||
+                        'Va como mensaje, con su vista previa: un video de YouTube, un recorrido 360, una carpeta.'
+                      "
+                      :message-type="avisoEnlace ? 'error' : 'info'"
+                    />
                     <Input
                       v-model="form.mapsUrl"
                       label="Ubicación"
@@ -1087,6 +1232,12 @@ const TITULO = 'mb-0 text-base font-medium text-n-slate-12';
                         class="block break-words whitespace-pre-wrap"
                         >{{ b.texto }}</span
                       >
+                      <img
+                        v-else-if="b.clase === 'imagen' && b.url"
+                        :src="b.url"
+                        :alt="b.nombre"
+                        class="block object-cover w-40 rounded max-h-32"
+                      />
                       <span v-else class="flex items-center gap-2">
                         <Icon
                           :icon="

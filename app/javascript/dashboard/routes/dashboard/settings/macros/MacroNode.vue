@@ -38,9 +38,10 @@ const errorMessage = computed(() => {
 
 const showActionInput = computed(() => {
   if (actionData.value.action_name === 'send_message') return false;
+  // [turuta] ?. : una macro antigua puede tener una accion que ya no se ofrece.
   const type = macroActionTypes.value.find(
     action => action.key === actionData.value.action_name
-  ).inputType;
+  )?.inputType;
   return !!type;
 });
 

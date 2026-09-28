@@ -86,6 +86,14 @@ const TURUTA_ACCIONES_OCULTAS = new Set([
   // Resuelve el chat y BLOQUEA al contacto: WhatsApp descarta sus mensajes.
   'mute_conversation',
 ]);
-export const MACRO_ACTION_TYPES = ACCIONES_DE_CHATWOOT.filter(
-  accion => !TURUTA_ACCIONES_OCULTAS.has(accion.key)
-);
+// [turuta] Primero lo que se usa para presentar una propiedad: mensaje,
+// adjunto y nota privada. Luego el resto, en el orden de Chatwoot.
+const TURUTA_PRIMERAS = ['send_message', 'send_attachment', 'add_private_note'];
+export const MACRO_ACTION_TYPES = [
+  ...TURUTA_PRIMERAS.map(clave =>
+    ACCIONES_DE_CHATWOOT.find(accion => accion.key === clave)
+  ),
+  ...ACCIONES_DE_CHATWOOT.filter(
+    accion => !TURUTA_PRIMERAS.includes(accion.key)
+  ),
+].filter(accion => !TURUTA_ACCIONES_OCULTAS.has(accion.key));
