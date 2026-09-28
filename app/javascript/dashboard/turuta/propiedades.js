@@ -220,7 +220,8 @@ export function formularioDe(p) {
   return {
     modo: p?.macroId ? 'macro' : 'ficha',
     ficha: p?.ficha || p?.fichaGenerada || '',
-    videoUrl: p?.videoUrl || '',
+    // El enlace pegado a mano; el video subido va aparte (videoSubido).
+    videoUrl: p?.videoEnlace || '',
     // Vacio: el mapa sale de la web. Asi guardar no congela la ubicacion.
     mapsUrl: p?.mapsUrlEquipo || '',
     visitHours: p?.horarioVisitas || '',
@@ -322,7 +323,14 @@ export function vistaPrevia(form, p, macro) {
   const burbujas = [];
   const ficha = limpio(form?.ficha) || limpio(p?.fichaGenerada);
   if (ficha) burbujas.push({ tipo: 'texto', texto: ficha });
-  if (limpio(form?.videoUrl)) {
+  // El video subido manda sobre el enlace pegado, como en la API.
+  if (p?.videoSubido) {
+    burbujas.push({
+      tipo: 'archivo',
+      clase: 'video',
+      nombre: p.videoSubido.nombre,
+    });
+  } else if (limpio(form?.videoUrl)) {
     burbujas.push({
       tipo: 'archivo',
       clase: 'video',
@@ -341,6 +349,38 @@ export const ICONO_DE_ARCHIVO = {
   audio: 'i-lucide-audio-lines',
   documento: 'i-lucide-file-text',
 };
+
+/** El limite de WhatsApp para un video: 16 MB. El mismo que la API. */
+export const VIDEO_MAX_BYTES = 16 * 1024 * 1024;
+
+/** 850 KB, 4.2 MB */
+export function tamanoLegible(bytes) {
+  const b = Number(bytes) || 0;
+  if (b < 1024 * 1024) return `${Math.max(1, Math.round(b / 1024))} KB`;
+  return `${(b / 1024 / 1024).toFixed(1)} MB`;
+}
+
+/**
+ * Si un archivo elegido en la PC sirve como video de WhatsApp, o por que no.
+ * Lo mismo que comprueba la API, antes de subir nada.
+ */
+export function problemaConElVideo(archivo) {
+  if (!archivo) return 'No se eligió ningún archivo.';
+  const nombre = String(archivo.name || '');
+  const tipo = String(archivo.type || '').toLowerCase();
+  const valido =
+    tipo === 'video/mp4' ||
+    tipo === 'video/3gpp' ||
+    /\.(mp4|3gp)$/i.test(nombre);
+  if (!valido) {
+    return 'WhatsApp solo acepta videos MP4 o 3GP. Conviértelo a MP4 y vuelve a subirlo.';
+  }
+  if (!archivo.size) return 'El archivo está vacío.';
+  if (archivo.size > VIDEO_MAX_BYTES) {
+    return `Pesa ${tamanoLegible(archivo.size)} y WhatsApp acepta hasta 16 MB. Comprímelo y vuelve a subirlo.`;
+  }
+  return '';
+}
 
 /** Un aviso si la URL del video no parece un fichero que WhatsApp acepte. */
 export function avisoDelVideo(url) {

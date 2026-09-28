@@ -40,6 +40,8 @@ import {
   resumen,
   subtitulo,
   textoDeWeb,
+  problemaConElVideo,
+  tamanoLegible,
   vistaPrevia,
   websParaElegir,
 } from './propiedades';
@@ -59,6 +61,15 @@ const error = ref(null);
 const guardando = ref(false);
 
 const busqueda = ref('');
+
+// El video que se sube desde la PC.
+const subiendo = ref(false);
+const progreso = ref(0);
+const nombreSubiendo = ref('');
+const textoSubida = computed(() => `Subiendo ${nombreSubiendo.value}`);
+const errorVideo = ref('');
+const arrastrando = ref(false);
+const verEnlace = ref(false);
 const web = ref('');
 const estado = ref('');
 const elegidaId = ref(null);
@@ -156,6 +167,10 @@ const enlaceMacro = macroId =>
 
 function abrir(p) {
   if (!p) return;
+  if (p.id !== elegidaId.value) {
+    errorVideo.value = '';
+    verEnlace.value = false;
+  }
   elegidaId.value = p.id;
   form.value = formularioDe(p);
 }
@@ -251,6 +266,97 @@ onMounted(() => {
 watch(config, (cfg, prev) => {
   if (cfg && !prev) cargar();
 });
+
+/** Pone al dia una propiedad de la lista sin tocar lo que se esta editando. */
+function actualizarPropiedad(nueva) {
+  const todas = datos.value?.propiedades || [];
+  const i = todas.findIndex(p => p.id === nueva?.id);
+  if (i >= 0) todas.splice(i, 1, nueva);
+}
+
+/**
+ * Sube el video a nuestra API, que lo guarda en el almacen. Con
+ * XMLHttpRequest y no fetch para poder enseñar el progreso.
+ */
+function subirVideo(archivo) {
+  errorVideo.value = problemaConElVideo(archivo);
+  if (errorVideo.value || !elegida.value || !config.value) return;
+  const p = elegida.value;
+  const datosForm = new FormData();
+  // Los campos antes que el archivo: asi el servidor los tiene al leerlo.
+  datosForm.append('accountId', String(route.params.accountId));
+  datosForm.append('site', p.site);
+  datosForm.append('propertyId', p.id);
+  datosForm.append('updatedBy', currentUser.value?.name || '');
+  datosForm.append('archivo', archivo);
+
+  subiendo.value = true;
+  progreso.value = 0;
+  nombreSubiendo.value = archivo.name;
+  const xhr = new XMLHttpRequest();
+  xhr.open('POST', `${config.value.api}/dashboard-app/properties/video`);
+  xhr.setRequestHeader('Authorization', `Bearer ${config.value.token}`);
+  xhr.upload.onprogress = e => {
+    if (e.lengthComputable)
+      progreso.value = Math.round((e.loaded * 100) / e.total);
+  };
+  xhr.onload = () => {
+    subiendo.value = false;
+    let cuerpo = {};
+    try {
+      cuerpo = JSON.parse(xhr.responseText || '{}');
+    } catch (e) {
+      cuerpo = {};
+    }
+    if (xhr.status >= 200 && xhr.status < 300 && cuerpo.propiedad) {
+      actualizarPropiedad(cuerpo.propiedad);
+      useAlert('Video subido. La IA lo manda después de la ficha.');
+    } else if (xhr.status === 413) {
+      errorVideo.value =
+        'Pesa más de 16 MB, el límite de WhatsApp. Comprímelo y vuelve a subirlo.';
+    } else {
+      errorVideo.value = cuerpo.message || 'No se pudo subir el video.';
+    }
+  };
+  xhr.onerror = () => {
+    subiendo.value = false;
+    errorVideo.value = 'No se pudo subir el video: revisa la conexión.';
+  };
+  xhr.send(datosForm);
+}
+
+function elegirArchivo(evento) {
+  const archivo = evento.target.files?.[0];
+  evento.target.value = '';
+  if (archivo) subirVideo(archivo);
+}
+
+function soltarArchivo(evento) {
+  arrastrando.value = false;
+  const archivo = evento.dataTransfer?.files?.[0];
+  if (archivo) subirVideo(archivo);
+}
+
+async function quitarVideo() {
+  // eslint-disable-next-line no-alert
+  if (!window.confirm('¿Quitar el video? La IA dejará de mandarlo.')) return;
+  const p = elegida.value;
+  try {
+    const q = new URLSearchParams({
+      accountId: String(route.params.accountId),
+      site: p.site,
+      propertyId: p.id,
+      updatedBy: currentUser.value?.name || '',
+    });
+    const r = await pedir(`/dashboard-app/properties/video?${q}`, {
+      method: 'DELETE',
+    });
+    actualizarPropiedad(r.propiedad);
+    errorVideo.value = '';
+  } catch (e) {
+    useAlert(`No se pudo quitar el video: ${e.message}`);
+  }
+}
 
 function anadirDato() {
   form.value.datos.push({ clave: '', valor: '' });
@@ -755,7 +861,7 @@ const TITULO = 'mb-0 text-base font-medium text-n-slate-12';
                       v-model="form.ficha"
                       rows="14"
                       :class="AREA"
-                      class="leading-relaxed resize-y"
+                      class="!h-auto leading-relaxed resize-y"
                     />
                     <p class="mt-1 mb-0 text-xs text-n-slate-10">
                       Retoca lo que quieras. Si la dejas igual que la generada,
@@ -763,18 +869,133 @@ const TITULO = 'mb-0 text-base font-medium text-n-slate-12';
                       descripción.
                     </p>
                   </div>
-                  <div class="grid gap-4 md:grid-cols-2">
-                    <Input
-                      v-model="form.videoUrl"
-                      label="Video"
-                      type="url"
-                      placeholder="https://.../recorrido.mp4"
-                      :message="
-                        avisoVideo ||
-                        'Enlace directo a un .mp4. Va tras la ficha.'
+                  <!-- Video: subido desde la PC, o un enlace pegado -->
+                  <div class="flex flex-col gap-1.5">
+                    <span class="text-heading-3 text-n-slate-12">Video</span>
+
+                    <div
+                      v-if="elegida.videoSubido"
+                      class="flex items-center gap-3 p-2 rounded-lg outline outline-1 outline-n-weak bg-n-alpha-1"
+                    >
+                      <video
+                        :src="elegida.videoUrl"
+                        class="flex-none object-cover w-24 h-16 rounded-md bg-n-slate-12"
+                        muted
+                        playsinline
+                        preload="metadata"
+                      />
+                      <div class="min-w-0 grow">
+                        <p
+                          class="mb-0 text-sm font-medium truncate text-n-slate-12"
+                        >
+                          {{ elegida.videoSubido.nombre }}
+                        </p>
+                        <p class="mb-0 text-xs text-n-slate-10">
+                          {{
+                            elegida.videoSubido.bytes
+                              ? `${tamanoLegible(elegida.videoSubido.bytes)} · `
+                              : ''
+                          }}se manda después de la ficha
+                        </p>
+                        <a
+                          v-if="elegida.videoUrl"
+                          :href="elegida.videoUrl"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          class="text-xs text-n-blue-11 hover:underline"
+                        >
+                          Verlo
+                        </a>
+                      </div>
+                      <Button
+                        label="Quitar"
+                        icon="i-lucide-trash-2"
+                        variant="ghost"
+                        color="ruby"
+                        size="sm"
+                        @click="quitarVideo"
+                      />
+                    </div>
+
+                    <div
+                      v-else-if="subiendo"
+                      class="p-3 rounded-lg outline outline-1 outline-n-weak bg-n-alpha-1"
+                    >
+                      <p
+                        class="flex justify-between gap-2 mb-2 text-xs text-n-slate-11"
+                      >
+                        <span class="truncate">{{ textoSubida }}</span>
+                        <span class="tabular-nums">{{ progreso }} %</span>
+                      </p>
+                      <div
+                        class="h-1.5 overflow-hidden rounded-full bg-n-alpha-2"
+                      >
+                        <div
+                          class="h-full transition-all duration-200 rounded-full bg-n-brand"
+                          :style="{ width: `${progreso}%` }"
+                        />
+                      </div>
+                    </div>
+
+                    <label
+                      v-else
+                      class="flex flex-col items-center justify-center gap-1 px-4 py-5 mb-0 text-center transition-colors border-2 border-dashed rounded-lg cursor-pointer"
+                      :class="
+                        arrastrando
+                          ? 'border-n-brand bg-n-alpha-1'
+                          : 'border-n-weak hover:border-n-slate-6'
                       "
-                      :message-type="avisoVideo ? 'error' : 'info'"
-                    />
+                      @dragover.prevent="arrastrando = true"
+                      @dragleave.prevent="arrastrando = false"
+                      @drop.prevent="soltarArchivo"
+                    >
+                      <input
+                        type="file"
+                        accept="video/mp4,video/3gpp,.mp4,.3gp"
+                        class="hidden"
+                        @change="elegirArchivo"
+                      />
+                      <Icon
+                        icon="i-lucide-upload"
+                        class="size-5 text-n-slate-10"
+                      />
+                      <span class="text-sm font-medium text-n-slate-12">
+                        Sube el video desde tu PC
+                      </span>
+                      <span class="text-xs text-n-slate-10">
+                        o arrástralo aquí · MP4 hasta 16 MB, el límite de
+                        WhatsApp
+                      </span>
+                    </label>
+
+                    <p v-if="errorVideo" class="mb-0 text-xs text-n-ruby-11">
+                      {{ errorVideo }}
+                    </p>
+
+                    <template v-if="!elegida.videoSubido && !subiendo">
+                      <Input
+                        v-if="verEnlace || form.videoUrl"
+                        v-model="form.videoUrl"
+                        type="url"
+                        placeholder="https://.../recorrido.mp4"
+                        :message="
+                          avisoVideo ||
+                          'Enlace directo a un .mp4 que ya esté en internet.'
+                        "
+                        :message-type="avisoVideo ? 'error' : 'info'"
+                      />
+                      <button
+                        v-else
+                        type="button"
+                        class="self-start text-xs text-n-blue-11 hover:underline"
+                        @click="verEnlace = true"
+                      >
+                        ¿El video ya está en internet? Pega el enlace
+                      </button>
+                    </template>
+                  </div>
+
+                  <div class="grid gap-4 md:grid-cols-2">
                     <Input
                       v-model="form.mapsUrl"
                       label="Ubicación"
@@ -929,7 +1150,7 @@ const TITULO = 'mb-0 text-base font-medium text-n-slate-12';
                   rows="3"
                   placeholder="Mantenimiento S/ 450 al mes. Se aceptan mascotas pequeñas."
                   :class="AREA"
-                  class="resize-y"
+                  class="!h-auto resize-y"
                 />
                 <span class="text-xs text-n-slate-10">
                   Lo usa para responder, sin decir que es una nota.

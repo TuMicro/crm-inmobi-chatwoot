@@ -14,8 +14,10 @@ import {
   ordenar,
   origen,
   precioTexto,
+  problemaConElVideo,
   resumen,
   subtitulo,
+  tamanoLegible,
   textoDeWeb,
   vistaPrevia,
   websParaElegir,
@@ -305,6 +307,62 @@ describe('vistaPrevia', () => {
 
   it('el nombre del archivo sale de la URL', () => {
     expect(nombreDeArchivo('https://x/a/b/video.mp4?t=1')).toBe('video.mp4');
+  });
+});
+
+describe('el video subido', () => {
+  it('el formulario lleva el enlace pegado, no la URL firmada del subido', () => {
+    const p = prop({
+      videoUrl: 'https://storage/firmada?X-Amz-Signature=abc',
+      videoEnlace: null,
+      videoSubido: {
+        clave: 'crm/v.mp4',
+        nombre: 'recorrido.mp4',
+        bytes: 4_000_000,
+      },
+    });
+    expect(formularioDe(p).videoUrl).toBe('');
+  });
+
+  it('en la vista previa manda el subido sobre el enlace', () => {
+    const p = prop({
+      videoSubido: { clave: 'k', nombre: 'recorrido.mp4', bytes: 1 },
+    });
+    const v = vistaPrevia(
+      { ...formularioDe(p), videoUrl: 'https://x/otro.mp4' },
+      p
+    );
+    expect(v[1]).toEqual({
+      tipo: 'archivo',
+      clase: 'video',
+      nombre: 'recorrido.mp4',
+    });
+  });
+
+  it('solo MP4 o 3GP hasta 16 MB, antes de subir nada', () => {
+    const mb = n => n * 1024 * 1024;
+    expect(
+      problemaConElVideo({ name: 'a.mp4', type: 'video/mp4', size: mb(5) })
+    ).toBe('');
+    expect(problemaConElVideo({ name: 'a.3gp', type: '', size: mb(1) })).toBe(
+      ''
+    );
+    expect(
+      problemaConElVideo({
+        name: 'a.mov',
+        type: 'video/quicktime',
+        size: mb(5),
+      })
+    ).toMatch(/MP4 o 3GP/);
+    expect(
+      problemaConElVideo({ name: 'a.mp4', type: 'video/mp4', size: mb(20) })
+    ).toMatch(/Pesa 20.0 MB/);
+    expect(problemaConElVideo(null)).toMatch(/ningún archivo/);
+  });
+
+  it('tamanoLegible', () => {
+    expect(tamanoLegible(850 * 1024)).toBe('850 KB');
+    expect(tamanoLegible(4.2 * 1024 * 1024)).toBe('4.2 MB');
   });
 });
 
