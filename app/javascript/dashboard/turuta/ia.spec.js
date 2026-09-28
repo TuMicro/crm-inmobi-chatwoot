@@ -103,6 +103,20 @@ describe('la configuracion', () => {
       maxTurnosSinAvance: 8,
     });
   });
+
+  it('el modelo: vacio es el del servidor; elegir uno lo manda', () => {
+    const f = formularioDe(config);
+    expect(f.modelo).toBe('');
+    expect(cambiosDe({ ...f, modelo: 'gemini-3.8-flash' }, config)).toEqual({
+      modelo: 'gemini-3.8-flash',
+    });
+    expect(
+      cambiosDe(formularioDe({ ...config, modelo: 'gemini-3.8-flash' }), {
+        ...config,
+        modelo: 'gemini-3.8-flash',
+      })
+    ).toEqual({});
+  });
 });
 
 describe('avisos', () => {

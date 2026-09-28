@@ -12,6 +12,7 @@ import { useStore, useMapGetter } from 'dashboard/composables/store';
 import { useAlert } from 'dashboard/composables';
 import Button from 'dashboard/components-next/button/Button.vue';
 import Icon from 'dashboard/components-next/icon/Icon.vue';
+import Dialog from 'dashboard/components-next/dialog/Dialog.vue';
 import ReportHeader from 'dashboard/routes/dashboard/settings/reports/components/ReportHeader.vue';
 import { leadAppConfig, textoError } from './leadApp';
 import {
@@ -123,13 +124,54 @@ async function accion(fn, exito) {
   }
 }
 
+// Confirmaciones con el dialogo de Chatwoot, no con el del navegador.
+const dialogoConfirmar = ref(null);
+const confirmacion = ref({
+  titulo: '',
+  detalle: '',
+  boton: '',
+  peligro: false,
+});
+let responderA = null;
+
+function confirmar({
+  titulo,
+  detalle = '',
+  boton = 'Aceptar',
+  peligro = false,
+}) {
+  confirmacion.value = { titulo, detalle, boton, peligro };
+  dialogoConfirmar.value?.open();
+  return new Promise(resolve => {
+    responderA = resolve;
+  });
+}
+
+function responderConfirmacion(si) {
+  const responder = responderA;
+  responderA = null;
+  if (si) dialogoConfirmar.value?.close();
+  responder?.(si);
+}
+
 /** Encender o apagar entera. Al encender, en todas las bandejas. */
-function cambiarModo(quiero) {
-  const texto = quiero
-    ? 'La IA atenderá los chats nuevos de todas las bandejas.'
-    : 'La IA dejará de atender. Los chats que tenía a medias pasan a un asesor.';
-  // eslint-disable-next-line no-alert
-  if (!window.confirm(texto)) return;
+async function cambiarModo(quiero) {
+  const si = await confirmar(
+    quiero
+      ? {
+          titulo: '¿Encender la IA?',
+          detalle: 'Atenderá los chats nuevos de todas las bandejas.',
+          boton: 'Encender',
+        }
+      : {
+          titulo: '¿Apagar la IA?',
+          detalle:
+            'Dejará de atender. Los chats que tenía a medias pasan a un asesor.',
+          boton: 'Apagar',
+          peligro: true,
+        }
+  );
+  if (!si) return;
   accion(
     () =>
       pedir('/dashboard-app/ai/mode', {
@@ -401,10 +443,12 @@ const CAMPO =
               </span>
             </header>
             <div class="flex items-end gap-0.5 h-28">
+              <!-- Cada columna, del alto entero: si no, el % de la barra no
+                   tiene de que sacarse y la barra no se ve (30/09). -->
               <div
                 v-for="b in barras"
                 :key="b.dia"
-                class="relative flex-1 group"
+                class="relative flex flex-col justify-end flex-1 h-full group"
                 :title="`${b.etiqueta}: ${b.turnos} respuestas, ${dinero(
                   b.costeUsd
                 )}`"
@@ -508,6 +552,7 @@ const CAMPO =
                 v-model="form[c.clave]"
                 rows="5"
                 :class="CAMPO"
+                class="!h-auto resize-y"
               />
               <input
                 v-else
@@ -541,10 +586,22 @@ const CAMPO =
             :value="prompt"
             readonly
             rows="20"
-            class="w-full p-4 mt-4 font-mono text-xs rounded-lg resize-y bg-n-alpha-1 text-n-slate-11"
+            class="w-full p-4 mt-4 font-mono text-xs rounded-lg resize-y bg-n-alpha-1 text-n-slate-11 !h-[32rem]"
           />
         </section>
       </div>
     </div>
+
+    <Dialog
+      ref="dialogoConfirmar"
+      :type="confirmacion.peligro ? 'alert' : 'edit'"
+      :title="confirmacion.titulo"
+      :description="confirmacion.detalle"
+      :confirm-button-label="confirmacion.boton"
+      cancel-button-label="Cancelar"
+      width="md"
+      @confirm="responderConfirmacion(true)"
+      @close="responderConfirmacion(false)"
+    />
   </div>
 </template>

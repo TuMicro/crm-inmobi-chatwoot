@@ -146,6 +146,18 @@ export const CAMPOS = [
     ayuda: 'Si el chat no avanza en tantas vueltas, lo pasa a una persona.',
     tipo: 'numero',
   },
+  {
+    clave: 'modelo',
+    titulo: 'Modelo',
+    ayuda:
+      'Quién piensa las respuestas. El prompt y las herramientas son los mismos: sirve para compararlos.',
+    tipo: 'opciones',
+    opciones: [
+      { valor: '', texto: 'El del servidor (Claude Sonnet 5)' },
+      { valor: 'claude-sonnet-5', texto: 'Claude Sonnet 5' },
+      { valor: 'gemini-3.8-flash', texto: 'Gemini 3.8 Flash (más barato)' },
+    ],
+  },
 ];
 
 /** El formulario de configuracion a partir de lo que devuelve la API. */
