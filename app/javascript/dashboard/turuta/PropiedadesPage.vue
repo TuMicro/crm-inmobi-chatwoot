@@ -9,7 +9,7 @@
 // tokens de color de Chatwoot, para que el tema oscuro salga solo. Los
 // calculos viven en propiedades.js.
 import { ref, computed, onMounted, watch } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { useStore, useMapGetter } from 'dashboard/composables/store';
 import { useAlert } from 'dashboard/composables';
 import Button from 'dashboard/components-next/button/Button.vue';
@@ -19,23 +19,30 @@ import { leadAppConfig, textoError } from './leadApp';
 import {
   ESTADOS,
   NEGOCIABLES,
+  QUE_HACE_EL_ESTADO,
   avisoDelVideo,
   cuerpoDe,
   filtrar,
   formularioDe,
   hayCambios,
+  opcionesDeEstado,
   ordenar,
   origen,
   pendientes,
   precioTexto,
   resumen,
   subtitulo,
+  textoDeWeb,
+  websParaElegir,
 } from './propiedades';
 
 const route = useRoute();
+const router = useRouter();
 const store = useStore();
 const apps = useMapGetter('dashboardApps/getRecords');
 const currentUser = useMapGetter('getCurrentUser');
+const rol = useMapGetter('getCurrentRole');
+const esAdmin = computed(() => rol.value === 'administrator');
 const config = computed(() => leadAppConfig(apps.value));
 
 const datos = ref(null);
@@ -48,6 +55,12 @@ const web = ref('');
 const estado = ref('');
 const elegidaId = ref(null);
 const form = ref(null);
+
+// Las macros de la cuenta (para usar una como ficha) y las webs conectadas.
+const macros = ref([]);
+const webs = ref([]);
+const verWebs = ref(false);
+const guardandoWebs = ref(false);
 
 async function pedir(path, init = {}) {
   const cfg = config.value;
@@ -82,6 +95,18 @@ const elegida = computed(
   () => propiedades.value.find(p => p.id === elegidaId.value) || null
 );
 const sinGuardar = computed(() => hayCambios(form.value, elegida.value));
+const macroElegida = computed(
+  () =>
+    macros.value.find(m => String(m.id) === String(form.value?.macroId)) || null
+);
+const websConectadas = computed(() => webs.value.filter(w => w.conectada));
+const enlaceMacro = macroId =>
+  router.resolve({
+    name: macroId ? 'macros_edit' : 'macros_new',
+    params: macroId
+      ? { accountId: route.params.accountId, macroId }
+      : { accountId: route.params.accountId },
+  }).href;
 const avisoVideo = computed(() => avisoDelVideo(form.value?.videoUrl));
 
 function abrir(p) {
@@ -98,9 +123,17 @@ async function cargar() {
   cargando.value = true;
   error.value = null;
   try {
-    datos.value = await pedir(
-      `/dashboard-app/properties?accountId=${route.params.accountId}`
-    );
+    const cuenta = route.params.accountId;
+    const [respuestaLista, respuestaMacros, respuestaWebs] = await Promise.all([
+      pedir(`/dashboard-app/properties?accountId=${cuenta}`),
+      pedir(`/dashboard-app/macros?accountId=${cuenta}`).catch(() => ({})),
+      pedir(`/dashboard-app/properties/webs?accountId=${cuenta}`).catch(
+        () => ({})
+      ),
+    ]);
+    datos.value = respuestaLista;
+    macros.value = respuestaMacros.macros || [];
+    webs.value = websParaElegir(respuestaWebs);
     // La propiedad abierta se mantiene, con lo recien guardado; si ya no esta
     // en la lista (se despublico en la web), se cierra.
     const sigue = propiedades.value.find(p => p.id === elegidaId.value);
@@ -169,6 +202,28 @@ async function guardar() {
   }
 }
 
+async function guardarWebs() {
+  if (guardandoWebs.value) return;
+  const sites = webs.value.filter(w => w.conectada).map(w => w.site);
+  guardandoWebs.value = true;
+  try {
+    await pedir('/dashboard-app/ai/sites', {
+      method: 'PUT',
+      body: JSON.stringify({
+        accountId: Number(route.params.accountId),
+        sites,
+      }),
+    });
+    verWebs.value = false;
+    await cargar();
+    useAlert('Webs guardadas. La IA las usa desde el próximo mensaje.');
+  } catch (e) {
+    useAlert(`No se pudieron guardar las webs: ${e.message}`);
+  } finally {
+    guardandoWebs.value = false;
+  }
+}
+
 const COLOR_ESTADO = {
   disponible: 'bg-n-teal-3 text-n-teal-11',
   reservado: 'bg-n-amber-3 text-n-amber-11',
@@ -223,8 +278,16 @@ const CAMPO =
         class="text-sm text-n-slate-11"
         :class="TARJETA"
       >
-        No hay propiedades publicadas en las webs del cliente
-        <span v-if="sitios.length">({{ sitios.join(' y ') }})</span>.
+        No hay propiedades publicadas en las webs conectadas
+        <span v-if="sitios.length">({{ sitios.join(', ') }})</span>.
+        <button
+          v-if="esAdmin"
+          type="button"
+          class="text-n-blue-11 hover:underline"
+          @click="verWebs = true"
+        >
+          Elegir las webs
+        </button>
       </p>
 
       <div v-else class="flex flex-col gap-4">
@@ -249,9 +312,9 @@ const CAMPO =
               },
               {
                 id: 'video',
-                titulo: 'Con video',
-                valor: cifras.conVideo,
-                nota: 'se manda tras la ficha',
+                titulo: 'Con macro o video',
+                valor: cifras.conMacroOVideo,
+                nota: 'se mandan con la ficha',
                 icono: 'i-lucide-video',
                 color: 'text-n-amber-11 bg-n-amber-3',
               },
@@ -286,6 +349,65 @@ const CAMPO =
           </article>
         </section>
 
+        <!-- Webs del inventario: cuales se conectan (solo administradores) -->
+        <section v-if="esAdmin" :class="TARJETA">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <p class="mb-0 text-sm text-n-slate-11">
+              Webs conectadas:
+              <span class="font-medium text-n-slate-12">
+                {{
+                  websConectadas.length
+                    ? websConectadas.map(w => w.site).join(', ')
+                    : 'ninguna'
+                }}
+              </span>
+            </p>
+            <button
+              type="button"
+              class="text-xs text-n-blue-11 hover:underline"
+              @click="verWebs = !verWebs"
+            >
+              {{ verWebs ? 'Cerrar' : 'Cambiar' }}
+            </button>
+          </div>
+          <div v-if="verWebs" class="mt-4">
+            <p class="mb-3 text-xs text-n-slate-10">
+              La IA ofrece las propiedades de todas las webs conectadas, en
+              todas las bandejas. Conecta las que salen en las webs del cliente;
+              en Supabase hay restos antiguos con el mismo nombre.
+            </p>
+            <label
+              v-for="w in webs"
+              :key="w.site"
+              class="flex items-start gap-3 px-3 py-2 mb-2 rounded-lg cursor-pointer bg-n-alpha-1"
+            >
+              <input v-model="w.conectada" type="checkbox" class="mt-1" />
+              <span class="min-w-0">
+                <span class="block text-sm text-n-slate-12">
+                  {{ w.nombre }}
+                  <span class="text-xs text-n-slate-10">({{ w.site }})</span>
+                </span>
+                <span class="block text-xs text-n-slate-10">
+                  {{ w.publicadas }} publicadas<span v-if="w.ejemplos.length"
+                    >: {{ w.ejemplos.join(', ') }}</span
+                  >
+                </span>
+              </span>
+            </label>
+            <div class="flex justify-end mt-3">
+              <Button
+                label="Guardar las webs"
+                variant="solid"
+                color="blue"
+                size="sm"
+                :is-loading="guardandoWebs"
+                :disabled="guardandoWebs"
+                @click="guardarWebs"
+              />
+            </div>
+          </div>
+        </section>
+
         <div class="grid gap-4 lg:grid-cols-[22rem_1fr] items-start">
           <!-- Lista -->
           <section :class="TARJETA">
@@ -308,7 +430,7 @@ const CAMPO =
                 "
                 @click="web = s"
               >
-                {{ s || 'Las dos webs' }}
+                {{ textoDeWeb(s) }}
               </button>
             </div>
             <div class="flex flex-wrap gap-1 mt-2">
@@ -439,12 +561,16 @@ const CAMPO =
               <label class="block text-xs font-medium text-n-slate-11">
                 Estado
                 <select v-model="form.availability" :class="CAMPO">
-                  <option v-for="e in ESTADOS" :key="e" :value="e">
-                    {{ e }}
+                  <option
+                    v-for="o in opcionesDeEstado(elegida)"
+                    :key="o.valor"
+                    :value="o.valor"
+                  >
+                    {{ o.texto }}
                   </option>
                 </select>
                 <span class="block mt-1 font-normal text-n-slate-10">
-                  Vendida o reservada: la IA lo dice y ofrece parecidas.
+                  {{ QUE_HACE_EL_ESTADO[form.availability] }} No cambia la web.
                 </span>
               </label>
 
@@ -524,8 +650,87 @@ const CAMPO =
               </label>
             </div>
 
+            <!-- La ficha como macro: varios mensajes y archivos, en orden -->
+            <div class="p-3 mt-5 rounded-lg bg-n-alpha-1">
+              <label class="block text-xs font-medium text-n-slate-11">
+                Enviar con una macro
+                <select v-model="form.macroId" :class="CAMPO">
+                  <option value="">
+                    Ninguna: la ficha de abajo, el video y la ubicación
+                  </option>
+                  <option v-for="m in macros" :key="m.id" :value="String(m.id)">
+                    {{ m.nombre }}{{ m.publica ? '' : ' (personal)' }}
+                  </option>
+                </select>
+              </label>
+              <div class="flex flex-wrap gap-3 mt-2 text-xs">
+                <a
+                  v-if="macroElegida"
+                  :href="enlaceMacro(macroElegida.id)"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="text-n-blue-11 hover:underline"
+                >
+                  Editar esta macro
+                </a>
+                <a
+                  :href="enlaceMacro(null)"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="text-n-blue-11 hover:underline"
+                >
+                  Crear una macro
+                </a>
+                <button
+                  type="button"
+                  class="text-n-slate-11 hover:underline"
+                  @click="cargar"
+                >
+                  Volver a leer las macros
+                </button>
+              </div>
+              <ol
+                v-if="macroElegida"
+                class="flex flex-col gap-1 mt-3 mb-0 text-xs list-decimal ltr:pl-5 rtl:pr-5 text-n-slate-12"
+              >
+                <li v-for="(paso, i) in macroElegida.pasos" :key="i">
+                  <span v-if="paso.tipo === 'texto'">
+                    Mensaje: «{{ paso.texto }}»
+                  </span>
+                  <span v-else>
+                    Archivo ({{ paso.clase }}): {{ paso.texto }}
+                  </span>
+                </li>
+              </ol>
+              <p
+                v-if="macroElegida && !macroElegida.pasos.length"
+                class="mt-2 mb-0 text-xs text-n-amber-11"
+              >
+                Esta macro no manda ningún mensaje ni archivo: la IA usará la
+                ficha de abajo.
+              </p>
+              <p
+                v-if="macroElegida && macroElegida.ignoradas.length"
+                class="mt-2 mb-0 text-xs text-n-slate-10"
+              >
+                La IA no hace el resto de acciones de la macro ({{
+                  macroElegida.ignoradas.join(', ')
+                }}): solo manda mensajes y archivos.
+              </p>
+              <p class="mt-2 mb-0 text-xs text-n-slate-10">
+                La IA manda los mensajes y archivos de la macro, en orden y con
+                el nombre de la empresa, en lugar de la ficha, el video y la
+                ubicación. Si no ves tu macro, márcala como visible para todos.
+              </p>
+            </div>
+
             <label class="block mt-4 text-xs font-medium text-n-slate-11">
-              Ficha de WhatsApp
+              Ficha de WhatsApp<span
+                v-if="macroElegida"
+                class="font-normal text-n-slate-10"
+              >
+                (no se usa: se manda la macro)</span
+              >
               <textarea
                 v-model="form.ficha"
                 rows="12"

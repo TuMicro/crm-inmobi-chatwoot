@@ -5,6 +5,60 @@
 
 export const ESTADOS = ['disponible', 'reservado', 'vendido'];
 
+/**
+ * Que hace cada estado. Ninguno toca la web del cliente: solo cambia lo que
+ * hace la IA con la propiedad.
+ */
+export const QUE_HACE_EL_ESTADO = {
+  '': 'Sigue a la web: si allí la marcan como vendida, aquí también.',
+  disponible: 'La IA la ofrece y manda su ficha.',
+  reservado:
+    'Alguien la separó. La IA no la ofrece ni manda su ficha; si preguntan por ella, dice que está reservada y ofrece parecidas.',
+  vendido:
+    'La IA no la ofrece ni manda su ficha; si preguntan por ella, dice que se vendió y ofrece parecidas.',
+};
+
+/** Las opciones del selector de estado. La primera sigue a la web. */
+export function opcionesDeEstado(p) {
+  return [
+    {
+      valor: '',
+      texto: `Según la web (${p?.disponibilidadWeb || 'disponible'})`,
+    },
+    ...ESTADOS.map(e => ({
+      valor: e,
+      texto: e.charAt(0).toUpperCase() + e.slice(1),
+    })),
+  ];
+}
+
+/** El texto del filtro por web: vacio es "Todas". */
+export const textoDeWeb = site => site || 'Todas';
+
+/**
+ * Las webs para el bloque "Webs del inventario": las que hay en Supabase, y
+ * tambien las conectadas que ya no estan, para poder quitarlas.
+ */
+export function websParaElegir(respuesta) {
+  const conectadas = new Set(respuesta?.conectadas || []);
+  const lista = (respuesta?.disponibles || []).map(w => ({
+    ...w,
+    conectada: conectadas.has(w.site),
+  }));
+  conectadas.forEach(site => {
+    if (!lista.some(w => w.site === site)) {
+      lista.push({
+        site,
+        nombre: site,
+        publicadas: 0,
+        ejemplos: [],
+        conectada: true,
+      });
+    }
+  });
+  return lista;
+}
+
 /** Que contesta la IA si preguntan si el precio se negocia. Vacio: no se sabe. */
 export const NEGOCIABLES = [
   { valor: '', texto: 'No se ha dicho' },
@@ -46,8 +100,11 @@ export function origen(p) {
 export function pendientes(p) {
   const falta = [];
   if (!p) return falta;
-  if (p.fichaPorDefecto) falta.push('ficha generada');
-  if (!p.videoUrl) falta.push('sin video');
+  // Con macro, la macro es la ficha y lleva lo que el equipo quiera.
+  if (!p.macroId) {
+    if (p.fichaPorDefecto) falta.push('ficha generada');
+    if (!p.videoUrl) falta.push('sin video');
+  }
   if (!p.horarioVisitas) falta.push('sin horario de visitas');
   return falta;
 }
@@ -76,7 +133,7 @@ export function ordenar(propiedades) {
   // Las que estan a medias arriba, las vendidas al final.
   const peso = p => {
     if (p.disponibilidad === 'vendido') return 2;
-    return p.fichaPorDefecto ? 0 : 1;
+    return p.fichaPorDefecto && !p.macroId ? 0 : 1;
   };
   return [...(propiedades || [])].sort((a, b) => {
     const d = peso(a) - peso(b);
@@ -98,8 +155,8 @@ export function resumen(propiedades) {
     disponibles: cuenta('disponible'),
     reservadas: cuenta('reservado'),
     vendidas: cuenta('vendido'),
-    conFichaPropia: lista.filter(p => !p.fichaPorDefecto).length,
-    conVideo: lista.filter(p => p.videoUrl).length,
+    conFichaPropia: lista.filter(p => !p.fichaPorDefecto || p.macroId).length,
+    conMacroOVideo: lista.filter(p => p.videoUrl || p.macroId).length,
   };
 }
 
@@ -132,7 +189,9 @@ export function formularioDe(p) {
     videoUrl: p?.videoUrl || '',
     mapsUrl: p?.mapsUrl || '',
     visitHours: p?.horarioVisitas || '',
-    availability: p?.disponibilidad || 'disponible',
+    // Vacio: sigue a la web. Asi guardar otro campo no congela el estado.
+    availability: p?.disponibilidadEquipo || '',
+    macroId: p?.macroId ? String(p.macroId) : '',
     negotiable: p?.negociable || '',
     conditions: p?.condiciones || '',
     notes: p?.notas || '',
@@ -155,6 +214,7 @@ export function hayCambios(form, p) {
     'negotiable',
     'conditions',
     'notes',
+    'macroId',
   ];
   if (camposTexto.some(c => !mismoTexto(form[c], original[c]))) return true;
   return (
@@ -178,6 +238,7 @@ export function cuerpoDe(form, p, accountId, quien) {
     conditions: String(form.conditions || '').trim(),
     notes: String(form.notes || '').trim(),
     facts: listaADatos(form.datos),
+    macroId: Number(form.macroId) > 0 ? Number(form.macroId) : null,
     updatedBy: quien || '',
   };
 }

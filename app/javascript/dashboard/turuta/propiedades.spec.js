@@ -6,12 +6,15 @@ import {
   formularioDe,
   hayCambios,
   listaADatos,
+  opcionesDeEstado,
   ordenar,
   origen,
   pendientes,
   precioTexto,
   resumen,
   subtitulo,
+  textoDeWeb,
+  websParaElegir,
 } from './propiedades';
 
 const prop = (extra = {}) => ({
@@ -78,6 +81,51 @@ describe('pendientes', () => {
       )
     ).toEqual([]);
   });
+
+  it('con macro no pide ficha ni video: la macro lleva lo que el equipo quiera', () => {
+    expect(pendientes(prop({ macroId: 7 }))).toEqual([
+      'sin horario de visitas',
+    ]);
+  });
+});
+
+describe('estado y webs', () => {
+  it('la primera opcion sigue a la web y dice que marca la web', () => {
+    const o = opcionesDeEstado(prop({ disponibilidadWeb: 'vendido' }));
+    expect(o[0]).toEqual({ valor: '', texto: 'Según la web (vendido)' });
+    expect(o.map(x => x.valor)).toEqual([
+      '',
+      'disponible',
+      'reservado',
+      'vendido',
+    ]);
+    expect(o[2].texto).toBe('Reservado');
+  });
+
+  it('el filtro sin web se llama Todas', () => {
+    expect(textoDeWeb('')).toBe('Todas');
+    expect(textoDeWeb('madhouse')).toBe('madhouse');
+  });
+
+  it('las webs para elegir marcan las conectadas y conservan las que ya no existen', () => {
+    const w = websParaElegir({
+      conectadas: ['joserojas', 'vieja'],
+      disponibles: [
+        {
+          site: 'joserojas',
+          nombre: 'José Rojas',
+          publicadas: 5,
+          ejemplos: [],
+        },
+        { site: 'madhouse', nombre: 'Madhouse', publicadas: 5, ejemplos: [] },
+      ],
+    });
+    expect(w.map(x => [x.site, x.conectada])).toEqual([
+      ['joserojas', true],
+      ['madhouse', false],
+      ['vieja', true],
+    ]);
+  });
 });
 
 describe('filtrar y ordenar', () => {
@@ -126,8 +174,10 @@ describe('resumen', () => {
       reservadas: 0,
       vendidas: 1,
       conFichaPropia: 1,
-      conVideo: 1,
+      conMacroOVideo: 1,
     });
+    expect(resumen([prop({ macroId: 3 })]).conFichaPropia).toBe(1);
+    expect(resumen([prop({ macroId: 3 })]).conMacroOVideo).toBe(1);
   });
 });
 
@@ -164,6 +214,15 @@ describe('el formulario', () => {
     expect(
       hayCambios({ ...form, datos: [{ clave: 'piso', valor: '7' }] }, p)
     ).toBe(true);
+    expect(hayCambios({ ...form, macroId: '7' }, p)).toBe(true);
+  });
+
+  it('el estado sigue a la web salvo que el equipo lo haya puesto', () => {
+    expect(formularioDe(prop()).availability).toBe('');
+    expect(
+      formularioDe(prop({ disponibilidadEquipo: 'reservado' })).availability
+    ).toBe('reservado');
+    expect(formularioDe(prop({ macroId: 7 })).macroId).toBe('7');
   });
 
   it('el cuerpo del PUT lleva la propiedad, todos los campos y quien lo hizo', () => {
@@ -181,13 +240,15 @@ describe('el formulario', () => {
       videoUrl: '',
       mapsUrl: 'https://maps.google.com/?q=1,2',
       visitHours: '11 a 13',
-      availability: 'disponible',
+      availability: '',
       negotiable: '',
       conditions: '',
       notes: '',
       facts: { piso: '7' },
+      macroId: null,
       updatedBy: 'Kefrin',
     });
+    expect(cuerpoDe({ ...form, macroId: '12' }, p, '1', '').macroId).toBe(12);
   });
 });
 
