@@ -1062,7 +1062,7 @@ const TITULO = 'mb-0 text-base font-medium text-n-slate-12';
                 y ubicación, o una macro de Chatwoot.
               </p>
 
-              <div class="grid gap-5 xl:grid-cols-[minmax(0,1fr)_17rem]">
+              <div class="grid gap-5 xl:grid-cols-[minmax(0,1fr)_20rem]">
                 <!-- Ficha y archivos -->
                 <div
                   v-if="form.modo === 'ficha'"
@@ -1479,48 +1479,54 @@ const TITULO = 'mb-0 text-base font-medium text-n-slate-12';
                 </div>
 
                 <!-- Vista previa -->
-                <aside class="p-3 rounded-xl bg-n-alpha-1">
+                <aside
+                  class="flex flex-col p-3 rounded-xl bg-n-alpha-1 xl:min-h-[28rem]"
+                >
                   <p
                     class="flex items-center gap-1.5 mb-2 text-xs font-medium text-n-slate-11"
                   >
                     <Icon icon="i-lucide-eye" class="size-3.5" />
                     Así le llega al lead
                   </p>
-                  <div
-                    v-if="burbujas.length"
-                    class="flex flex-col items-end gap-1.5 max-h-[28rem] overflow-y-auto"
-                  >
+                  <!-- En pantalla ancha, tan alta como el editor de al lado:
+                       solo hay scroll si lo que se manda no cabe. -->
+                  <div class="xl:relative xl:flex-1 xl:min-h-0">
                     <div
-                      v-for="(b, i) in burbujas"
-                      :key="i"
-                      class="max-w-full px-3 py-2 text-xs rounded-lg rounded-tr-sm shadow-sm bg-n-teal-3 text-n-slate-12"
+                      v-if="burbujas.length"
+                      class="flex flex-col items-end gap-1.5 xl:absolute xl:inset-0 xl:overflow-y-auto"
                     >
-                      <span
-                        v-if="b.tipo === 'texto'"
-                        class="block break-words whitespace-pre-wrap"
-                        >{{ b.texto }}</span
+                      <div
+                        v-for="(b, i) in burbujas"
+                        :key="i"
+                        class="max-w-full px-3 py-2 text-xs rounded-lg rounded-tr-sm shadow-sm bg-n-teal-3 text-n-slate-12"
                       >
-                      <img
-                        v-else-if="b.clase === 'imagen' && b.url"
-                        :src="b.url"
-                        :alt="b.nombre"
-                        class="block object-cover w-40 rounded max-h-32"
-                      />
-                      <span v-else class="flex items-center gap-2">
-                        <Icon
-                          :icon="
-                            ICONO_DE_ARCHIVO[b.clase] ||
-                            ICONO_DE_ARCHIVO.documento
-                          "
-                          class="flex-none size-4 text-n-teal-11"
+                        <span
+                          v-if="b.tipo === 'texto'"
+                          class="block break-words whitespace-pre-wrap"
+                          >{{ b.texto }}</span
+                        >
+                        <img
+                          v-else-if="b.clase === 'imagen' && b.url"
+                          :src="b.url"
+                          :alt="b.nombre"
+                          class="block object-cover w-40 rounded max-h-32"
                         />
-                        <span class="truncate">{{ b.nombre }}</span>
-                      </span>
+                        <span v-else class="flex items-center gap-2">
+                          <Icon
+                            :icon="
+                              ICONO_DE_ARCHIVO[b.clase] ||
+                              ICONO_DE_ARCHIVO.documento
+                            "
+                            class="flex-none size-4 text-n-teal-11"
+                          />
+                          <span class="truncate">{{ b.nombre }}</span>
+                        </span>
+                      </div>
                     </div>
+                    <p v-else class="mb-0 text-xs text-n-slate-10">
+                      Elige una macro para ver lo que manda.
+                    </p>
                   </div>
-                  <p v-else class="mb-0 text-xs text-n-slate-10">
-                    Elige una macro para ver lo que manda.
-                  </p>
                 </aside>
               </div>
             </div>
