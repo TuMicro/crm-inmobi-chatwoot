@@ -1,4 +1,5 @@
 import {
+  ACEPTA_ARCHIVOS,
   adjuntosDe,
   estadoMacroAsesores,
   cuerpoDe,
@@ -393,6 +394,12 @@ describe('los archivos', () => {
       /Ya hay 10/
     );
     expect(problemaConElArchivo(null)).toMatch(/ningún archivo/);
+  });
+
+  it('el selector deja elegir por extension, tambien .webp', () => {
+    expect(ACEPTA_ARCHIVOS.split(',')).toEqual(
+      expect.arrayContaining(['.webp', '.jpg', '.png', '.mov', '.pdf'])
+    );
   });
 
   it('tamanoLegible', () => {

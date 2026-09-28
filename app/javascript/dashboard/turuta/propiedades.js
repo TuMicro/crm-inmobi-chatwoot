@@ -411,9 +411,30 @@ export const MAX_PIEZAS = 15;
 const MB = 1024 * 1024;
 const SUBIDA_MAX = { imagen: 25 * MB, video: 500 * MB, documento: 40 * MB };
 
-/** Lo que deja elegir el selector de archivos. */
-export const ACEPTA_ARCHIVOS =
-  'image/jpeg,image/png,image/webp,video/*,.mov,.mkv,application/pdf,.pdf';
+/**
+ * Lo que deja elegir el selector de archivos. Con las extensiones además de
+ * los tipos: Windows no siempre sabe que .webp es image/webp, y entonces el
+ * selector no enseñaba esas fotos (30/09).
+ */
+export const ACEPTA_ARCHIVOS = [
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  '.jpg',
+  '.jpeg',
+  '.png',
+  '.webp',
+  'video/*',
+  '.mp4',
+  '.mov',
+  '.m4v',
+  '.3gp',
+  '.webm',
+  '.mkv',
+  '.avi',
+  'application/pdf',
+  '.pdf',
+].join(',');
 
 export const ETIQUETA_TIPO = {
   imagen: 'Foto',
