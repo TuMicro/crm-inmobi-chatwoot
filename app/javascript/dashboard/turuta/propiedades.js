@@ -472,3 +472,44 @@ export function avisoDelEnlace(url) {
     return 'El enlace tiene que empezar por https://';
   return '';
 }
+
+/**
+ * La caja «Macro para los asesores» de la pestaña Ficha y archivos: lo que
+ * dice y si se puede pulsar. `macros` es la lista de la cuenta (para el
+ * nombre); `sinGuardar` y `subiendo`, lo que impide guardarla ahora.
+ */
+export function estadoMacroAsesores(p, { macros = [], sinGuardar, subiendo }) {
+  let motivo = '';
+  if (sinGuardar) motivo = 'Guarda los cambios antes.';
+  else if (subiendo) motivo = 'Espera a que terminen de subir los archivos.';
+  if (!p?.macroAsesoresId) {
+    return {
+      titulo: 'Macro para los asesores',
+      detalle:
+        'Guarda esto mismo como una macro de Chatwoot, para mandarlo a mano desde un chat.',
+      boton: 'Guardar como macro',
+      destacado: true,
+      motivo,
+    };
+  }
+  const macro = macros.find(m => String(m.id) === String(p.macroAsesoresId));
+  const titulo = macro ? `Macro «${macro.nombre}»` : 'Macro para los asesores';
+  if (p.macroAsesoresAlDia) {
+    return {
+      titulo,
+      detalle:
+        'Al día: manda lo mismo que la IA. Actualizar reemplaza sus pasos con lo de aquí.',
+      boton: 'Actualizar',
+      destacado: false,
+      motivo,
+    };
+  }
+  return {
+    titulo,
+    detalle:
+      'Cambió la ficha, los archivos, el enlace o la ubicación: actualízala para que los asesores manden lo mismo.',
+    boton: 'Actualizar la macro',
+    destacado: true,
+    motivo,
+  };
+}

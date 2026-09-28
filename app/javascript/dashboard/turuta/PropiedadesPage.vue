@@ -31,6 +31,7 @@ import {
   QUE_HACE_EL_ESTADO,
   avisoDelEnlace,
   cuerpoDe,
+  estadoMacroAsesores,
   fichaEsGenerada,
   filtrar,
   formularioDe,
@@ -130,6 +131,16 @@ const subidasDeEsta = computed(() => subidas.value.filter(deLaElegida));
 const erroresDeEsta = computed(() => erroresSubida.value.filter(deLaElegida));
 const cabeMas = computed(
   () => archivos.value.length + subidasDeEsta.value.length < MAX_ARCHIVOS
+);
+
+// La macro para los asesores: lo mismo que manda la IA, como macro de Chatwoot.
+const guardandoMacro = ref(false);
+const cajaMacro = computed(() =>
+  estadoMacroAsesores(elegida.value, {
+    macros: macros.value,
+    sinGuardar: sinGuardar.value,
+    subiendo: subidasDeEsta.value.length > 0,
+  })
 );
 const generada = computed(() => fichaEsGenerada(form.value, elegida.value));
 const macroElegida = computed(
@@ -445,6 +456,34 @@ async function quitarArchivo(a) {
     actualizarPropiedad(r.propiedad);
   } catch (e) {
     useAlert(`No se pudo quitar: ${e.message}`);
+  }
+}
+
+async function guardarMacroAsesores() {
+  const p = elegida.value;
+  if (!p || guardandoMacro.value || cajaMacro.value.motivo) return;
+  guardandoMacro.value = true;
+  try {
+    const r = await pedir('/dashboard-app/properties/macro', {
+      method: 'POST',
+      body: JSON.stringify({
+        accountId: Number(route.params.accountId),
+        site: p.site,
+        propertyId: p.id,
+        updatedBy: currentUser.value?.name || '',
+      }),
+    });
+    actualizarPropiedad(r.propiedad);
+    await recargarMacros();
+    useAlert(
+      r.macro?.creada
+        ? `Macro «${r.macro.nombre}» creada: los asesores ya la tienen.`
+        : `Macro «${r.macro?.nombre}» actualizada.`
+    );
+  } catch (e) {
+    useAlert(`No se pudo guardar la macro: ${e.message}`);
+  } finally {
+    guardandoMacro.value = false;
   }
 }
 
@@ -1150,6 +1189,51 @@ const TITULO = 'mb-0 text-base font-medium text-n-slate-12';
                       "
                       message="Vacío: se arma con la ubicación de la web."
                     />
+                  </div>
+
+                  <!-- La macro para los asesores -->
+                  <div
+                    class="flex flex-wrap items-center gap-3 p-3 rounded-lg outline outline-1 outline-n-weak"
+                  >
+                    <span
+                      class="flex items-center justify-center flex-none rounded-lg size-9 bg-n-alpha-2"
+                    >
+                      <Icon
+                        icon="i-lucide-zap"
+                        class="size-4 text-n-slate-11"
+                      />
+                    </span>
+                    <div class="min-w-0 grow basis-60">
+                      <p
+                        class="mb-0 text-sm font-medium truncate text-n-slate-12"
+                      >
+                        {{ cajaMacro.titulo }}
+                      </p>
+                      <p class="mb-0 text-xs text-n-slate-10">
+                        {{ cajaMacro.detalle }}
+                      </p>
+                    </div>
+                    <div class="flex items-center flex-none gap-3">
+                      <a
+                        v-if="elegida.macroAsesoresId"
+                        :href="enlaceMacro(elegida.macroAsesoresId)"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="text-xs text-n-blue-11 hover:underline"
+                      >
+                        Abrir
+                      </a>
+                      <Button
+                        v-tooltip="cajaMacro.motivo"
+                        :label="cajaMacro.boton"
+                        :variant="cajaMacro.destacado ? 'solid' : 'faded'"
+                        color="blue"
+                        size="sm"
+                        :is-loading="guardandoMacro"
+                        :disabled="!!cajaMacro.motivo || guardandoMacro"
+                        @click="guardarMacroAsesores"
+                      />
+                    </div>
                   </div>
                 </div>
 

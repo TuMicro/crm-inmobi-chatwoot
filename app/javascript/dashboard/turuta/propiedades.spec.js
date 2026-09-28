@@ -1,5 +1,6 @@
 import {
   adjuntosDe,
+  estadoMacroAsesores,
   avisoDelEnlace,
   cuerpoDe,
   datosALista,
@@ -403,5 +404,43 @@ describe('avisoDelEnlace', () => {
     expect(avisoDelEnlace('https://youtu.be/abc')).toBe('');
     expect(avisoDelEnlace('https://my.matterport.com/show/?m=x')).toBe('');
     expect(avisoDelEnlace('youtu.be/abc')).toMatch(/https/);
+  });
+});
+
+describe('estadoMacroAsesores', () => {
+  const macros = [{ id: 12, nombre: 'JR-001 · Dúplex' }];
+
+  it('sin macro, invita a guardarla', () => {
+    expect(estadoMacroAsesores(prop(), { macros })).toMatchObject({
+      boton: 'Guardar como macro',
+      destacado: true,
+      motivo: '',
+    });
+  });
+
+  it('al dia o desactualizada, con su nombre', () => {
+    const alDia = prop({ macroAsesoresId: 12, macroAsesoresAlDia: true });
+    expect(estadoMacroAsesores(alDia, { macros })).toMatchObject({
+      titulo: 'Macro «JR-001 · Dúplex»',
+      boton: 'Actualizar',
+      destacado: false,
+    });
+    const vieja = prop({ macroAsesoresId: 12, macroAsesoresAlDia: false });
+    expect(estadoMacroAsesores(vieja, { macros })).toMatchObject({
+      boton: 'Actualizar la macro',
+      destacado: true,
+    });
+    expect(estadoMacroAsesores(vieja, { macros: [] }).titulo).toBe(
+      'Macro para los asesores'
+    );
+  });
+
+  it('no deja guardarla con cambios sin guardar o archivos subiendo', () => {
+    expect(
+      estadoMacroAsesores(prop(), { macros, sinGuardar: true }).motivo
+    ).toMatch(/Guarda los cambios/);
+    expect(
+      estadoMacroAsesores(prop(), { macros, subiendo: true }).motivo
+    ).toMatch(/terminen de subir/);
   });
 });
