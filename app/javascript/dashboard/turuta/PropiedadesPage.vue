@@ -1,38 +1,46 @@
 <script setup>
 // [turuta] Pagina "Propiedades": lo que la IA manda y sabe de cada propiedad.
 // La lista sale de las webs del cliente (nuestra API la lee de Supabase) y por
-// cada una el equipo guarda la ficha de WhatsApp, el video, la ubicacion, el
-// horario de visitas, si esta vendida, si el precio se negocia, las
-// condiciones y los datos que la IA confirmo con el equipo.
+// cada una el equipo decide que manda la IA (la ficha con su video y
+// ubicacion, o una macro de Chatwoot) y lo que sabe para responder (estado,
+// negociacion, horario, condiciones, notas y datos confirmados).
 //
-// Misma envoltura que la pagina Embudo: cabecera de informe y tarjetas con los
-// tokens de color de Chatwoot, para que el tema oscuro salga solo. Los
-// calculos viven en propiedades.js.
+// Misma envoltura que la pagina Embudo (cabecera de informe, tarjetas) y los
+// componentes de Chatwoot (TabBar, Input), para que no se note el salto y el
+// tema oscuro salga solo. Los calculos viven en propiedades.js.
 import { ref, computed, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useStore, useMapGetter } from 'dashboard/composables/store';
 import { useAlert } from 'dashboard/composables';
 import Button from 'dashboard/components-next/button/Button.vue';
 import Icon from 'dashboard/components-next/icon/Icon.vue';
+import Input from 'dashboard/components-next/input/Input.vue';
+import TabBar from 'dashboard/components-next/tabbar/TabBar.vue';
 import ReportHeader from 'dashboard/routes/dashboard/settings/reports/components/ReportHeader.vue';
+import CampoSelect from './CampoSelect.vue';
 import { leadAppConfig, textoError } from './leadApp';
 import {
   ESTADOS,
+  ETIQUETA_ESTADO,
+  ICONO_DE_ARCHIVO,
   NEGOCIABLES,
   QUE_HACE_EL_ESTADO,
   avisoDelVideo,
   cuerpoDe,
+  fichaEsGenerada,
   filtrar,
   formularioDe,
   hayCambios,
+  indicadores,
+  motivoParaNoGuardar,
   opcionesDeEstado,
   ordenar,
   origen,
-  pendientes,
   precioTexto,
   resumen,
   subtitulo,
   textoDeWeb,
+  vistaPrevia,
   websParaElegir,
 } from './propiedades';
 
@@ -95,11 +103,49 @@ const elegida = computed(
   () => propiedades.value.find(p => p.id === elegidaId.value) || null
 );
 const sinGuardar = computed(() => hayCambios(form.value, elegida.value));
+const motivo = computed(() =>
+  form.value ? motivoParaNoGuardar(form.value) : ''
+);
+const avisoVideo = computed(() => avisoDelVideo(form.value?.videoUrl));
+const generada = computed(() => fichaEsGenerada(form.value, elegida.value));
 const macroElegida = computed(
   () =>
     macros.value.find(m => String(m.id) === String(form.value?.macroId)) || null
 );
+const burbujas = computed(() =>
+  form.value ? vistaPrevia(form.value, elegida.value, macroElegida.value) : []
+);
 const websConectadas = computed(() => webs.value.filter(w => w.conectada));
+
+// Pestañas: que manda la IA, y el filtro por web.
+const PESTANAS_ENVIO = [{ label: 'Ficha y video' }, { label: 'Macro' }];
+const pestanaEnvio = computed(() => (form.value?.modo === 'macro' ? 1 : 0));
+const pestanasWeb = computed(() => [
+  { label: textoDeWeb(''), site: '' },
+  ...sitios.value.map(s => ({ label: textoDeWeb(s), site: s })),
+]);
+const pestanaWeb = computed(() =>
+  Math.max(
+    0,
+    pestanasWeb.value.findIndex(t => t.site === web.value)
+  )
+);
+
+const opcionesFiltroEstado = [
+  { value: '', label: 'Cualquier estado' },
+  ...ESTADOS.map(e => ({ value: e, label: ETIQUETA_ESTADO[e] })),
+];
+const opcionesDeMacro = computed(() => [
+  {
+    value: '',
+    label: macros.value.length ? 'Elige una macro' : 'No hay macros',
+  },
+  ...macros.value.map(m => ({
+    value: String(m.id),
+    label: m.publica ? m.nombre : `${m.nombre} (personal)`,
+  })),
+]);
+
 const enlaceMacro = macroId =>
   router.resolve({
     name: macroId ? 'macros_edit' : 'macros_new',
@@ -107,12 +153,46 @@ const enlaceMacro = macroId =>
       ? { accountId: route.params.accountId, macroId }
       : { accountId: route.params.accountId },
   }).href;
-const avisoVideo = computed(() => avisoDelVideo(form.value?.videoUrl));
 
 function abrir(p) {
   if (!p) return;
   elegidaId.value = p.id;
   form.value = formularioDe(p);
+}
+
+/** Cambiar de propiedad con cambios a medias pide confirmacion. */
+function elegir(p) {
+  if (p.id === elegidaId.value) return;
+  // eslint-disable-next-line no-alert
+  if (
+    sinGuardar.value &&
+    !window.confirm('Hay cambios sin guardar. ¿Descartarlos?')
+  )
+    return;
+  abrir(p);
+}
+
+function cerrar() {
+  // eslint-disable-next-line no-alert
+  if (
+    sinGuardar.value &&
+    !window.confirm('Hay cambios sin guardar. ¿Descartarlos?')
+  )
+    return;
+  elegidaId.value = null;
+  form.value = null;
+}
+
+function descartar() {
+  if (elegida.value) form.value = formularioDe(elegida.value);
+}
+
+function cambiarModo(pestana) {
+  form.value.modo = pestana.label === 'Macro' ? 'macro' : 'ficha';
+}
+
+function restaurarFicha() {
+  form.value.ficha = elegida.value?.fichaGenerada || '';
 }
 
 async function cargar() {
@@ -152,6 +232,17 @@ async function cargar() {
   }
 }
 
+async function recargarMacros() {
+  try {
+    const r = await pedir(
+      `/dashboard-app/macros?accountId=${route.params.accountId}`
+    );
+    macros.value = r.macros || [];
+  } catch (e) {
+    useAlert('No se pudieron leer las macros');
+  }
+}
+
 onMounted(() => {
   if (!(apps.value || []).length) store.dispatch('dashboardApps/get');
   cargar();
@@ -160,11 +251,6 @@ onMounted(() => {
 watch(config, (cfg, prev) => {
   if (cfg && !prev) cargar();
 });
-
-function cerrar() {
-  elegidaId.value = null;
-  form.value = null;
-}
 
 function anadirDato() {
   form.value.datos.push({ clave: '', valor: '' });
@@ -175,7 +261,7 @@ function quitarDato(i) {
 }
 
 async function guardar() {
-  if (!elegida.value || guardando.value) return;
+  if (!elegida.value || guardando.value || motivo.value) return;
   guardando.value = true;
   try {
     await pedir('/dashboard-app/properties/playbook', {
@@ -215,6 +301,7 @@ async function guardarWebs() {
       }),
     });
     verWebs.value = false;
+    web.value = '';
     await cargar();
     useAlert('Webs guardadas. La IA las usa desde el próximo mensaje.');
   } catch (e) {
@@ -228,12 +315,14 @@ const COLOR_ESTADO = {
   disponible: 'bg-n-teal-3 text-n-teal-11',
   reservado: 'bg-n-amber-3 text-n-amber-11',
   vendido: 'bg-n-slate-3 text-n-slate-11',
+  alquilado: 'bg-n-slate-3 text-n-slate-11',
 };
 
 const TARJETA =
-  'px-6 py-5 rounded-xl shadow outline outline-1 outline-n-container bg-n-solid-2';
-const CAMPO =
-  'block w-full px-3 py-2 mt-1 text-sm rounded-lg border border-n-weak bg-n-alpha-black2 text-n-slate-12 outline-none hover:border-n-slate-6 focus:border-n-strong';
+  'rounded-xl shadow-sm outline outline-1 outline-n-container bg-n-solid-2';
+const AREA =
+  'block w-full !mb-0 px-3 py-2.5 text-sm rounded-lg border-0 outline outline-1 -outline-offset-1 outline-n-weak hover:outline-n-slate-6 focus:outline-n-brand bg-n-alpha-black2 text-n-slate-12 placeholder:text-n-slate-10 transition-all duration-200';
+const TITULO = 'mb-0 text-base font-medium text-n-slate-12';
 </script>
 
 <template>
@@ -243,10 +332,10 @@ const CAMPO =
     class="w-full px-6 overflow-auto bg-n-surface-1"
     data-turuta="propiedades"
   >
-    <div class="max-w-6xl pb-24 mx-auto">
+    <div class="pb-24 mx-auto max-w-7xl">
       <ReportHeader
         header-title="Propiedades"
-        header-description="Lo que la IA manda y sabe de cada propiedad. La lista sale de las webs; aquí se guarda la ficha de WhatsApp, el video, el horario de visitas y lo demás."
+        header-description="Qué manda la IA cuando un lead pregunta por una propiedad, y qué sabe de ella para responder. La lista sale de las webs del cliente."
       >
         <Button
           label="Actualizar"
@@ -259,38 +348,31 @@ const CAMPO =
         />
       </ReportHeader>
 
-      <p v-if="error" class="text-sm text-n-slate-11" :class="TARJETA">
+      <p
+        v-if="error"
+        class="px-6 py-5 text-sm text-n-slate-11"
+        :class="TARJETA"
+      >
         {{ textoError(error) }}
       </p>
-      <p v-else-if="!datos" class="text-sm text-n-slate-11" :class="TARJETA">
+      <p
+        v-else-if="!datos"
+        class="px-6 py-5 text-sm text-n-slate-11"
+        :class="TARJETA"
+      >
         Cargando...
       </p>
       <p
         v-else-if="!datos.configurado"
-        class="text-sm text-n-slate-11"
+        class="px-6 py-5 text-sm text-n-slate-11"
         :class="TARJETA"
       >
         El inventario no está conectado: faltan las claves de las webs en el
         servidor. Sin ellas la IA no ofrece propiedades.
       </p>
-      <p
-        v-else-if="!propiedades.length"
-        class="text-sm text-n-slate-11"
-        :class="TARJETA"
-      >
-        No hay propiedades publicadas en las webs conectadas
-        <span v-if="sitios.length">({{ sitios.join(', ') }})</span>.
-        <button
-          v-if="esAdmin"
-          type="button"
-          class="text-n-blue-11 hover:underline"
-          @click="verWebs = true"
-        >
-          Elegir las webs
-        </button>
-      </p>
 
       <div v-else class="flex flex-col gap-4">
+        <!-- Cifras -->
         <section class="grid grid-cols-2 gap-4 lg:grid-cols-4">
           <article
             v-for="t in [
@@ -304,9 +386,9 @@ const CAMPO =
               },
               {
                 id: 'ficha',
-                titulo: 'Con ficha propia',
+                titulo: 'Con ficha propia o macro',
                 valor: cifras.conFichaPropia,
-                nota: 'el resto usa la generada',
+                nota: 'el resto manda la generada',
                 icono: 'i-lucide-file-text',
                 color: 'text-n-teal-11 bg-n-teal-3',
               },
@@ -319,16 +401,16 @@ const CAMPO =
                 color: 'text-n-amber-11 bg-n-amber-3',
               },
               {
-                id: 'vendidas',
-                titulo: 'Vendidas o reservadas',
-                valor: cifras.vendidas + cifras.reservadas,
-                nota: 'la IA no las ofrece',
+                id: 'fuera',
+                titulo: 'No disponibles',
+                valor: cifras.noDisponibles,
+                nota: 'reservadas, vendidas o alquiladas',
                 icono: 'i-lucide-circle-slash',
                 color: 'text-n-slate-11 bg-n-slate-3',
               },
             ]"
             :key="t.id"
-            class="flex items-start gap-4"
+            class="flex items-start gap-4 px-5 py-4"
             :class="TARJETA"
           >
             <span
@@ -340,7 +422,7 @@ const CAMPO =
             <div class="min-w-0">
               <p class="mb-1 text-sm text-n-slate-11">{{ t.titulo }}</p>
               <p
-                class="mb-1 text-3xl font-medium leading-none tabular-nums text-n-slate-12"
+                class="mb-1 text-2xl font-medium leading-none tabular-nums text-n-slate-12"
               >
                 {{ t.valor }}
               </p>
@@ -349,51 +431,63 @@ const CAMPO =
           </article>
         </section>
 
-        <!-- Webs del inventario: cuales se conectan (solo administradores) -->
-        <section v-if="esAdmin" :class="TARJETA">
+        <!-- Webs conectadas (solo administradores) -->
+        <section v-if="esAdmin" class="px-5 py-3" :class="TARJETA">
           <div class="flex flex-wrap items-center justify-between gap-2">
-            <p class="mb-0 text-sm text-n-slate-11">
+            <p class="flex items-center gap-2 mb-0 text-sm text-n-slate-11">
+              <Icon icon="i-lucide-globe" class="size-4 text-n-slate-10" />
               Webs conectadas:
-              <span class="font-medium text-n-slate-12">
-                {{
-                  websConectadas.length
-                    ? websConectadas.map(w => w.site).join(', ')
-                    : 'ninguna'
-                }}
+              <span
+                v-for="w in websConectadas"
+                :key="w.site"
+                class="px-2 py-0.5 text-xs font-medium rounded-md bg-n-alpha-2 text-n-slate-12"
+              >
+                {{ w.site }}
+              </span>
+              <span v-if="!websConectadas.length" class="text-n-amber-11">
+                ninguna
               </span>
             </p>
-            <button
-              type="button"
-              class="text-xs text-n-blue-11 hover:underline"
+            <Button
+              :label="verWebs ? 'Cerrar' : 'Cambiar'"
+              variant="ghost"
+              color="blue"
+              size="xs"
               @click="verWebs = !verWebs"
-            >
-              {{ verWebs ? 'Cerrar' : 'Cambiar' }}
-            </button>
+            />
           </div>
-          <div v-if="verWebs" class="mt-4">
+          <div v-if="verWebs" class="pt-3 mt-3 border-t border-n-weak">
             <p class="mb-3 text-xs text-n-slate-10">
               La IA ofrece las propiedades de todas las webs conectadas, en
-              todas las bandejas. Conecta las que salen en las webs del cliente;
-              en Supabase hay restos antiguos con el mismo nombre.
+              todas las bandejas.
             </p>
-            <label
-              v-for="w in webs"
-              :key="w.site"
-              class="flex items-start gap-3 px-3 py-2 mb-2 rounded-lg cursor-pointer bg-n-alpha-1"
-            >
-              <input v-model="w.conectada" type="checkbox" class="mt-1" />
-              <span class="min-w-0">
-                <span class="block text-sm text-n-slate-12">
-                  {{ w.nombre }}
-                  <span class="text-xs text-n-slate-10">({{ w.site }})</span>
+            <div class="grid gap-2 md:grid-cols-2">
+              <label
+                v-for="w in webs"
+                :key="w.site"
+                class="flex items-start gap-3 px-3 py-2.5 rounded-lg cursor-pointer outline outline-1 transition-colors"
+                :class="
+                  w.conectada
+                    ? 'outline-n-brand bg-n-alpha-1'
+                    : 'outline-n-weak hover:bg-n-alpha-1'
+                "
+              >
+                <input v-model="w.conectada" type="checkbox" class="mt-1" />
+                <span class="min-w-0">
+                  <span class="block text-sm font-medium text-n-slate-12">
+                    {{ w.nombre }}
+                    <span class="font-normal text-n-slate-10">
+                      · {{ w.site }}
+                    </span>
+                  </span>
+                  <span class="block text-xs truncate text-n-slate-10">
+                    {{ w.publicadas }} publicadas{{
+                      w.ejemplos.length ? `: ${w.ejemplos.join(', ')}` : ''
+                    }}
+                  </span>
                 </span>
-                <span class="block text-xs text-n-slate-10">
-                  {{ w.publicadas }} publicadas<span v-if="w.ejemplos.length"
-                    >: {{ w.ejemplos.join(', ') }}</span
-                  >
-                </span>
-              </span>
-            </label>
+              </label>
+            </div>
             <div class="flex justify-end mt-3">
               <Button
                 label="Guardar las webs"
@@ -408,140 +502,197 @@ const CAMPO =
           </div>
         </section>
 
-        <div class="grid gap-4 lg:grid-cols-[22rem_1fr] items-start">
+        <p
+          v-if="!propiedades.length"
+          class="px-6 py-5 text-sm text-n-slate-11"
+          :class="TARJETA"
+        >
+          No hay propiedades publicadas en las webs conectadas.
+        </p>
+
+        <div
+          v-else
+          class="grid gap-4 lg:grid-cols-[21rem_minmax(0,1fr)] items-start"
+        >
           <!-- Lista -->
-          <section :class="TARJETA">
-            <input
-              v-model="busqueda"
-              type="search"
-              placeholder="Buscar por distrito, calle, código..."
-              :class="CAMPO"
-            />
-            <div class="flex flex-wrap gap-1 mt-3">
-              <button
-                v-for="s in ['', ...sitios]"
-                :key="s || 'todas'"
-                type="button"
-                class="px-2.5 py-1 text-xs rounded-md transition-colors"
-                :class="
-                  s === web
-                    ? 'bg-n-brand text-white font-medium'
-                    : 'bg-n-alpha-2 text-n-slate-11 hover:text-n-slate-12'
-                "
-                @click="web = s"
-              >
-                {{ textoDeWeb(s) }}
-              </button>
+          <section class="p-3 lg:sticky lg:top-4" :class="TARJETA">
+            <div class="relative">
+              <Icon
+                icon="i-lucide-search"
+                class="absolute -translate-y-1/2 pointer-events-none top-1/2 ltr:left-3 rtl:right-3 size-4 text-n-slate-10"
+              />
+              <input
+                v-model="busqueda"
+                type="search"
+                placeholder="Buscar por distrito, calle o código"
+                :class="AREA"
+                class="h-9 ltr:pl-9 rtl:pr-9"
+              />
             </div>
-            <div class="flex flex-wrap gap-1 mt-2">
-              <button
-                v-for="e in ['', ...ESTADOS]"
-                :key="e || 'cualquiera'"
-                type="button"
-                class="px-2.5 py-1 text-xs rounded-md transition-colors capitalize"
-                :class="
-                  e === estado
-                    ? 'bg-n-alpha-3 text-n-slate-12 font-medium'
-                    : 'text-n-slate-11 hover:text-n-slate-12'
-                "
-                @click="estado = e"
-              >
-                {{ e || 'Cualquier estado' }}
-              </button>
+            <div class="flex flex-wrap items-center gap-2 mt-3">
+              <TabBar
+                v-if="sitios.length > 1"
+                :tabs="pestanasWeb"
+                :initial-active-tab="pestanaWeb"
+                @tab-changed="t => (web = t.site)"
+              />
+              <div class="ltr:ml-auto rtl:mr-auto w-36">
+                <CampoSelect
+                  v-model="estado"
+                  :options="opcionesFiltroEstado"
+                  compacto
+                />
+              </div>
             </div>
 
-            <p class="mt-4 mb-2 text-xs text-n-slate-10">
+            <p class="px-1 mt-3 mb-1 text-xs text-n-slate-10">
               {{ lista.length }} de {{ cifras.total }}
             </p>
             <ul
-              class="flex flex-col gap-1 mb-0 list-none max-h-[34rem] overflow-y-auto ltr:ml-0 rtl:mr-0"
+              class="flex flex-col gap-1 mb-0 list-none max-h-[36rem] overflow-y-auto ltr:ml-0 rtl:mr-0"
             >
               <li v-for="p in lista" :key="p.id">
                 <button
                   type="button"
-                  class="w-full px-2 py-2 text-left rounded-lg transition-colors"
+                  class="flex w-full gap-3 p-2 text-left transition-colors rounded-lg"
                   :class="
-                    p.id === elegidaId ? 'bg-n-alpha-2' : 'hover:bg-n-alpha-1'
+                    p.id === elegidaId
+                      ? 'bg-n-alpha-2 outline outline-1 outline-n-weak'
+                      : 'hover:bg-n-alpha-1'
                   "
-                  @click="abrir(p)"
+                  @click="elegir(p)"
                 >
-                  <div class="flex items-start gap-2">
-                    <img
-                      v-if="p.portada"
-                      :src="p.portada"
-                      alt=""
-                      class="flex-none object-cover rounded-md size-10 bg-n-alpha-2"
+                  <img
+                    v-if="p.portada"
+                    :src="p.portada"
+                    alt=""
+                    class="flex-none object-cover rounded-md size-12 bg-n-alpha-2"
+                  />
+                  <span
+                    v-else
+                    class="flex items-center justify-center flex-none rounded-md size-12 bg-n-alpha-2"
+                  >
+                    <Icon
+                      icon="i-lucide-building-2"
+                      class="size-5 text-n-slate-10"
                     />
+                  </span>
+                  <span class="min-w-0 grow">
                     <span
-                      v-else
-                      class="flex items-center justify-center flex-none rounded-md size-10 bg-n-alpha-2"
+                      class="block text-sm font-medium truncate text-n-slate-12"
+                      :title="p.titulo"
                     >
-                      <Icon
-                        icon="i-lucide-building-2"
-                        class="size-4 text-n-slate-10"
-                      />
+                      {{ p.titulo }}
                     </span>
-                    <span class="min-w-0 grow">
+                    <span class="block text-xs truncate text-n-slate-10">
+                      {{ subtitulo(p) }}
+                    </span>
+                    <span class="flex items-center justify-between mt-1">
                       <span
-                        class="block text-sm truncate text-n-slate-12"
-                        :title="p.titulo"
+                        class="text-xs font-medium tabular-nums text-n-slate-11"
                       >
-                        {{ p.titulo }}
-                      </span>
-                      <span class="block text-xs truncate text-n-slate-10">
-                        {{ subtitulo(p) }}
-                      </span>
-                      <span class="block mt-1 text-xs text-n-slate-11">
                         {{ precioTexto(p) }}
                       </span>
+                      <span class="flex items-center gap-1.5">
+                        <span
+                          v-if="p.disponibilidad !== 'disponible'"
+                          class="px-1.5 py-px text-[10px] font-medium rounded"
+                          :class="COLOR_ESTADO[p.disponibilidad]"
+                        >
+                          {{ ETIQUETA_ESTADO[p.disponibilidad] }}
+                        </span>
+                        <span
+                          v-for="i in indicadores(p)"
+                          :key="i.clave"
+                          :title="i.titulo"
+                          class="flex"
+                        >
+                          <Icon
+                            :icon="i.icono"
+                            class="size-3.5"
+                            :class="i.ok ? 'text-n-teal-10' : 'text-n-slate-7'"
+                          />
+                        </span>
+                      </span>
                     </span>
-                    <span
-                      class="flex-none px-1.5 py-0.5 text-[10px] rounded capitalize"
-                      :class="COLOR_ESTADO[p.disponibilidad]"
-                    >
-                      {{ p.disponibilidad }}
-                    </span>
-                  </div>
-                  <div
-                    v-if="pendientes(p).length"
-                    class="flex flex-wrap gap-1 mt-1.5 ltr:pl-12 rtl:pr-12"
-                  >
-                    <span
-                      v-for="falta in pendientes(p)"
-                      :key="falta"
-                      class="px-1.5 py-0.5 text-[10px] rounded bg-n-alpha-2 text-n-slate-10"
-                    >
-                      {{ falta }}
-                    </span>
-                  </div>
+                  </span>
                 </button>
               </li>
             </ul>
-          </section>
-
-          <!-- Editor -->
-          <section v-if="!elegida" :class="TARJETA">
-            <p class="mb-0 text-sm text-n-slate-11">
-              Elige una propiedad de la lista para ver y editar lo que la IA
-              manda de ella.
+            <p
+              class="flex flex-wrap gap-x-3 gap-y-1 px-1 pt-2 mt-2 mb-0 text-[11px] border-t border-n-weak text-n-slate-10"
+            >
+              <span class="flex items-center gap-1">
+                <Icon icon="i-lucide-file-text" class="size-3" /> ficha propia
+              </span>
+              <span class="flex items-center gap-1">
+                <Icon icon="i-lucide-video" class="size-3" /> video
+              </span>
+              <span class="flex items-center gap-1">
+                <Icon icon="i-lucide-calendar-clock" class="size-3" /> horario
+              </span>
+              <span class="flex items-center gap-1">
+                <Icon icon="i-lucide-zap" class="size-3" /> macro
+              </span>
             </p>
           </section>
 
-          <section v-else :class="TARJETA">
-            <header class="flex items-start justify-between gap-4">
-              <div class="min-w-0">
-                <h2 class="mb-1 text-lg font-medium truncate text-n-slate-12">
-                  {{ elegida.titulo }}
-                </h2>
-                <p class="mb-0 text-sm text-n-slate-11">
-                  {{ subtitulo(elegida) }} · {{ precioTexto(elegida) }}
+          <!-- Sin propiedad elegida -->
+          <section
+            v-if="!elegida"
+            class="flex flex-col items-center justify-center gap-2 px-6 py-16 text-center"
+            :class="TARJETA"
+          >
+            <span
+              class="flex items-center justify-center rounded-full size-12 bg-n-alpha-2"
+            >
+              <Icon
+                icon="i-lucide-mouse-pointer-click"
+                class="size-5 text-n-slate-10"
+              />
+            </span>
+            <p class="mb-0 text-sm font-medium text-n-slate-12">
+              Elige una propiedad de la lista
+            </p>
+            <p class="max-w-sm mb-0 text-sm text-n-slate-10">
+              Verás lo que la IA le manda al lead y lo que sabe de ella para
+              responder.
+            </p>
+          </section>
+
+          <!-- Editor -->
+          <section v-else class="min-w-0" :class="TARJETA">
+            <header class="flex gap-4 p-5 border-b border-n-weak">
+              <img
+                v-if="elegida.portada"
+                :src="elegida.portada"
+                alt=""
+                class="flex-none object-cover rounded-lg size-16 bg-n-alpha-2"
+              />
+              <div class="min-w-0 grow">
+                <div class="flex flex-wrap items-center gap-2">
+                  <h2 class="mb-0 text-lg font-medium truncate text-n-slate-12">
+                    {{ elegida.titulo }}
+                  </h2>
+                  <span
+                    class="px-2 py-0.5 text-xs font-medium rounded-md"
+                    :class="COLOR_ESTADO[elegida.disponibilidad]"
+                  >
+                    {{ ETIQUETA_ESTADO[elegida.disponibilidad] }}
+                  </span>
+                </div>
+                <p class="mt-1 mb-0 text-sm text-n-slate-11">
+                  {{ subtitulo(elegida) }} ·
+                  <span class="font-medium">{{ precioTexto(elegida) }}</span>
                 </p>
-                <p class="mb-0 text-xs text-n-slate-10">
+                <p class="mt-0.5 mb-0 text-xs text-n-slate-10">
                   {{ origen(elegida) }}
+                  <template v-if="elegida.fichaActualizadaPor">
+                    · guardado por {{ elegida.fichaActualizadaPor }}
+                  </template>
                 </p>
               </div>
               <Button
-                label="Cerrar"
                 icon="i-lucide-x"
                 variant="ghost"
                 color="slate"
@@ -550,286 +701,329 @@ const CAMPO =
               />
             </header>
 
-            <p
-              v-if="elegida.fichaActualizadaPor"
-              class="mt-2 mb-0 text-xs text-n-slate-10"
-            >
-              Lo último lo guardó {{ elegida.fichaActualizadaPor }}.
-            </p>
-
-            <div class="grid gap-4 mt-5 md:grid-cols-2">
-              <label class="block text-xs font-medium text-n-slate-11">
-                Estado
-                <select v-model="form.availability" :class="CAMPO">
-                  <option
-                    v-for="o in opcionesDeEstado(elegida)"
-                    :key="o.valor"
-                    :value="o.valor"
-                  >
-                    {{ o.texto }}
-                  </option>
-                </select>
-                <span class="block mt-1 font-normal text-n-slate-10">
-                  {{ QUE_HACE_EL_ESTADO[form.availability] }} No cambia la web.
-                </span>
-              </label>
-
-              <label class="block text-xs font-medium text-n-slate-11">
-                ¿El precio se negocia?
-                <select v-model="form.negotiable" :class="CAMPO">
-                  <option
-                    v-for="n in NEGOCIABLES"
-                    :key="n.valor"
-                    :value="n.valor"
-                  >
-                    {{ n.texto }}
-                  </option>
-                </select>
-                <span class="block mt-1 font-normal text-n-slate-10">
-                  La IA nunca negocia: solo responde esto.
-                </span>
-              </label>
-
-              <label class="block text-xs font-medium text-n-slate-11">
-                Video para WhatsApp
-                <input
-                  v-model="form.videoUrl"
-                  type="url"
-                  placeholder="https://.../video.mp4"
-                  :class="CAMPO"
+            <!-- 1. Que manda la IA -->
+            <div class="p-5 border-b border-n-weak">
+              <div class="flex flex-wrap items-center justify-between gap-3">
+                <h3 :class="TITULO">Qué le manda la IA al lead</h3>
+                <TabBar
+                  :tabs="PESTANAS_ENVIO"
+                  :initial-active-tab="pestanaEnvio"
+                  @tab-changed="cambiarModo"
                 />
-                <span
-                  class="block mt-1 font-normal"
-                  :class="avisoVideo ? 'text-n-amber-11' : 'text-n-slate-10'"
+              </div>
+              <p class="mt-1 mb-4 text-sm text-n-slate-10">
+                Solo una de las dos: la ficha con su video y ubicación, o una
+                macro de Chatwoot con varios mensajes y archivos.
+              </p>
+
+              <div class="grid gap-5 xl:grid-cols-[minmax(0,1fr)_17rem]">
+                <!-- Ficha y video -->
+                <div
+                  v-if="form.modo === 'ficha'"
+                  class="flex flex-col gap-4 min-w-0"
                 >
-                  {{
-                    avisoVideo ||
-                    'Se manda justo después de la ficha. Enlace directo a un .mp4.'
-                  }}
-                </span>
-              </label>
+                  <div>
+                    <div
+                      class="flex flex-wrap items-center justify-between gap-2 mb-1.5"
+                    >
+                      <span class="text-heading-3 text-n-slate-12">
+                        Ficha de WhatsApp
+                      </span>
+                      <span
+                        v-if="generada"
+                        class="flex items-center gap-1 text-xs text-n-slate-10"
+                      >
+                        <Icon icon="i-lucide-sparkles" class="size-3.5" />
+                        Generada desde la web
+                      </span>
+                      <span v-else class="flex items-center gap-2 text-xs">
+                        <Icon
+                          icon="i-lucide-pencil-line"
+                          class="size-3.5 text-n-teal-11"
+                        />
+                        <span class="text-n-teal-11">Editada</span>
+                        <Button
+                          label="Volver a la generada"
+                          variant="link"
+                          color="blue"
+                          size="xs"
+                          @click="restaurarFicha"
+                        />
+                      </span>
+                    </div>
+                    <textarea
+                      v-model="form.ficha"
+                      rows="14"
+                      :class="AREA"
+                      class="leading-relaxed resize-y"
+                    />
+                    <p class="mt-1 mb-0 text-xs text-n-slate-10">
+                      Retoca lo que quieras. Si la dejas igual que la generada,
+                      sigue a la web cuando allí cambie el precio o la
+                      descripción.
+                    </p>
+                  </div>
+                  <div class="grid gap-4 md:grid-cols-2">
+                    <Input
+                      v-model="form.videoUrl"
+                      label="Video"
+                      type="url"
+                      placeholder="https://.../recorrido.mp4"
+                      :message="
+                        avisoVideo ||
+                        'Enlace directo a un .mp4. Va tras la ficha.'
+                      "
+                      :message-type="avisoVideo ? 'error' : 'info'"
+                    />
+                    <Input
+                      v-model="form.mapsUrl"
+                      label="Ubicación"
+                      type="url"
+                      :placeholder="
+                        elegida.mapsUrlWeb || 'https://maps.google.com/...'
+                      "
+                      message="Vacío: se arma con la ubicación de la web."
+                    />
+                  </div>
+                </div>
 
-              <label class="block text-xs font-medium text-n-slate-11">
-                Ubicación
-                <input
-                  v-model="form.mapsUrl"
-                  type="url"
-                  placeholder="https://maps.google.com/..."
-                  :class="CAMPO"
+                <!-- Macro -->
+                <div v-else class="flex flex-col gap-3 min-w-0">
+                  <CampoSelect
+                    v-model="form.macroId"
+                    label="Macro"
+                    :options="opcionesDeMacro"
+                  />
+                  <div class="flex flex-wrap items-center gap-x-4 gap-y-1">
+                    <a
+                      v-if="macroElegida"
+                      :href="enlaceMacro(macroElegida.id)"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="flex items-center gap-1 text-xs text-n-blue-11 hover:underline"
+                    >
+                      <Icon icon="i-lucide-pencil" class="size-3.5" />
+                      Editar esta macro
+                    </a>
+                    <a
+                      :href="enlaceMacro(null)"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="flex items-center gap-1 text-xs text-n-blue-11 hover:underline"
+                    >
+                      <Icon icon="i-lucide-plus" class="size-3.5" />
+                      Crear una macro
+                    </a>
+                    <button
+                      type="button"
+                      class="flex items-center gap-1 text-xs text-n-slate-11 hover:underline"
+                      @click="recargarMacros"
+                    >
+                      <Icon icon="i-lucide-refresh-cw" class="size-3.5" />
+                      Volver a leer las macros
+                    </button>
+                  </div>
+                  <p
+                    v-if="macroElegida && !macroElegida.pasos.length"
+                    class="px-3 py-2 mb-0 text-xs rounded-lg bg-n-amber-3 text-n-amber-11"
+                  >
+                    Esta macro no manda ningún mensaje ni archivo: la IA mandará
+                    la ficha.
+                  </p>
+                  <p
+                    v-if="macroElegida && macroElegida.ignoradas.length"
+                    class="px-3 py-2 mb-0 text-xs rounded-lg bg-n-alpha-1 text-n-slate-11"
+                  >
+                    La IA solo manda los mensajes y archivos. No hace el resto
+                    de la macro: {{ macroElegida.ignoradas.join(', ') }}.
+                  </p>
+                  <p class="mb-0 text-xs text-n-slate-10">
+                    La IA manda los mensajes y archivos de la macro, en orden y
+                    con el nombre de la empresa. Si no ves tu macro, márcala
+                    como visible para todos.
+                  </p>
+                </div>
+
+                <!-- Vista previa -->
+                <aside class="p-3 rounded-xl bg-n-alpha-1">
+                  <p
+                    class="flex items-center gap-1.5 mb-2 text-xs font-medium text-n-slate-11"
+                  >
+                    <Icon icon="i-lucide-eye" class="size-3.5" />
+                    Así le llega al lead
+                  </p>
+                  <div
+                    v-if="burbujas.length"
+                    class="flex flex-col items-end gap-1.5 max-h-[28rem] overflow-y-auto"
+                  >
+                    <div
+                      v-for="(b, i) in burbujas"
+                      :key="i"
+                      class="max-w-full px-3 py-2 text-xs rounded-lg rounded-tr-sm shadow-sm bg-n-teal-3 text-n-slate-12"
+                    >
+                      <span
+                        v-if="b.tipo === 'texto'"
+                        class="block break-words whitespace-pre-wrap"
+                        >{{ b.texto }}</span
+                      >
+                      <span v-else class="flex items-center gap-2">
+                        <Icon
+                          :icon="
+                            ICONO_DE_ARCHIVO[b.clase] ||
+                            ICONO_DE_ARCHIVO.documento
+                          "
+                          class="flex-none size-4 text-n-teal-11"
+                        />
+                        <span class="truncate">{{ b.nombre }}</span>
+                      </span>
+                    </div>
+                  </div>
+                  <p v-else class="mb-0 text-xs text-n-slate-10">
+                    Elige una macro para ver lo que manda.
+                  </p>
+                </aside>
+              </div>
+            </div>
+
+            <!-- 2. Lo que sabe la IA -->
+            <div class="p-5">
+              <h3 :class="TITULO">Lo que la IA sabe de ella</h3>
+              <p class="mt-1 mb-4 text-sm text-n-slate-10">
+                No se le manda al lead tal cual: la IA lo usa para responder con
+                sus palabras.
+              </p>
+
+              <div class="grid gap-4 md:grid-cols-2">
+                <CampoSelect
+                  v-model="form.availability"
+                  label="Estado"
+                  :options="opcionesDeEstado(elegida)"
+                  :ayuda="`${QUE_HACE_EL_ESTADO[form.availability]} No cambia la web.`"
                 />
-                <span class="block mt-1 font-normal text-n-slate-10">
-                  Si se deja vacío, se arma con las coordenadas de la web.
-                </span>
-              </label>
-
-              <label class="block text-xs font-medium text-n-slate-11">
-                Horario de visitas
-                <input
+                <CampoSelect
+                  v-model="form.negotiable"
+                  label="¿El precio se negocia?"
+                  :options="NEGOCIABLES"
+                  ayuda="La IA nunca negocia: solo responde esto."
+                />
+                <Input
                   v-model="form.visitHours"
-                  type="text"
+                  label="Horario de visitas"
                   placeholder="Lunes a sábado de 11:30 a 13:30"
-                  :class="CAMPO"
+                  message="Lo dice, pero nunca agenda: la visita la cierra un asesor."
                 />
-                <span class="block mt-1 font-normal text-n-slate-10">
-                  La IA lo dice, pero nunca agenda: la visita la cierra un
-                  asesor.
-                </span>
-              </label>
-
-              <label class="block text-xs font-medium text-n-slate-11">
-                Condiciones
-                <input
+                <Input
                   v-model="form.conditions"
-                  type="text"
+                  label="Condiciones"
                   placeholder="Solo al contado. No tiene cochera."
-                  :class="CAMPO"
+                  message="Las dice tal cual."
                 />
-                <span class="block mt-1 font-normal text-n-slate-10">
-                  Se dicen tal cual están escritas aquí.
+              </div>
+
+              <label class="flex flex-col gap-1 mt-4 mb-0">
+                <span class="mb-0.5 text-heading-3 text-n-slate-12">
+                  Notas para la IA
+                </span>
+                <textarea
+                  v-model="form.notes"
+                  rows="3"
+                  placeholder="Mantenimiento S/ 450 al mes. Se aceptan mascotas pequeñas."
+                  :class="AREA"
+                  class="resize-y"
+                />
+                <span class="text-xs text-n-slate-10">
+                  Lo usa para responder, sin decir que es una nota.
                 </span>
               </label>
-            </div>
 
-            <!-- La ficha como macro: varios mensajes y archivos, en orden -->
-            <div class="p-3 mt-5 rounded-lg bg-n-alpha-1">
-              <label class="block text-xs font-medium text-n-slate-11">
-                Enviar con una macro
-                <select v-model="form.macroId" :class="CAMPO">
-                  <option value="">
-                    Ninguna: la ficha de abajo, el video y la ubicación
-                  </option>
-                  <option v-for="m in macros" :key="m.id" :value="String(m.id)">
-                    {{ m.nombre }}{{ m.publica ? '' : ' (personal)' }}
-                  </option>
-                </select>
-              </label>
-              <div class="flex flex-wrap gap-3 mt-2 text-xs">
-                <a
-                  v-if="macroElegida"
-                  :href="enlaceMacro(macroElegida.id)"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  class="text-n-blue-11 hover:underline"
-                >
-                  Editar esta macro
-                </a>
-                <a
-                  :href="enlaceMacro(null)"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  class="text-n-blue-11 hover:underline"
-                >
-                  Crear una macro
-                </a>
-                <button
-                  type="button"
-                  class="text-n-slate-11 hover:underline"
-                  @click="cargar"
-                >
-                  Volver a leer las macros
-                </button>
-              </div>
-              <ol
-                v-if="macroElegida"
-                class="flex flex-col gap-1 mt-3 mb-0 text-xs list-decimal ltr:pl-5 rtl:pr-5 text-n-slate-12"
-              >
-                <li v-for="(paso, i) in macroElegida.pasos" :key="i">
-                  <span v-if="paso.tipo === 'texto'">
-                    Mensaje: «{{ paso.texto }}»
+              <div class="mt-5">
+                <div class="flex items-center justify-between gap-2">
+                  <span class="text-heading-3 text-n-slate-12">
+                    Datos confirmados
                   </span>
-                  <span v-else>
-                    Archivo ({{ paso.clase }}): {{ paso.texto }}
-                  </span>
-                </li>
-              </ol>
-              <p
-                v-if="macroElegida && !macroElegida.pasos.length"
-                class="mt-2 mb-0 text-xs text-n-amber-11"
-              >
-                Esta macro no manda ningún mensaje ni archivo: la IA usará la
-                ficha de abajo.
-              </p>
-              <p
-                v-if="macroElegida && macroElegida.ignoradas.length"
-                class="mt-2 mb-0 text-xs text-n-slate-10"
-              >
-                La IA no hace el resto de acciones de la macro ({{
-                  macroElegida.ignoradas.join(', ')
-                }}): solo manda mensajes y archivos.
-              </p>
-              <p class="mt-2 mb-0 text-xs text-n-slate-10">
-                La IA manda los mensajes y archivos de la macro, en orden y con
-                el nombre de la empresa, en lugar de la ficha, el video y la
-                ubicación. Si no ves tu macro, márcala como visible para todos.
-              </p>
+                  <Button
+                    label="Añadir dato"
+                    icon="i-lucide-plus"
+                    variant="ghost"
+                    color="blue"
+                    size="xs"
+                    @click="anadirDato"
+                  />
+                </div>
+                <p class="mt-1 mb-2 text-xs text-n-slate-10">
+                  Dato y valor, como «piso = 7». Los guarda también la IA cuando
+                  el equipo le contesta una consulta con una nota «IA:». Valen
+                  para cualquier lead.
+                </p>
+                <div
+                  v-for="(d, i) in form.datos"
+                  :key="i"
+                  class="grid items-center gap-2 mt-2 grid-cols-[10rem_minmax(0,1fr)_auto]"
+                >
+                  <input
+                    v-model="d.clave"
+                    type="text"
+                    placeholder="piso"
+                    :class="AREA"
+                    class="h-9"
+                  />
+                  <input
+                    v-model="d.valor"
+                    type="text"
+                    placeholder="7"
+                    :class="AREA"
+                    class="h-9"
+                  />
+                  <Button
+                    icon="i-lucide-trash-2"
+                    variant="ghost"
+                    color="ruby"
+                    size="sm"
+                    @click="quitarDato(i)"
+                  />
+                </div>
+                <p
+                  v-if="!form.datos.length"
+                  class="px-3 py-2 mt-2 mb-0 text-xs rounded-lg bg-n-alpha-1 text-n-slate-10"
+                >
+                  Todavía no hay ninguno.
+                </p>
+              </div>
             </div>
 
-            <label class="block mt-4 text-xs font-medium text-n-slate-11">
-              Ficha de WhatsApp<span
-                v-if="macroElegida"
-                class="font-normal text-n-slate-10"
+            <!-- Guardar -->
+            <footer
+              class="sticky bottom-0 flex flex-wrap items-center justify-end gap-3 px-5 py-3 border-t rounded-b-xl border-n-weak bg-n-solid-2"
+            >
+              <span
+                class="text-xs ltr:mr-auto rtl:ml-auto"
+                :class="
+                  motivo || sinGuardar ? 'text-n-amber-11' : 'text-n-slate-10'
+                "
               >
-                (no se usa: se manda la macro)</span
-              >
-              <textarea
-                v-model="form.ficha"
-                rows="12"
-                :placeholder="elegida.ficha"
-                :class="CAMPO"
-                class="font-mono leading-relaxed"
+                {{
+                  motivo ||
+                  (sinGuardar ? 'Hay cambios sin guardar' : 'Todo guardado')
+                }}
+              </span>
+              <Button
+                label="Descartar"
+                variant="ghost"
+                color="slate"
+                size="sm"
+                :disabled="!sinGuardar || guardando"
+                @click="descartar"
               />
-              <span class="block mt-1 font-normal text-n-slate-10">
-                <template v-if="elegida.fichaPorDefecto">
-                  Ahora se manda la ficha generada desde la web, la que se ve de
-                  fondo. Escribe aquí para mandar la tuya.
-                </template>
-                <template v-else>
-                  Se manda esta. Bórrala entera para volver a la generada desde
-                  la web.
-                </template>
-              </span>
-            </label>
-
-            <label class="block mt-4 text-xs font-medium text-n-slate-11">
-              Notas para la IA
-              <textarea
-                v-model="form.notes"
-                rows="3"
-                placeholder="Lo que conviene que sepa al hablar de esta propiedad."
-                :class="CAMPO"
-              />
-              <span class="block mt-1 font-normal text-n-slate-10">
-                El lead no las ve: la IA las usa para responder.
-              </span>
-            </label>
-
-            <div class="mt-4">
-              <div class="flex items-baseline justify-between gap-2">
-                <span class="text-xs font-medium text-n-slate-11">
-                  Datos confirmados
-                </span>
-                <button
-                  type="button"
-                  class="text-xs text-n-blue-11 hover:underline"
-                  @click="anadirDato"
-                >
-                  Añadir dato
-                </button>
-              </div>
-              <p class="mt-1 mb-2 text-xs text-n-slate-10">
-                Lo que el equipo le confirmó a la IA en un chat (piso,
-                mantenimiento, qué se queda). Vale para cualquier lead que
-                pregunte por esta propiedad.
-              </p>
-              <div
-                v-for="(d, i) in form.datos"
-                :key="i"
-                class="flex items-center gap-2 mt-2"
-              >
-                <input
-                  v-model="d.clave"
-                  type="text"
-                  placeholder="piso"
-                  class="w-40"
-                  :class="CAMPO"
-                />
-                <input
-                  v-model="d.valor"
-                  type="text"
-                  placeholder="7"
-                  class="grow"
-                  :class="CAMPO"
-                />
-                <button
-                  type="button"
-                  class="flex-none p-2 rounded-md text-n-slate-10 hover:text-n-ruby-11 hover:bg-n-alpha-2"
-                  @click="quitarDato(i)"
-                >
-                  <Icon icon="i-lucide-trash-2" class="size-4" />
-                </button>
-              </div>
-              <p
-                v-if="!form.datos.length"
-                class="mt-2 mb-0 text-xs text-n-slate-10"
-              >
-                Todavía no hay ninguno.
-              </p>
-            </div>
-
-            <div class="flex items-center justify-end gap-3 mt-6">
-              <span v-if="sinGuardar" class="text-xs text-n-amber-11">
-                Hay cambios sin guardar
-              </span>
               <Button
                 label="Guardar"
                 variant="solid"
                 color="blue"
                 size="sm"
-                :disabled="!sinGuardar || guardando"
+                :disabled="!sinGuardar || !!motivo || guardando"
                 :is-loading="guardando"
                 @click="guardar"
               />
-            </div>
+            </footer>
           </section>
         </div>
       </div>

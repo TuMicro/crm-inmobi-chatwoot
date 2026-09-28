@@ -3,40 +3,52 @@
 // que el equipo guardo por propiedad; aqui solo se filtra, se ordena y se
 // prepara el formulario. Ver docs/16-manual-ia.md en crm-inmobi.
 
-export const ESTADOS = ['disponible', 'reservado', 'vendido'];
+export const ESTADOS = ['disponible', 'reservado', 'vendido', 'alquilado'];
+
+export const ETIQUETA_ESTADO = {
+  disponible: 'Disponible',
+  reservado: 'Reservado',
+  vendido: 'Vendido',
+  alquilado: 'Alquilado',
+};
 
 /**
  * Que hace cada estado. Ninguno toca la web del cliente: solo cambia lo que
  * hace la IA con la propiedad.
  */
 export const QUE_HACE_EL_ESTADO = {
-  '': 'Sigue a la web: si allí la marcan como vendida, aquí también.',
+  '': 'Sigue a la «Situación» del panel de la web: si allí la marcan vendida o alquilada, aquí también.',
   disponible: 'La IA la ofrece y manda su ficha.',
   reservado:
-    'Alguien la separó. La IA no la ofrece ni manda su ficha; si preguntan por ella, dice que está reservada y ofrece parecidas.',
+    'Alguien la separó. La IA no la ofrece ni manda su ficha; si preguntan, dice que está reservada y ofrece parecidas.',
   vendido:
-    'La IA no la ofrece ni manda su ficha; si preguntan por ella, dice que se vendió y ofrece parecidas.',
+    'La IA no la ofrece ni manda su ficha; si preguntan, dice que se vendió y ofrece parecidas.',
+  alquilado:
+    'La IA no la ofrece ni manda su ficha; si preguntan, dice que ya se alquiló y ofrece parecidas.',
 };
 
 /** Las opciones del selector de estado. La primera sigue a la web. */
 export function opcionesDeEstado(p) {
+  const web = ETIQUETA_ESTADO[p?.disponibilidadWeb] || 'Disponible';
   return [
-    {
-      valor: '',
-      texto: `Según la web (${p?.disponibilidadWeb || 'disponible'})`,
-    },
-    ...ESTADOS.map(e => ({
-      valor: e,
-      texto: e.charAt(0).toUpperCase() + e.slice(1),
-    })),
+    { value: '', label: `Según la web (${web.toLowerCase()})` },
+    ...ESTADOS.map(e => ({ value: e, label: ETIQUETA_ESTADO[e] })),
   ];
 }
+
+/** Que contesta la IA si preguntan si el precio se negocia. Vacio: no se sabe. */
+export const NEGOCIABLES = [
+  { value: '', label: 'No se ha dicho' },
+  { value: 'si', label: 'Sí' },
+  { value: 'ligeramente', label: 'Ligeramente' },
+  { value: 'no', label: 'No, precio fijo' },
+];
 
 /** El texto del filtro por web: vacio es "Todas". */
 export const textoDeWeb = site => site || 'Todas';
 
 /**
- * Las webs para el bloque "Webs del inventario": las que hay en Supabase, y
+ * Las webs para el bloque "Webs conectadas": las que hay en Supabase, y
  * tambien las conectadas que ya no estan, para poder quitarlas.
  */
 export function websParaElegir(respuesta) {
@@ -58,14 +70,6 @@ export function websParaElegir(respuesta) {
   });
   return lista;
 }
-
-/** Que contesta la IA si preguntan si el precio se negocia. Vacio: no se sabe. */
-export const NEGOCIABLES = [
-  { valor: '', texto: 'No se ha dicho' },
-  { valor: 'si', texto: 'Sí' },
-  { valor: 'ligeramente', texto: 'Ligeramente' },
-  { valor: 'no', texto: 'No, precio fijo' },
-];
 
 const sinTildes = s =>
   String(s || '')
@@ -91,22 +95,48 @@ export function subtitulo(p) {
 
 /** De donde sale: la web, el codigo que usa el cliente y la direccion. */
 export function origen(p) {
-  return [p?.site, p?.codigo ? `codigo ${p.codigo}` : null, p?.direccion]
+  return [p?.site, p?.codigo ? `código ${p.codigo}` : null, p?.direccion]
     .filter(Boolean)
     .join(' · ');
 }
 
-/** Lo que le falta a una propiedad para que la IA la mande completa. */
-export function pendientes(p) {
-  const falta = [];
-  if (!p) return falta;
-  // Con macro, la macro es la ficha y lleva lo que el equipo quiera.
-  if (!p.macroId) {
-    if (p.fichaPorDefecto) falta.push('ficha generada');
-    if (!p.videoUrl) falta.push('sin video');
-  }
-  if (!p.horarioVisitas) falta.push('sin horario de visitas');
-  return falta;
+/** El texto del aviso del video en la lista. */
+function tituloDelVideo(p, conMacro) {
+  if (conMacro) return 'Los archivos van en la macro';
+  return p?.videoUrl ? 'Con video' : 'Sin video';
+}
+
+/**
+ * Los tres avisos de la lista, como iconos: que manda la IA (ficha propia o
+ * macro), si lleva video o macro, y si tiene horario de visitas.
+ */
+export function indicadores(p) {
+  const conMacro = !!p?.macroId;
+  const fichaGenerada = p?.fichaPorDefecto
+    ? 'Ficha generada desde la web'
+    : 'Ficha escrita por el equipo';
+  return [
+    {
+      clave: 'ficha',
+      icono: conMacro ? 'i-lucide-zap' : 'i-lucide-file-text',
+      ok: conMacro || !p?.fichaPorDefecto,
+      titulo: conMacro ? 'Manda una macro' : fichaGenerada,
+    },
+    {
+      clave: 'video',
+      icono: 'i-lucide-video',
+      ok: conMacro || !!p?.videoUrl,
+      titulo: tituloDelVideo(p, conMacro),
+    },
+    {
+      clave: 'visitas',
+      icono: 'i-lucide-calendar-clock',
+      ok: !!p?.horarioVisitas,
+      titulo: p?.horarioVisitas
+        ? `Visitas: ${p.horarioVisitas}`
+        : 'Sin horario de visitas',
+    },
+  ];
 }
 
 /** Filtra por web, por estado y por texto (titulo, distrito, direccion, codigo). */
@@ -130,9 +160,9 @@ export function filtrar(
 
 /** Las que necesitan atencion primero, y dentro de cada grupo por distrito. */
 export function ordenar(propiedades) {
-  // Las que estan a medias arriba, las vendidas al final.
+  // Las que estan a medias arriba, las que no estan disponibles al final.
   const peso = p => {
-    if (p.disponibilidad === 'vendido') return 2;
+    if (p.disponibilidad !== 'disponible') return 2;
     return p.fichaPorDefecto && !p.macroId ? 0 : 1;
   };
   return [...(propiedades || [])].sort((a, b) => {
@@ -145,16 +175,13 @@ export function ordenar(propiedades) {
   });
 }
 
-/** Cuantas hay de cada estado, y cuantas siguen con la ficha generada. */
+/** Cuantas hay de cada estado, y cuantas tienen ficha propia o macro. */
 export function resumen(propiedades) {
   const lista = propiedades || [];
-  const cuenta = estado =>
-    lista.filter(p => p.disponibilidad === estado).length;
   return {
     total: lista.length,
-    disponibles: cuenta('disponible'),
-    reservadas: cuenta('reservado'),
-    vendidas: cuenta('vendido'),
+    disponibles: lista.filter(p => p.disponibilidad === 'disponible').length,
+    noDisponibles: lista.filter(p => p.disponibilidad !== 'disponible').length,
     conFichaPropia: lista.filter(p => !p.fichaPorDefecto || p.macroId).length,
     conMacroOVideo: lista.filter(p => p.videoUrl || p.macroId).length,
   };
@@ -180,14 +207,22 @@ export function listaADatos(lista) {
   return salida;
 }
 
-/** El formulario que ve el equipo, a partir de la propiedad que da la API. */
+const limpio = v => String(v ?? '').trim();
+
+/**
+ * El formulario que ve el equipo, a partir de la propiedad que da la API.
+ *
+ * La ficha va escrita en el campo (la del equipo o, si no hay, la generada)
+ * para poder retocar una parte. Si al guardar sigue igual que la generada, no
+ * se guarda como propia: asi sigue a la web.
+ */
 export function formularioDe(p) {
   return {
-    // Si la ficha es la generada, el campo va vacio: se ve de marca de agua y
-    // solo se guarda si el equipo escribe la suya.
-    ficha: p?.fichaPorDefecto ? '' : p?.ficha || '',
+    modo: p?.macroId ? 'macro' : 'ficha',
+    ficha: p?.ficha || p?.fichaGenerada || '',
     videoUrl: p?.videoUrl || '',
-    mapsUrl: p?.mapsUrl || '',
+    // Vacio: el mapa sale de la web. Asi guardar no congela la ubicacion.
+    mapsUrl: p?.mapsUrlEquipo || '',
     visitHours: p?.horarioVisitas || '',
     // Vacio: sigue a la web. Asi guardar otro campo no congela el estado.
     availability: p?.disponibilidadEquipo || '',
@@ -199,13 +234,16 @@ export function formularioDe(p) {
   };
 }
 
-const mismoTexto = (a, b) => String(a || '').trim() === String(b || '').trim();
+/** Si la ficha del formulario es la generada desde la web, tal cual. */
+export const fichaEsGenerada = (form, p) =>
+  limpio(form?.ficha) === limpio(p?.fichaGenerada);
 
 /** Si el formulario trae algo distinto de lo guardado. */
 export function hayCambios(form, p) {
   if (!form || !p) return false;
   const original = formularioDe(p);
-  const camposTexto = [
+  const campos = [
+    'modo',
     'ficha',
     'videoUrl',
     'mapsUrl',
@@ -214,43 +252,104 @@ export function hayCambios(form, p) {
     'negotiable',
     'conditions',
     'notes',
-    'macroId',
   ];
-  if (camposTexto.some(c => !mismoTexto(form[c], original[c]))) return true;
+  if (campos.some(c => limpio(form[c]) !== limpio(original[c]))) return true;
+  if (
+    form.modo === 'macro' &&
+    limpio(form.macroId) !== limpio(original.macroId)
+  )
+    return true;
   return (
     JSON.stringify(listaADatos(form.datos)) !==
     JSON.stringify(listaADatos(original.datos))
   );
 }
 
+/** Lo que impide guardar, o '' si se puede. */
+export function motivoParaNoGuardar(form) {
+  if (form?.modo === 'macro' && !(Number(form.macroId) > 0)) {
+    return 'Elige una macro, o vuelve a «Ficha y video».';
+  }
+  return '';
+}
+
 /** El cuerpo del PUT. Se mandan todos los campos: el formulario los tiene todos. */
 export function cuerpoDe(form, p, accountId, quien) {
+  const ficha = limpio(form.ficha);
   return {
     accountId: Number(accountId),
     site: p.site,
     propertyId: p.id,
-    ficha: String(form.ficha || '').trim(),
-    videoUrl: String(form.videoUrl || '').trim(),
-    mapsUrl: String(form.mapsUrl || '').trim(),
-    visitHours: String(form.visitHours || '').trim(),
-    availability: String(form.availability || '').trim(),
-    negotiable: String(form.negotiable || '').trim(),
-    conditions: String(form.conditions || '').trim(),
-    notes: String(form.notes || '').trim(),
+    // Igual que la generada: no se guarda como propia, sigue a la web.
+    ficha: ficha === limpio(p.fichaGenerada) ? '' : ficha,
+    videoUrl: limpio(form.videoUrl),
+    mapsUrl: limpio(form.mapsUrl),
+    visitHours: limpio(form.visitHours),
+    availability: limpio(form.availability),
+    negotiable: limpio(form.negotiable),
+    conditions: limpio(form.conditions),
+    notes: limpio(form.notes),
     facts: listaADatos(form.datos),
-    macroId: Number(form.macroId) > 0 ? Number(form.macroId) : null,
+    macroId:
+      form.modo === 'macro' && Number(form.macroId) > 0
+        ? Number(form.macroId)
+        : null,
     updatedBy: quien || '',
   };
 }
 
+/** El nombre de un archivo a partir de su URL. */
+export const nombreDeArchivo = url =>
+  decodeURIComponent(
+    String(url || '')
+      .split('?')[0]
+      .split('/')
+      .pop() || 'archivo'
+  );
+
+/**
+ * Lo que vera el lead, en orden, para la vista previa: en modo ficha, la
+ * ficha, el video y la ubicacion; en modo macro, sus mensajes y archivos.
+ */
+export function vistaPrevia(form, p, macro) {
+  if (form?.modo === 'macro') {
+    return (macro?.pasos || []).map(paso =>
+      paso.tipo === 'texto'
+        ? { tipo: 'texto', texto: paso.texto }
+        : { tipo: 'archivo', clase: paso.clase, nombre: paso.texto }
+    );
+  }
+  const burbujas = [];
+  const ficha = limpio(form?.ficha) || limpio(p?.fichaGenerada);
+  if (ficha) burbujas.push({ tipo: 'texto', texto: ficha });
+  if (limpio(form?.videoUrl)) {
+    burbujas.push({
+      tipo: 'archivo',
+      clase: 'video',
+      nombre: nombreDeArchivo(form.videoUrl),
+    });
+  }
+  const mapa = limpio(form?.mapsUrl) || limpio(p?.mapsUrlWeb);
+  if (mapa) burbujas.push({ tipo: 'texto', texto: `Ubicación: ${mapa}` });
+  return burbujas;
+}
+
+/** El icono de un archivo segun su clase. */
+export const ICONO_DE_ARCHIVO = {
+  video: 'i-lucide-video',
+  imagen: 'i-lucide-image',
+  audio: 'i-lucide-audio-lines',
+  documento: 'i-lucide-file-text',
+};
+
 /** Un aviso si la URL del video no parece un fichero que WhatsApp acepte. */
 export function avisoDelVideo(url) {
-  const v = String(url || '').trim();
+  const v = limpio(url);
   if (!v) return '';
   if (!/^https?:\/\//i.test(v))
     return 'El video tiene que ser una URL que empiece por https.';
   if (/youtube\.com|youtu\.be|vimeo\.com|drive\.google\.com/i.test(v)) {
-    return 'Enlaces de YouTube, Vimeo o Drive no se pueden mandar por WhatsApp: hace falta el enlace directo a un archivo .mp4.';
+    return 'WhatsApp no acepta enlaces de YouTube, Vimeo o Drive: hace falta el enlace directo a un archivo .mp4.';
   }
   if (!/\.(mp4|3gp|mov)(\?|$)/i.test(v))
     return 'Lo normal es que acabe en .mp4.';

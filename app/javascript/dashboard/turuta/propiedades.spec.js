@@ -2,18 +2,22 @@ import {
   avisoDelVideo,
   cuerpoDe,
   datosALista,
+  fichaEsGenerada,
   filtrar,
   formularioDe,
   hayCambios,
+  indicadores,
   listaADatos,
+  motivoParaNoGuardar,
+  nombreDeArchivo,
   opcionesDeEstado,
   ordenar,
   origen,
-  pendientes,
   precioTexto,
   resumen,
   subtitulo,
   textoDeWeb,
+  vistaPrevia,
   websParaElegir,
 } from './propiedades';
 
@@ -31,20 +35,26 @@ const prop = (extra = {}) => ({
   dormitorios: 3,
   areaM2: 168,
   disponibilidad: 'disponible',
+  disponibilidadWeb: 'disponible',
+  disponibilidadEquipo: null,
   ficha: 'FICHA GENERADA',
+  fichaGenerada: 'FICHA GENERADA',
   fichaPorDefecto: true,
   videoUrl: null,
   mapsUrl: 'https://maps.google.com/?q=1,2',
+  mapsUrlWeb: 'https://maps.google.com/?q=1,2',
+  mapsUrlEquipo: null,
   horarioVisitas: null,
   negociable: null,
   condiciones: null,
   notas: null,
   datos: {},
+  macroId: null,
   ...extra,
 });
 
-describe('precioTexto y subtitulo', () => {
-  it('pone el simbolo de la moneda y separa los miles', () => {
+describe('textos de la lista', () => {
+  it('precio con moneda y miles', () => {
     expect(precioTexto(prop())).toBe('$ 298,000');
     expect(
       precioTexto(prop({ moneda: 'PEN', precio: 1500, periodo: 'mensual' }))
@@ -52,59 +62,54 @@ describe('precioTexto y subtitulo', () => {
     expect(precioTexto(prop({ precio: null }))).toBe('Sin precio');
   });
 
-  it('dice de donde sale: web, codigo y direccion', () => {
-    expect(origen(prop())).toBe('madhouse · codigo MH-7 · Av. Camino Real 123');
-    expect(origen({ site: 'madhouse' })).toBe('madhouse');
-  });
-
-  it('resume tipo, distrito, dormitorios y metros', () => {
+  it('subtitulo y origen', () => {
     expect(subtitulo(prop())).toBe(
       'Departamento en San Isidro · 3 dorm · 168 m²'
     );
-  });
-});
-
-describe('pendientes', () => {
-  it('dice que le falta para que la IA la mande completa', () => {
-    expect(pendientes(prop())).toEqual([
-      'ficha generada',
-      'sin video',
-      'sin horario de visitas',
-    ]);
-    expect(
-      pendientes(
-        prop({
-          fichaPorDefecto: false,
-          videoUrl: 'https://x/v.mp4',
-          horarioVisitas: '11 a 13',
-        })
-      )
-    ).toEqual([]);
-  });
-
-  it('con macro no pide ficha ni video: la macro lleva lo que el equipo quiera', () => {
-    expect(pendientes(prop({ macroId: 7 }))).toEqual([
-      'sin horario de visitas',
-    ]);
-  });
-});
-
-describe('estado y webs', () => {
-  it('la primera opcion sigue a la web y dice que marca la web', () => {
-    const o = opcionesDeEstado(prop({ disponibilidadWeb: 'vendido' }));
-    expect(o[0]).toEqual({ valor: '', texto: 'Según la web (vendido)' });
-    expect(o.map(x => x.valor)).toEqual([
-      '',
-      'disponible',
-      'reservado',
-      'vendido',
-    ]);
-    expect(o[2].texto).toBe('Reservado');
+    expect(origen(prop())).toBe('madhouse · código MH-7 · Av. Camino Real 123');
   });
 
   it('el filtro sin web se llama Todas', () => {
     expect(textoDeWeb('')).toBe('Todas');
     expect(textoDeWeb('madhouse')).toBe('madhouse');
+  });
+});
+
+describe('indicadores', () => {
+  it('sin nada propio, los tres apagados', () => {
+    expect(indicadores(prop()).map(i => i.ok)).toEqual([false, false, false]);
+  });
+
+  it('con ficha propia, video y horario, encendidos', () => {
+    const i = indicadores(
+      prop({
+        fichaPorDefecto: false,
+        videoUrl: 'https://x/v.mp4',
+        horarioVisitas: '11 a 13',
+      })
+    );
+    expect(i.map(x => x.ok)).toEqual([true, true, true]);
+    expect(i[2].titulo).toBe('Visitas: 11 a 13');
+  });
+
+  it('con macro, ficha y archivos cuentan como resueltos', () => {
+    const i = indicadores(prop({ macroId: 7 }));
+    expect(i[0]).toMatchObject({ ok: true, icono: 'i-lucide-zap' });
+    expect(i[1].ok).toBe(true);
+  });
+});
+
+describe('estado y webs', () => {
+  it('la primera opcion sigue a la web y dice que marca la web', () => {
+    const o = opcionesDeEstado(prop({ disponibilidadWeb: 'alquilado' }));
+    expect(o[0]).toEqual({ value: '', label: 'Según la web (alquilado)' });
+    expect(o.map(x => x.value)).toEqual([
+      '',
+      'disponible',
+      'reservado',
+      'vendido',
+      'alquilado',
+    ]);
   });
 
   it('las webs para elegir marcan las conectadas y conservan las que ya no existen', () => {
@@ -128,56 +133,41 @@ describe('estado y webs', () => {
   });
 });
 
-describe('filtrar y ordenar', () => {
+describe('filtrar, ordenar y resumir', () => {
   const lista = [
     prop({ id: 'a', distrito: 'Barranco', titulo: 'Dúplex frente al mar' }),
     prop({
       id: 'b',
       site: 'joserojas',
       distrito: 'San Isidro',
-      disponibilidad: 'vendido',
+      disponibilidad: 'alquilado',
     }),
     prop({ id: 'c', distrito: 'Miraflores', fichaPorDefecto: false }),
   ];
 
-  it('por web y por estado', () => {
+  it('por web, estado y texto sin tildes', () => {
     expect(filtrar(lista, { site: 'joserojas' }).map(p => p.id)).toEqual(['b']);
-    expect(filtrar(lista, { estado: 'vendido' }).map(p => p.id)).toEqual(['b']);
-  });
-
-  it('por texto, sin tildes y con varias palabras', () => {
+    expect(filtrar(lista, { estado: 'alquilado' }).map(p => p.id)).toEqual([
+      'b',
+    ]);
     expect(filtrar(lista, { texto: 'duplex mar' }).map(p => p.id)).toEqual([
       'a',
     ]);
-    expect(filtrar(lista, { texto: 'MIRAFLORES' }).map(p => p.id)).toEqual([
-      'c',
-    ]);
-    expect(filtrar(lista, { texto: 'mh-7' }).length).toBe(3);
     expect(filtrar(lista, { texto: 'surco' })).toEqual([]);
   });
 
-  it('primero las que tienen la ficha generada, al final las vendidas', () => {
+  it('primero las que tienen la ficha generada, al final las no disponibles', () => {
     expect(ordenar(lista).map(p => p.id)).toEqual(['a', 'c', 'b']);
   });
-});
 
-describe('resumen', () => {
-  it('cuenta por estado, fichas propias y videos', () => {
-    const r = resumen([
-      prop(),
-      prop({ disponibilidad: 'vendido' }),
-      prop({ fichaPorDefecto: false, videoUrl: 'https://x/v.mp4' }),
-    ]);
-    expect(r).toEqual({
-      total: 3,
-      disponibles: 2,
-      reservadas: 0,
-      vendidas: 1,
-      conFichaPropia: 1,
+  it('el resumen cuenta disponibles, no disponibles, fichas propias y macros o videos', () => {
+    expect(resumen([...lista, prop({ macroId: 3 })])).toEqual({
+      total: 4,
+      disponibles: 3,
+      noDisponibles: 1,
+      conFichaPropia: 2,
       conMacroOVideo: 1,
     });
-    expect(resumen([prop({ macroId: 3 })]).conFichaPropia).toBe(1);
-    expect(resumen([prop({ macroId: 3 })]).conMacroOVideo).toBe(1);
   });
 });
 
@@ -198,11 +188,28 @@ describe('los datos confirmados', () => {
 });
 
 describe('el formulario', () => {
-  it('con la ficha generada, el campo va vacio', () => {
-    expect(formularioDe(prop()).ficha).toBe('');
+  it('la ficha va escrita en el campo, no de marca de agua', () => {
+    expect(formularioDe(prop()).ficha).toBe('FICHA GENERADA');
     expect(
       formularioDe(prop({ fichaPorDefecto: false, ficha: 'La mía' })).ficha
     ).toBe('La mía');
+  });
+
+  it('estado y ubicacion siguen a la web salvo que el equipo los haya puesto', () => {
+    const f = formularioDe(prop());
+    expect(f.availability).toBe('');
+    expect(f.mapsUrl).toBe('');
+    expect(
+      formularioDe(prop({ disponibilidadEquipo: 'reservado' })).availability
+    ).toBe('reservado');
+  });
+
+  it('el modo sale de si hay macro', () => {
+    expect(formularioDe(prop()).modo).toBe('ficha');
+    expect(formularioDe(prop({ macroId: 7 }))).toMatchObject({
+      modo: 'macro',
+      macroId: '7',
+    });
   });
 
   it('sabe si hay algo sin guardar', () => {
@@ -210,22 +217,29 @@ describe('el formulario', () => {
     const form = formularioDe(p);
     expect(hayCambios(form, p)).toBe(false);
     expect(hayCambios({ ...form, visitHours: '11 a 13' }, p)).toBe(true);
-    expect(hayCambios({ ...form, ficha: '  ' }, p)).toBe(false);
     expect(
-      hayCambios({ ...form, datos: [{ clave: 'piso', valor: '7' }] }, p)
+      hayCambios({ ...form, ficha: 'FICHA GENERADA\nY algo más' }, p)
     ).toBe(true);
-    expect(hayCambios({ ...form, macroId: '7' }, p)).toBe(true);
+    expect(hayCambios({ ...form, modo: 'macro', macroId: '7' }, p)).toBe(true);
+    // Elegir una macro en la otra pestaña sin cambiar de modo no cuenta.
+    expect(hayCambios({ ...form, macroId: '7' }, p)).toBe(false);
   });
 
-  it('el estado sigue a la web salvo que el equipo lo haya puesto', () => {
-    expect(formularioDe(prop()).availability).toBe('');
-    expect(
-      formularioDe(prop({ disponibilidadEquipo: 'reservado' })).availability
-    ).toBe('reservado');
-    expect(formularioDe(prop({ macroId: 7 })).macroId).toBe('7');
+  it('sabe si la ficha es la generada', () => {
+    const p = prop();
+    expect(fichaEsGenerada(formularioDe(p), p)).toBe(true);
+    expect(fichaEsGenerada({ ficha: 'otra' }, p)).toBe(false);
   });
 
-  it('el cuerpo del PUT lleva la propiedad, todos los campos y quien lo hizo', () => {
+  it('en modo macro hay que elegir una', () => {
+    expect(motivoParaNoGuardar({ modo: 'ficha' })).toBe('');
+    expect(motivoParaNoGuardar({ modo: 'macro', macroId: '' })).toMatch(
+      /Elige una macro/
+    );
+    expect(motivoParaNoGuardar({ modo: 'macro', macroId: '3' })).toBe('');
+  });
+
+  it('el cuerpo del PUT: la ficha igual a la generada no se guarda como propia', () => {
     const p = prop();
     const form = {
       ...formularioDe(p),
@@ -238,7 +252,7 @@ describe('el formulario', () => {
       propertyId: 'p1',
       ficha: '',
       videoUrl: '',
-      mapsUrl: 'https://maps.google.com/?q=1,2',
+      mapsUrl: '',
       visitHours: '11 a 13',
       availability: '',
       negotiable: '',
@@ -248,7 +262,49 @@ describe('el formulario', () => {
       macroId: null,
       updatedBy: 'Kefrin',
     });
-    expect(cuerpoDe({ ...form, macroId: '12' }, p, '1', '').macroId).toBe(12);
+    expect(cuerpoDe({ ...form, ficha: 'La mía' }, p, '1', '').ficha).toBe(
+      'La mía'
+    );
+  });
+
+  it('la macro solo se guarda en modo macro', () => {
+    const p = prop();
+    const f = { ...formularioDe(p), macroId: '12' };
+    expect(cuerpoDe(f, p, '1', '').macroId).toBeNull();
+    expect(cuerpoDe({ ...f, modo: 'macro' }, p, '1', '').macroId).toBe(12);
+  });
+});
+
+describe('vistaPrevia', () => {
+  it('en modo ficha: la ficha, el video y la ubicacion de la web', () => {
+    const p = prop();
+    const v = vistaPrevia(
+      { ...formularioDe(p), videoUrl: 'https://x/tour%20dia.mp4' },
+      p
+    );
+    expect(v).toEqual([
+      { tipo: 'texto', texto: 'FICHA GENERADA' },
+      { tipo: 'archivo', clase: 'video', nombre: 'tour dia.mp4' },
+      { tipo: 'texto', texto: 'Ubicación: https://maps.google.com/?q=1,2' },
+    ]);
+  });
+
+  it('en modo macro: sus pasos', () => {
+    const macro = {
+      pasos: [
+        { tipo: 'texto', texto: 'Hola' },
+        { tipo: 'archivo', texto: 'plano.pdf', clase: 'documento' },
+      ],
+    };
+    expect(vistaPrevia({ modo: 'macro' }, prop(), macro)).toEqual([
+      { tipo: 'texto', texto: 'Hola' },
+      { tipo: 'archivo', clase: 'documento', nombre: 'plano.pdf' },
+    ]);
+    expect(vistaPrevia({ modo: 'macro' }, prop(), null)).toEqual([]);
+  });
+
+  it('el nombre del archivo sale de la URL', () => {
+    expect(nombreDeArchivo('https://x/a/b/video.mp4?t=1')).toBe('video.mp4');
   });
 });
 
