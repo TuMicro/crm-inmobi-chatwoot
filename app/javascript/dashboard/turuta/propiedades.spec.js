@@ -2,6 +2,7 @@ import {
   ACEPTA_ARCHIVOS,
   adjuntosDe,
   estadoMacroAsesores,
+  resumenCortoDeMacro,
   cuerpoDe,
   datosALista,
   fichaEsGenerada,
@@ -10,7 +11,6 @@ import {
   hayCambios,
   indicadores,
   listaADatos,
-  motivoParaNoGuardar,
   nombreDeArchivo,
   opcionesDeEstado,
   ordenar,
@@ -212,12 +212,9 @@ describe('el formulario', () => {
     ).toBe('reservado');
   });
 
-  it('el modo sale de si hay macro', () => {
-    expect(formularioDe(prop()).modo).toBe('ficha');
-    expect(formularioDe(prop({ macroId: 7 }))).toMatchObject({
-      modo: 'macro',
-      macroId: '7',
-    });
+  it('no tiene modo ni macro: la pestaña Macro ya no existe', () => {
+    expect(formularioDe(prop({ macroId: 7 }))).not.toHaveProperty('modo');
+    expect(formularioDe(prop({ macroId: 7 }))).not.toHaveProperty('macroId');
   });
 
   it('sabe si hay algo sin guardar', () => {
@@ -228,23 +225,12 @@ describe('el formulario', () => {
     expect(
       hayCambios({ ...form, ficha: 'FICHA GENERADA\nY algo más' }, p)
     ).toBe(true);
-    expect(hayCambios({ ...form, modo: 'macro', macroId: '7' }, p)).toBe(true);
-    // Elegir una macro en la otra pestaña sin cambiar de modo no cuenta.
-    expect(hayCambios({ ...form, macroId: '7' }, p)).toBe(false);
   });
 
   it('sabe si la ficha es la generada', () => {
     const p = prop();
     expect(fichaEsGenerada(formularioDe(p), p)).toBe(true);
     expect(fichaEsGenerada({ ficha: 'otra' }, p)).toBe(false);
-  });
-
-  it('en modo macro hay que elegir una', () => {
-    expect(motivoParaNoGuardar({ modo: 'ficha' })).toBe('');
-    expect(motivoParaNoGuardar({ modo: 'macro', macroId: '' })).toMatch(
-      /Elige una macro/
-    );
-    expect(motivoParaNoGuardar({ modo: 'macro', macroId: '3' })).toBe('');
   });
 
   it('el cuerpo del PUT: la ficha igual a la generada no se guarda como propia', () => {
@@ -265,24 +251,16 @@ describe('el formulario', () => {
       conditions: '',
       notes: '',
       facts: { piso: '7' },
-      macroId: null,
       updatedBy: 'Kefrin',
     });
     expect(cuerpoDe({ ...form, ficha: 'La mía' }, p, '1', '').ficha).toBe(
       'La mía'
     );
   });
-
-  it('la macro solo se guarda en modo macro', () => {
-    const p = prop();
-    const f = { ...formularioDe(p), macroId: '12' };
-    expect(cuerpoDe(f, p, '1', '').macroId).toBeNull();
-    expect(cuerpoDe({ ...f, modo: 'macro' }, p, '1', '').macroId).toBe(12);
-  });
 });
 
 describe('vistaPrevia', () => {
-  it('en modo ficha: la ficha y lo que va detras, en su orden', () => {
+  it('la ficha y lo que va detras, en su orden', () => {
     const p = prop({
       piezas: [
         { id: 'u', tipo: 'ubicacion' },
@@ -312,7 +290,7 @@ describe('vistaPrevia', () => {
       mapsUrl: null,
     });
     expect(
-      vistaPrevia(formularioDe(p), p, null, {
+      vistaPrevia(formularioDe(p), p, {
         t: 'https://x/tour%20dia.mp4',
       })[1]
     ).toEqual({
@@ -328,20 +306,6 @@ describe('vistaPrevia', () => {
         piezas: [{ id: 'u', tipo: 'ubicacion' }],
       })
     ).toHaveLength(1);
-  });
-
-  it('en modo macro: sus pasos', () => {
-    const macro = {
-      pasos: [
-        { tipo: 'texto', texto: 'Hola' },
-        { tipo: 'archivo', texto: 'plano.pdf', clase: 'documento' },
-      ],
-    };
-    expect(vistaPrevia({ modo: 'macro' }, prop(), macro)).toEqual([
-      { tipo: 'texto', texto: 'Hola' },
-      { tipo: 'archivo', clase: 'documento', nombre: 'plano.pdf' },
-    ]);
-    expect(vistaPrevia({ modo: 'macro' }, prop(), null)).toEqual([]);
   });
 
   it('el nombre del archivo sale de la URL', () => {
@@ -444,5 +408,33 @@ describe('estadoMacroAsesores', () => {
     expect(
       estadoMacroAsesores(prop(), { macros, subiendo: true }).motivo
     ).toMatch(/terminen de subir/);
+  });
+});
+
+describe('los botones de la macro y el resumen para elegirla', () => {
+  it('guardar en la misma o en una nueva', () => {
+    const vieja = prop({ macroAsesoresId: 12, macroAsesoresAlDia: false });
+    expect(
+      estadoMacroAsesores(vieja, { macros: [] }).acciones.map(a => a.label)
+    ).toEqual([
+      'Guardar cambios en la misma macro',
+      'Guardar cambios en una nueva macro',
+    ]);
+  });
+
+  it('una macro en una linea', () => {
+    expect(
+      resumenCortoDeMacro({
+        pasos: [
+          { tipo: 'texto' },
+          { tipo: 'texto' },
+          { tipo: 'archivo', clase: 'video' },
+        ],
+        ignoradas: ['nota privada', 'asignar agente'],
+      })
+    ).toBe('2 mensajes · un archivo · además: nota privada, asignar agente');
+    expect(resumenCortoDeMacro({ pasos: [], ignoradas: [] })).toBe(
+      'no manda mensajes'
+    );
   });
 });

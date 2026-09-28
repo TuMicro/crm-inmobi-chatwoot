@@ -245,14 +245,12 @@ const limpio = v => String(v ?? '').trim();
  */
 export function formularioDe(p) {
   return {
-    modo: p?.macroId ? 'macro' : 'ficha',
     ficha: p?.ficha || p?.fichaGenerada || '',
     // Lo que va tras la ficha (archivos, textos, la ubicacion) no esta aqui:
     // se guarda al momento, pieza a pieza.
     visitHours: p?.horarioVisitas || '',
     // Vacio: sigue a la web. Asi guardar otro campo no congela el estado.
     availability: p?.disponibilidadEquipo || '',
-    macroId: p?.macroId ? String(p.macroId) : '',
     negotiable: p?.negociable || '',
     conditions: p?.condiciones || '',
     notes: p?.notas || '',
@@ -269,7 +267,6 @@ export function hayCambios(form, p) {
   if (!form || !p) return false;
   const original = formularioDe(p);
   const campos = [
-    'modo',
     'ficha',
     'visitHours',
     'availability',
@@ -278,23 +275,10 @@ export function hayCambios(form, p) {
     'notes',
   ];
   if (campos.some(c => limpio(form[c]) !== limpio(original[c]))) return true;
-  if (
-    form.modo === 'macro' &&
-    limpio(form.macroId) !== limpio(original.macroId)
-  )
-    return true;
   return (
     JSON.stringify(listaADatos(form.datos)) !==
     JSON.stringify(listaADatos(original.datos))
   );
-}
-
-/** Lo que impide guardar, o '' si se puede. */
-export function motivoParaNoGuardar(form) {
-  if (form?.modo === 'macro' && !(Number(form.macroId) > 0)) {
-    return 'Elige una macro, o vuelve a «Ficha y archivos».';
-  }
-  return '';
 }
 
 /** El cuerpo del PUT. Se mandan todos los campos: el formulario los tiene todos. */
@@ -312,10 +296,6 @@ export function cuerpoDe(form, p, accountId, quien) {
     conditions: limpio(form.conditions),
     notes: limpio(form.notes),
     facts: listaADatos(form.datos),
-    macroId:
-      form.modo === 'macro' && Number(form.macroId) > 0
-        ? Number(form.macroId)
-        : null,
     updatedBy: quien || '',
   };
 }
@@ -341,19 +321,12 @@ function claseDeEnlace(url) {
 }
 
 /**
- * Lo que vera el lead, en orden, para la vista previa: en modo ficha, la
- * ficha y lo que va detras (archivos, textos, la ubicacion); en modo macro,
- * sus mensajes y archivos. Como lo manda la IA (pasosTrasLaFicha en la API).
- * `borradores` son los textos que se estan escribiendo, por id.
+ * Lo que vera el lead, en orden, para la vista previa: la ficha y lo que va
+ * detras (archivos, textos, la ubicacion). Como lo manda la IA
+ * (pasosTrasLaFicha en la API). `borradores` son los textos que se estan
+ * escribiendo, por id.
  */
-export function vistaPrevia(form, p, macro, borradores = {}) {
-  if (form?.modo === 'macro') {
-    return (macro?.pasos || []).map(paso =>
-      paso.tipo === 'texto'
-        ? { tipo: 'texto', texto: paso.texto }
-        : { tipo: 'archivo', clase: paso.clase, nombre: paso.texto }
-    );
-  }
+export function vistaPrevia(form, p, borradores = {}) {
   const burbujas = [];
   const ficha = limpio(form?.ficha) || limpio(p?.fichaGenerada);
   if (ficha) burbujas.push({ tipo: 'texto', texto: ficha });
@@ -516,7 +489,13 @@ export function estadoMacroAsesores(p, { macros = [], sinGuardar, subiendo }) {
     return {
       titulo,
       detalle: 'Al día: manda lo mismo que la IA.',
-      acciones: [{ clave: 'nueva', label: 'Crear otra', destacado: false }],
+      acciones: [
+        {
+          clave: 'nueva',
+          label: 'Copiar en una nueva macro',
+          destacado: false,
+        },
+      ],
       motivo,
     };
   }
@@ -526,9 +505,31 @@ export function estadoMacroAsesores(p, { macros = [], sinGuardar, subiendo }) {
       ? 'Hay cambios sin guardar. ¿Los pasas a esta macro o creas otra? Se guardan antes.'
       : 'Cambió la ficha o lo que va detrás. ¿Actualizas esta macro o creas otra?',
     acciones: [
-      { clave: 'actualizar', label: 'Actualizar esta macro', destacado: true },
-      { clave: 'nueva', label: 'Crear otra', destacado: false },
+      {
+        clave: 'actualizar',
+        label: 'Guardar cambios en la misma macro',
+        destacado: true,
+      },
+      {
+        clave: 'nueva',
+        label: 'Guardar cambios en una nueva macro',
+        destacado: false,
+      },
     ],
     motivo,
   };
+}
+
+/** Una macro en una linea, para elegirla: «2 mensajes · un archivo · además: nota privada». */
+export function resumenCortoDeMacro(m) {
+  const pasos = m?.pasos || [];
+  const textos = pasos.filter(x => x.tipo === 'texto').length;
+  const archivos = pasos.length - textos;
+  const partes = [];
+  if (textos) partes.push(cuantos(textos, 'un mensaje', 'mensajes'));
+  if (archivos) partes.push(cuantos(archivos, 'un archivo', 'archivos'));
+  if (!partes.length) partes.push('no manda mensajes');
+  const ademas = m?.ignoradas || [];
+  if (ademas.length) partes.push(`además: ${ademas.join(', ')}`);
+  return partes.join(' · ');
 }

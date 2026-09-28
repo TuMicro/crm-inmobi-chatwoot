@@ -17,6 +17,7 @@ import Button from 'dashboard/components-next/button/Button.vue';
 import Icon from 'dashboard/components-next/icon/Icon.vue';
 import Input from 'dashboard/components-next/input/Input.vue';
 import TabBar from 'dashboard/components-next/tabbar/TabBar.vue';
+import Dialog from 'dashboard/components-next/dialog/Dialog.vue';
 import ReportHeader from 'dashboard/routes/dashboard/settings/reports/components/ReportHeader.vue';
 import CampoSelect from './CampoSelect.vue';
 import { leadAppConfig, textoError } from './leadApp';
@@ -37,7 +38,6 @@ import {
   formularioDe,
   hayCambios,
   indicadores,
-  motivoParaNoGuardar,
   opcionesDeEstado,
   ordenar,
   origen,
@@ -46,6 +46,7 @@ import {
   subtitulo,
   textoDeWeb,
   problemaConElArchivo,
+  resumenCortoDeMacro,
   tamanoLegible,
   tipoDeArchivo,
   vistaPrevia,
@@ -120,9 +121,6 @@ const elegida = computed(
   () => propiedades.value.find(p => p.id === elegidaId.value) || null
 );
 const sinGuardar = computed(() => hayCambios(form.value, elegida.value));
-const motivo = computed(() =>
-  form.value ? motivoParaNoGuardar(form.value) : ''
-);
 // Lo que va tras la ficha: archivos, textos y la ubicacion. Se guarda al
 // momento, pieza a pieza; los textos, al salir del campo.
 const piezas = computed(() => elegida.value?.piezas || []);
@@ -155,25 +153,18 @@ const cajaMacro = computed(() =>
   })
 );
 const generada = computed(() => fichaEsGenerada(form.value, elegida.value));
-const macroElegida = computed(
-  () =>
-    macros.value.find(m => String(m.id) === String(form.value?.macroId)) || null
-);
+const macroDeId = id =>
+  macros.value.find(m => id && String(m.id) === String(id)) || null;
+// La macro enlazada para los asesores, y la que la IA manda en vez de la
+// ficha si se eligio antes en la pestaña Macro (ya no existe: se carga aqui).
+const macroEnlazada = computed(() => macroDeId(elegida.value?.macroAsesoresId));
+const macroQueMandaLaIA = computed(() => macroDeId(elegida.value?.macroId));
 const burbujas = computed(() =>
-  form.value
-    ? vistaPrevia(
-        form.value,
-        elegida.value,
-        macroElegida.value,
-        borradores.value
-      )
-    : []
+  form.value ? vistaPrevia(form.value, elegida.value, borradores.value) : []
 );
 const websConectadas = computed(() => webs.value.filter(w => w.conectada));
 
-// Pestañas: que manda la IA, y el filtro por web.
-const PESTANAS_ENVIO = [{ label: 'Ficha y archivos' }, { label: 'Macro' }];
-const pestanaEnvio = computed(() => (form.value?.modo === 'macro' ? 1 : 0));
+// Pestañas: el filtro por web.
 const pestanasWeb = computed(() => [
   { label: textoDeWeb(''), site: '' },
   ...sitios.value.map(s => ({ label: textoDeWeb(s), site: s })),
@@ -189,16 +180,6 @@ const opcionesFiltroEstado = [
   { value: '', label: 'Cualquier estado' },
   ...ESTADOS.map(e => ({ value: e, label: ETIQUETA_ESTADO[e] })),
 ];
-const opcionesDeMacro = computed(() => [
-  {
-    value: '',
-    label: macros.value.length ? 'Elige una macro' : 'No hay macros',
-  },
-  ...macros.value.map(m => ({
-    value: String(m.id),
-    label: m.publica ? m.nombre : `${m.nombre} (personal)`,
-  })),
-]);
 
 const enlaceMacro = macroId =>
   router.resolve({
@@ -218,35 +199,60 @@ function abrir(p) {
   form.value = formularioDe(p);
 }
 
+// Confirmaciones con el dialogo de Chatwoot, no con el del navegador.
+const dialogoConfirmar = ref(null);
+const confirmacion = ref({
+  titulo: '',
+  detalle: '',
+  boton: '',
+  peligro: false,
+});
+let responderA = null;
+
+/** Abre el dialogo y se resuelve con true (acepta) o false (cancela o cierra). */
+function confirmar({
+  titulo,
+  detalle = '',
+  boton = 'Aceptar',
+  peligro = false,
+}) {
+  confirmacion.value = { titulo, detalle, boton, peligro };
+  dialogoConfirmar.value?.open();
+  return new Promise(resolve => {
+    responderA = resolve;
+  });
+}
+
+function responderConfirmacion(si) {
+  const responder = responderA;
+  responderA = null;
+  // Cerrar avisa "close": ya no hay a quien responder.
+  if (si) dialogoConfirmar.value?.close();
+  responder?.(si);
+}
+
+const DESCARTAR = {
+  titulo: 'Hay cambios sin guardar',
+  detalle: 'Si sales de esta propiedad ahora, se pierden.',
+  boton: 'Descartar cambios',
+  peligro: true,
+};
+
 /** Cambiar de propiedad con cambios a medias pide confirmacion. */
-function elegir(p) {
+async function elegir(p) {
   if (p.id === elegidaId.value) return;
-  // eslint-disable-next-line no-alert
-  if (
-    sinGuardar.value &&
-    !window.confirm('Hay cambios sin guardar. ¿Descartarlos?')
-  )
-    return;
+  if (sinGuardar.value && !(await confirmar(DESCARTAR))) return;
   abrir(p);
 }
 
-function cerrar() {
-  // eslint-disable-next-line no-alert
-  if (
-    sinGuardar.value &&
-    !window.confirm('Hay cambios sin guardar. ¿Descartarlos?')
-  )
-    return;
+async function cerrar() {
+  if (sinGuardar.value && !(await confirmar(DESCARTAR))) return;
   elegidaId.value = null;
   form.value = null;
 }
 
 function descartar() {
   if (elegida.value) form.value = formularioDe(elegida.value);
-}
-
-function cambiarModo(pestana) {
-  form.value.modo = pestana.label === 'Macro' ? 'macro' : 'ficha';
 }
 
 function restaurarFicha() {
@@ -479,16 +485,26 @@ async function moverPieza(i, paso) {
 }
 
 function preguntaAlQuitar(pieza) {
-  if (pieza.tipo === 'ubicacion') return '';
-  if (pieza.tipo === 'texto')
-    return '¿Quitar este mensaje? La IA dejará de mandarlo.';
-  return `¿Quitar «${pieza.nombre}»? La IA dejará de mandarlo.`;
+  if (pieza.tipo === 'ubicacion') return null;
+  if (pieza.tipo === 'texto') {
+    return {
+      titulo: '¿Quitar este mensaje?',
+      detalle: 'La IA dejará de mandarlo tras la ficha.',
+      boton: 'Quitar',
+      peligro: true,
+    };
+  }
+  return {
+    titulo: `¿Quitar «${pieza.nombre}»?`,
+    detalle: 'La IA dejará de mandarlo y se borra del almacén.',
+    boton: 'Quitar',
+    peligro: true,
+  };
 }
 
 async function quitarPieza(pieza) {
   const pregunta = preguntaAlQuitar(pieza);
-  // eslint-disable-next-line no-alert
-  if (pregunta && !window.confirm(pregunta)) return;
+  if (pregunta && !(await confirmar(pregunta))) return;
   const p = elegida.value;
   try {
     const q = new URLSearchParams({
@@ -568,7 +584,7 @@ function quitarDato(i) {
  * usa la macro de los asesores, que guarda antes de pasarse a Chatwoot).
  */
 async function guardar({ callado = false } = {}) {
-  if (!elegida.value || guardando.value || motivo.value) return false;
+  if (!elegida.value || guardando.value) return false;
   guardando.value = true;
   try {
     await pedir('/dashboard-app/properties/playbook', {
@@ -632,6 +648,51 @@ async function guardarMacroAsesores(clave) {
   } finally {
     guardandoMacro.value = false;
   }
+}
+
+// Cargar una macro de Chatwoot en la propiedad, para editarla aqui.
+const dialogoMacros = ref(null);
+const macroACargar = ref(null);
+const cargandoMacro = ref(false);
+
+async function abrirCargarMacro() {
+  macroACargar.value = null;
+  await recargarMacros();
+  dialogoMacros.value?.open();
+}
+
+/** Carga una macro: su primer mensaje es la ficha y el resto, la lista. */
+async function cargarMacro(macroId) {
+  const p = elegida.value;
+  if (!p || cargandoMacro.value) return false;
+  cargandoMacro.value = true;
+  try {
+    const r = await pedir('/dashboard-app/properties/macro/cargar', {
+      method: 'POST',
+      body: cuerpoPieza(p, { macroId: Number(macroId) }),
+    });
+    await cargar();
+    await recargarMacros();
+    const faltan = (r.omitidos || [])
+      .map(o => `${o.nombre} (${o.motivo})`)
+      .join('; ');
+    useAlert(
+      faltan
+        ? `Macro «${r.macro?.nombre}» cargada, menos: ${faltan}`
+        : `Macro «${r.macro?.nombre}» cargada: edítala aquí y guarda los cambios en la misma macro.`
+    );
+    return true;
+  } catch (e) {
+    useAlert(`No se pudo cargar la macro: ${e.message}`);
+    return false;
+  } finally {
+    cargandoMacro.value = false;
+  }
+}
+
+async function cargarMacroElegida() {
+  if (!macroACargar.value) return;
+  if (await cargarMacro(macroACargar.value)) dialogoMacros.value?.close();
 }
 
 async function guardarWebs() {
@@ -1051,23 +1112,43 @@ const TITULO = 'mb-0 text-base font-medium text-n-slate-12';
             <div class="p-5 border-b border-n-weak">
               <div class="flex flex-wrap items-center justify-between gap-3">
                 <h3 :class="TITULO">Qué le manda la IA al lead</h3>
-                <TabBar
-                  :tabs="PESTANAS_ENVIO"
-                  :initial-active-tab="pestanaEnvio"
-                  @tab-changed="cambiarModo"
+                <Button
+                  label="Cargar una macro"
+                  icon="i-lucide-download"
+                  variant="faded"
+                  color="slate"
+                  size="sm"
+                  @click="abrirCargarMacro"
                 />
               </div>
               <p class="mt-1 mb-4 text-sm text-n-slate-10">
-                Solo una de las dos: la ficha con sus fotos, videos, PDF, enlace
-                y ubicación, o una macro de Chatwoot.
+                La ficha y lo que va detrás, en este orden. Puedes empezar desde
+                una macro de Chatwoot y editarla aquí.
               </p>
 
+              <div
+                v-if="elegida.macroId"
+                class="flex flex-wrap items-center gap-3 px-3 py-2.5 mb-4 rounded-lg bg-n-amber-3 text-n-amber-11"
+              >
+                <Icon icon="i-lucide-triangle-alert" class="flex-none size-4" />
+                <p class="mb-0 text-sm grow basis-60">
+                  Ahora la IA manda la macro «{{
+                    macroQueMandaLaIA?.nombre || elegida.macroId
+                  }}» en vez de esto. Cárgala aquí para verla y editarla: desde
+                  entonces manda lo de esta página.
+                </p>
+                <Button
+                  label="Cargar la macro"
+                  color="amber"
+                  size="sm"
+                  :is-loading="cargandoMacro"
+                  @click="cargarMacro(elegida.macroId)"
+                />
+              </div>
+
               <div class="grid gap-5 xl:grid-cols-[minmax(0,1fr)_20rem]">
-                <!-- Ficha y archivos -->
-                <div
-                  v-if="form.modo === 'ficha'"
-                  class="flex flex-col gap-4 min-w-0"
-                >
+                <!-- La ficha y lo que va detras -->
+                <div class="flex flex-col gap-4 min-w-0">
                   <div>
                     <div
                       class="flex flex-wrap items-center justify-between gap-2 mb-1.5"
@@ -1394,8 +1475,16 @@ const TITULO = 'mb-0 text-base font-medium text-n-slate-12';
                       <p class="mb-0 text-xs text-n-slate-10">
                         {{ cajaMacro.detalle }}
                       </p>
+                      <p
+                        v-if="macroEnlazada?.ignoradas?.length"
+                        class="mt-1 mb-0 text-xs text-n-slate-10"
+                      >
+                        La macro también hace (la IA no):
+                        {{ macroEnlazada.ignoradas.join(', ') }}. Se conserva al
+                        guardar.
+                      </p>
                     </div>
-                    <div class="flex items-center flex-none gap-3">
+                    <div class="flex flex-wrap items-center flex-none gap-3">
                       <a
                         v-if="elegida.macroAsesoresId"
                         :href="enlaceMacro(elegida.macroAsesoresId)"
@@ -1403,7 +1492,7 @@ const TITULO = 'mb-0 text-base font-medium text-n-slate-12';
                         rel="noopener noreferrer"
                         class="text-xs text-n-blue-11 hover:underline"
                       >
-                        Abrir
+                        Editar en Chatwoot
                       </a>
                       <Button
                         v-for="accion in cajaMacro.acciones"
@@ -1419,63 +1508,6 @@ const TITULO = 'mb-0 text-base font-medium text-n-slate-12';
                       />
                     </div>
                   </div>
-                </div>
-
-                <!-- Macro -->
-                <div v-else class="flex flex-col gap-3 min-w-0">
-                  <CampoSelect
-                    v-model="form.macroId"
-                    label="Macro"
-                    :options="opcionesDeMacro"
-                  />
-                  <div class="flex flex-wrap items-center gap-x-4 gap-y-1">
-                    <a
-                      v-if="macroElegida"
-                      :href="enlaceMacro(macroElegida.id)"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      class="flex items-center gap-1 text-xs text-n-blue-11 hover:underline"
-                    >
-                      <Icon icon="i-lucide-pencil" class="size-3.5" />
-                      Editar esta macro
-                    </a>
-                    <a
-                      :href="enlaceMacro(null)"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      class="flex items-center gap-1 text-xs text-n-blue-11 hover:underline"
-                    >
-                      <Icon icon="i-lucide-plus" class="size-3.5" />
-                      Crear una macro
-                    </a>
-                    <button
-                      type="button"
-                      class="flex items-center gap-1 text-xs text-n-slate-11 hover:underline"
-                      @click="recargarMacros"
-                    >
-                      <Icon icon="i-lucide-refresh-cw" class="size-3.5" />
-                      Volver a leer las macros
-                    </button>
-                  </div>
-                  <p
-                    v-if="macroElegida && !macroElegida.pasos.length"
-                    class="px-3 py-2 mb-0 text-xs rounded-lg bg-n-amber-3 text-n-amber-11"
-                  >
-                    Esta macro no manda ningún mensaje ni archivo: la IA mandará
-                    la ficha.
-                  </p>
-                  <p
-                    v-if="macroElegida && macroElegida.ignoradas.length"
-                    class="px-3 py-2 mb-0 text-xs rounded-lg bg-n-alpha-1 text-n-slate-11"
-                  >
-                    La IA solo manda los mensajes y archivos. No hace el resto
-                    de la macro: {{ macroElegida.ignoradas.join(', ') }}.
-                  </p>
-                  <p class="mb-0 text-xs text-n-slate-10">
-                    La IA manda los mensajes y archivos de la macro, en orden y
-                    con el nombre de la empresa. Si no ves tu macro, márcala
-                    como visible para todos.
-                  </p>
                 </div>
 
                 <!-- Vista previa -->
@@ -1524,7 +1556,7 @@ const TITULO = 'mb-0 text-base font-medium text-n-slate-12';
                       </div>
                     </div>
                     <p v-else class="mb-0 text-xs text-n-slate-10">
-                      Elige una macro para ver lo que manda.
+                      Escribe la ficha para ver cómo le llega.
                     </p>
                   </div>
                 </aside>
@@ -1643,14 +1675,9 @@ const TITULO = 'mb-0 text-base font-medium text-n-slate-12';
             >
               <span
                 class="text-xs ltr:mr-auto rtl:ml-auto"
-                :class="
-                  motivo || sinGuardar ? 'text-n-amber-11' : 'text-n-slate-10'
-                "
+                :class="sinGuardar ? 'text-n-amber-11' : 'text-n-slate-10'"
               >
-                {{
-                  motivo ||
-                  (sinGuardar ? 'Hay cambios sin guardar' : 'Todo guardado')
-                }}
+                {{ sinGuardar ? 'Hay cambios sin guardar' : 'Todo guardado' }}
               </span>
               <Button
                 label="Descartar"
@@ -1665,7 +1692,7 @@ const TITULO = 'mb-0 text-base font-medium text-n-slate-12';
                 variant="solid"
                 color="blue"
                 size="sm"
-                :disabled="!sinGuardar || !!motivo || guardando"
+                :disabled="!sinGuardar || guardando"
                 :is-loading="guardando"
                 @click="guardar"
               />
@@ -1674,5 +1701,82 @@ const TITULO = 'mb-0 text-base font-medium text-n-slate-12';
         </div>
       </div>
     </div>
+
+    <Dialog
+      ref="dialogoConfirmar"
+      :type="confirmacion.peligro ? 'alert' : 'edit'"
+      :title="confirmacion.titulo"
+      :description="confirmacion.detalle"
+      :confirm-button-label="confirmacion.boton"
+      cancel-button-label="Cancelar"
+      width="md"
+      @confirm="responderConfirmacion(true)"
+      @close="responderConfirmacion(false)"
+    />
+
+    <Dialog
+      ref="dialogoMacros"
+      title="Cargar una macro"
+      :description="
+        sinGuardar
+          ? 'Su contenido reemplaza la ficha y lo que va detrás. Los cambios sin guardar se pierden.'
+          : 'Su contenido reemplaza la ficha y lo que va detrás: el primer mensaje pasa a ser la ficha y el resto, la lista. Luego lo editas aquí y «Guardar cambios en la misma macro» la actualiza.'
+      "
+      confirm-button-label="Cargar"
+      cancel-button-label="Cancelar"
+      :disable-confirm-button="!macroACargar"
+      :is-loading="cargandoMacro"
+      width="xl"
+      @confirm="cargarMacroElegida"
+    >
+      <p v-if="!macros.length" class="mb-0 text-sm text-n-slate-10">
+        No hay macros visibles para todos.
+        <a
+          :href="enlaceMacro(null)"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="text-n-blue-11 hover:underline"
+        >
+          Crear una
+        </a>
+      </p>
+      <div v-else class="flex flex-col gap-2 overflow-y-auto max-h-[50vh]">
+        <label
+          v-for="m in macros"
+          :key="m.id"
+          class="flex items-start gap-3 p-3 mb-0 transition-colors rounded-lg cursor-pointer outline outline-1"
+          :class="
+            macroACargar === m.id
+              ? 'outline-n-brand bg-n-alpha-2'
+              : 'outline-n-weak hover:bg-n-alpha-1'
+          "
+        >
+          <input
+            v-model="macroACargar"
+            type="radio"
+            name="macro-a-cargar"
+            :value="m.id"
+            class="mt-1"
+          />
+          <span class="min-w-0">
+            <span class="block text-sm font-medium text-n-slate-12">
+              {{ m.nombre }}
+              <span
+                v-if="m.id === elegida?.macroAsesoresId"
+                class="font-normal text-n-teal-11"
+              >
+                · la de esta propiedad
+              </span>
+              <span v-if="!m.publica" class="font-normal text-n-slate-10">
+                · personal
+              </span>
+            </span>
+            <span class="block text-xs text-n-slate-10">
+              {{ resumenCortoDeMacro(m) }}
+            </span>
+          </span>
+        </label>
+      </div>
+    </Dialog>
   </div>
 </template>
