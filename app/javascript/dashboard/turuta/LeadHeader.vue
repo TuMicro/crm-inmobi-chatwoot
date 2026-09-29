@@ -426,7 +426,7 @@ const claseEtapa = computed(() => {
       >
         <Button
           v-if="siguiente"
-          :label="siguiente.name"
+          :label="`Mover a ${siguiente.name}`"
           icon="i-lucide-arrow-right"
           variant="solid"
           color="blue"

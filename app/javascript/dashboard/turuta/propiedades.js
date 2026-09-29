@@ -476,7 +476,7 @@ export function estadoMacroAsesores(p, { macros = [], sinGuardar, subiendo }) {
   if (!p?.macroAsesoresId) {
     return {
       titulo: 'Macro para los asesores',
-      detalle: `Guarda esto mismo como una macro de Chatwoot, para mandarlo a mano desde un chat.${antes}`,
+      detalle: `Guarda esto mismo como una macro, para mandarlo a mano desde un chat.${antes}`,
       acciones: [
         { clave: 'crear', label: 'Guardar como macro', destacado: true },
       ],

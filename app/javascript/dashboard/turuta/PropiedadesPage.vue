@@ -1123,7 +1123,7 @@ const TITULO = 'mb-0 text-base font-medium text-n-slate-12';
               </div>
               <p class="mt-1 mb-4 text-sm text-n-slate-10">
                 La ficha y lo que va detrás, en este orden. Puedes empezar desde
-                una macro de Chatwoot y editarla aquí.
+                una de tus macros y editarla aquí.
               </p>
 
               <div
@@ -1492,7 +1492,7 @@ const TITULO = 'mb-0 text-base font-medium text-n-slate-12';
                         rel="noopener noreferrer"
                         class="text-xs text-n-blue-11 hover:underline"
                       >
-                        Editar en Chatwoot
+                        Editar la macro
                       </a>
                       <Button
                         v-for="accion in cajaMacro.acciones"
