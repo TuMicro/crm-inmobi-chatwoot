@@ -4,6 +4,7 @@ import { frontendURL } from 'dashboard/helper/URLHelper';
 import EmbudoPage from './EmbudoPage.vue';
 import PropiedadesPage from './PropiedadesPage.vue';
 import IaPage from './IaPage.vue';
+import ReiniciarLeadPage from './ReiniciarLeadPage.vue';
 
 export const routes = [
   {
@@ -28,6 +29,14 @@ export const routes = [
     component: IaPage,
     // Solo administradores: el interruptor y lo que la IA dice de la empresa
     // no son cosa de un asesor. El item del menu se esconde solo.
+    meta: { permissions: ['administrator'] },
+  },
+  {
+    path: frontendURL('accounts/:accountId/turuta/reiniciar-lead'),
+    name: 'turuta_reiniciar_lead',
+    component: ReiniciarLeadPage,
+    // Solo administradores: borra a una persona de la cuenta. Va en Ajustes;
+    // el item se esconde solo a los asesores.
     meta: { permissions: ['administrator'] },
   },
 ];

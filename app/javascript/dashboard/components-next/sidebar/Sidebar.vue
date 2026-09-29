@@ -1004,6 +1004,15 @@ const menuItems = computed(() => {
           icon: 'i-lucide-credit-card',
           to: accountScopedRoute('billing_settings_index'),
         },
+        // [turuta] Nuestra pagina: borrar un numero de prueba para volver a
+        // empezar (lo mismo que infra/reset-lead.sh). Solo administradores.
+        {
+          name: 'Turuta Reiniciar lead',
+          label: 'Reiniciar un lead',
+          icon: 'i-lucide-rotate-ccw',
+          to: accountScopedRoute('turuta_reiniciar_lead'),
+          activeOn: ['turuta_reiniciar_lead'],
+        },
       ],
     },
   ]); // [turuta] turutaPodar
