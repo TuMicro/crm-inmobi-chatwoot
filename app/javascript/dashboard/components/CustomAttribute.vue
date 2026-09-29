@@ -245,8 +245,9 @@ export default {
               class="mt-0.5"
             />
           </span>
+          <!-- [turuta] Las de seleccion multiple no se borran: se desmarcan. -->
           <NextButton
-            v-if="showActions && hasValue"
+            v-if="showActions && hasValue && !isAttributeTypeMultiList"
             v-tooltip.left="$t('CUSTOM_ATTRIBUTES.ACTIONS.DELETE')"
             slate
             sm
@@ -337,7 +338,7 @@ export default {
         :opciones="values"
         :valor="value"
         @update="onUpdateMultiList"
-        @delete="onDelete"
+        @delete="onUpdateMultiList([])"
       />
     </div>
     <div v-if="isAttributeTypeList">

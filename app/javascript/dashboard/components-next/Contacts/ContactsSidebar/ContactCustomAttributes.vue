@@ -21,6 +21,13 @@ const searchQuery = ref('');
 
 const contactAttributes = useMapGetter('attributes/getContactAttributes') || [];
 
+// [turuta] Las de seleccion multiple (Distritos de interes) siempre a la vista:
+// se marcan y desmarcan, no hace falta "anadirlas" a cada contacto.
+const esMultiple = key =>
+  (contactAttributes.value || []).some(
+    a => a.attributeKey === key && a.attributeDisplayType === 'multi_list'
+  );
+
 const hasContactAttributes = computed(
   () => contactAttributes.value?.length > 0
 );
@@ -78,7 +85,7 @@ const usedAttributes = computed(() => {
   const attributes = processContactAttributes(
     contactAttributes.value,
     props.selectedContact?.customAttributes,
-    (key, custom) => key in custom
+    (key, custom) => key in custom || esMultiple(key)
   );
 
   return sortByUISettings(attributes);
@@ -88,7 +95,7 @@ const unusedAttributes = computed(() => {
   const attributes = processContactAttributes(
     contactAttributes.value,
     props.selectedContact?.customAttributes,
-    (key, custom) => !(key in custom)
+    (key, custom) => !(key in custom) && !esMultiple(key)
   );
 
   return sortByUISettings(attributes);

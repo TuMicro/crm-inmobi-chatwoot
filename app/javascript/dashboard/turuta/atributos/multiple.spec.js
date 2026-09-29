@@ -4,6 +4,7 @@ import {
   alternar,
   contieneAlguna,
   esIdDeFiltro,
+  esListaDeDistritos,
   idDeFiltro,
   opcionesDeFiltro,
   textoParaContiene,
@@ -124,5 +125,38 @@ describe('contiene, en el filtro en vivo', () => {
 
   it('sin valor guardado no encaja nada', () => {
     expect(contieneAlguna(['"Sur"'], undefined)).toBe(false);
+  });
+});
+
+describe('esListaDeDistritos', () => {
+  it('la de nuestra clave, o una lista multiple de distritos', () => {
+    const c = extra => ({ attribute_model: 'contact_attribute', ...extra });
+    expect(
+      esListaDeDistritos(c({ attribute_key: 'distritos_de_interes' }))
+    ).toBe(true);
+    expect(
+      esListaDeDistritos(
+        c({
+          attribute_key: 'distritos',
+          attribute_display_name: 'Distritos de interés',
+          attribute_display_type: 'multi_list',
+        })
+      )
+    ).toBe(true);
+    expect(
+      esListaDeDistritos(
+        c({
+          attribute_key: 'x',
+          attribute_display_name: 'Distritos que busca',
+          attribute_display_type: 'text',
+        })
+      )
+    ).toBe(false);
+    expect(
+      esListaDeDistritos({
+        attribute_model: 'conversation_attribute',
+        attribute_key: 'distritos_de_interes',
+      })
+    ).toBe(false);
   });
 });

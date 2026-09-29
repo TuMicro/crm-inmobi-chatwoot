@@ -72,3 +72,22 @@ export function contieneAlguna(valoresDelFiltro, valorGuardado) {
     enMinusculas.includes(String(v).toLowerCase())
   );
 }
+
+const sinTildes = texto =>
+  String(texto || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+
+/** "Distritos de interés": la lista en la que la IA marca los distritos del
+ *  lead (la crea nuestra API). Se edita su lista, pero no se borra. La misma
+ *  regla que definicionDeDistritos en la API. */
+export function esListaDeDistritos(atributo) {
+  if (!atributo || atributo.attribute_model !== 'contact_attribute')
+    return false;
+  if (atributo.attribute_key === 'distritos_de_interes') return true;
+  return (
+    atributo.attribute_display_type === TIPO_MULTIPLE &&
+    /distrito/.test(sinTildes(atributo.attribute_display_name))
+  );
+}

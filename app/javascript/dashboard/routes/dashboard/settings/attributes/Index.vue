@@ -11,6 +11,7 @@ import Button from 'dashboard/components-next/button/Button.vue';
 import TabBar from 'dashboard/components-next/tabbar/TabBar.vue';
 import AttributeListItem from 'dashboard/components-next/ConversationWorkflow/AttributeListItem.vue';
 import { useI18n } from 'vue-i18n';
+import { esListaDeDistritos } from 'dashboard/turuta/atributos/multiple';
 import {
   useStoreGetters,
   useStore,
@@ -146,6 +147,8 @@ const derivedAttributes = computed(() =>
     type: attribute.attribute_display_type,
     value: attribute.attribute_key,
     badges: buildBadges(attribute),
+    // [turuta] La usa la IA: se edita su lista, no se borra.
+    turutaFijo: esListaDeDistritos(attribute),
   }))
 );
 

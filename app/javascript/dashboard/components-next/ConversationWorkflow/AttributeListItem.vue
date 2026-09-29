@@ -19,6 +19,9 @@ const props = defineProps({
 
 const emit = defineEmits(['edit', 'delete']);
 
+// [turuta] La lista de distritos la usa la IA: se edita, no se borra.
+const LA_USA_LA_IA = 'La usa la IA';
+
 const iconByType = {
   text: 'i-lucide-menu',
   checkbox: 'i-lucide-circle-check-big',
@@ -50,6 +53,11 @@ const attributeIcon = computed(() => {
             </h4>
             <div class="flex items-center gap-1.5">
               <Label :label="attribute.type" compact />
+              <Label
+                v-if="attribute.turutaFijo"
+                :label="LA_USA_LA_IA"
+                compact
+              />
               <AttributeBadge
                 v-for="badge in badges"
                 :key="badge.type"
@@ -83,6 +91,7 @@ const attributeIcon = computed(() => {
           @click="emit('edit', attribute)"
         />
         <Button
+          v-if="!attribute.turutaFijo"
           icon="i-woot-bin"
           slate
           sm
