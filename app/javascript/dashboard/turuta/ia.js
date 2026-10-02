@@ -7,8 +7,9 @@ export const TEXTO_MOTIVO = {
   calificado: 'Calificados',
   visita: 'Pidieron visita',
   pide_humano: 'Pidieron hablar con alguien',
-  vendedor: 'Querían vender',
+  vendedor: 'Propietarios: querían vender o alquilar',
   servicio: 'Preguntaron por un servicio',
+  otro_asunto: 'Escribieron por otro asunto',
   fuera_de_alcance: 'Fuera de su alcance',
   sin_avance: 'Muchas vueltas sin avanzar',
   gestion: 'Pidieron una gestión',
@@ -179,7 +180,7 @@ export function cambiosDe(form, config) {
     const ahora = String(form?.[c.clave] ?? '').trim();
     if (ahora === antes.trim()) return;
     // Vaciar un campo lo borra; el numero va como numero.
-    salida[c.clave] = c.tipo === 'numero' ? Number(ahora) || 12 : ahora;
+    salida[c.clave] = c.tipo === 'numero' ? Number(ahora) || 6 : ahora;
   });
   return salida;
 }

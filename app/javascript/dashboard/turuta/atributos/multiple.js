@@ -79,15 +79,33 @@ const sinTildes = texto =>
     .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase();
 
-/** "Distritos de interés": la lista en la que la IA marca los distritos del
- *  lead (la crea nuestra API). Se edita su lista, pero no se borra. La misma
- *  regla que definicionDeDistritos en la API. */
-export function esListaDeDistritos(atributo) {
+/** Las listas que llena la IA y amplia sola si hace falta (las crea nuestra
+ *  API): "Distritos de interés" y "Tipo de propiedad". Se edita su lista,
+ *  pero no se borran. La misma regla que definicionDeLista en la API
+ *  (services/api/src/ai/listas.logic.ts). */
+const LISTAS_DE_LA_IA = [
+  {
+    clave: 'distritos_de_interes',
+    tipos: [TIPO_MULTIPLE],
+    nombre: /distrito/,
+    viejo: 'distritos_de_interes_ia',
+  },
+  {
+    clave: 'tipo_de_propiedad',
+    tipos: [TIPO_MULTIPLE, 'list'],
+    nombre: /^tipos? de (propiedad|inmueble)/,
+    viejo: 'tipo_de_propiedad_ia',
+  },
+];
+
+export function esListaDeLaIa(atributo) {
   if (!atributo || atributo.attribute_model !== 'contact_attribute')
     return false;
-  if (atributo.attribute_key === 'distritos_de_interes') return true;
-  return (
-    atributo.attribute_display_type === TIPO_MULTIPLE &&
-    /distrito/.test(sinTildes(atributo.attribute_display_name))
+  return LISTAS_DE_LA_IA.some(
+    l =>
+      atributo.attribute_key === l.clave ||
+      (atributo.attribute_key !== l.viejo &&
+        l.tipos.includes(atributo.attribute_display_type) &&
+        l.nombre.test(sinTildes(atributo.attribute_display_name)))
   );
 }

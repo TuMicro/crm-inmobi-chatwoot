@@ -4,7 +4,7 @@ import {
   alternar,
   contieneAlguna,
   esIdDeFiltro,
-  esListaDeDistritos,
+  esListaDeLaIa,
   idDeFiltro,
   opcionesDeFiltro,
   textoParaContiene,
@@ -128,14 +128,14 @@ describe('contiene, en el filtro en vivo', () => {
   });
 });
 
-describe('esListaDeDistritos', () => {
+describe('esListaDeLaIa', () => {
   it('la de nuestra clave, o una lista multiple de distritos', () => {
     const c = extra => ({ attribute_model: 'contact_attribute', ...extra });
+    expect(esListaDeLaIa(c({ attribute_key: 'distritos_de_interes' }))).toBe(
+      true
+    );
     expect(
-      esListaDeDistritos(c({ attribute_key: 'distritos_de_interes' }))
-    ).toBe(true);
-    expect(
-      esListaDeDistritos(
+      esListaDeLaIa(
         c({
           attribute_key: 'distritos',
           attribute_display_name: 'Distritos de interés',
@@ -144,7 +144,7 @@ describe('esListaDeDistritos', () => {
       )
     ).toBe(true);
     expect(
-      esListaDeDistritos(
+      esListaDeLaIa(
         c({
           attribute_key: 'x',
           attribute_display_name: 'Distritos que busca',
@@ -153,10 +153,42 @@ describe('esListaDeDistritos', () => {
       )
     ).toBe(false);
     expect(
-      esListaDeDistritos({
+      esListaDeLaIa({
         attribute_model: 'conversation_attribute',
         attribute_key: 'distritos_de_interes',
       })
+    ).toBe(false);
+  });
+
+  it('y la de tipo de propiedad, aunque sea de seleccion simple', () => {
+    const c = extra => ({ attribute_model: 'contact_attribute', ...extra });
+    expect(esListaDeLaIa(c({ attribute_key: 'tipo_de_propiedad' }))).toBe(true);
+    expect(
+      esListaDeLaIa(
+        c({
+          attribute_key: 'tipo',
+          attribute_display_name: 'Tipo de propiedad',
+          attribute_display_type: 'list',
+        })
+      )
+    ).toBe(true);
+    expect(
+      esListaDeLaIa(
+        c({
+          attribute_key: 'tipo_de_propiedad_ia',
+          attribute_display_name: 'Tipo de propiedad',
+          attribute_display_type: 'list',
+        })
+      )
+    ).toBe(false);
+    expect(
+      esListaDeLaIa(
+        c({
+          attribute_key: 'presupuesto',
+          attribute_display_name: 'Presupuesto',
+          attribute_display_type: 'text',
+        })
+      )
     ).toBe(false);
   });
 });
