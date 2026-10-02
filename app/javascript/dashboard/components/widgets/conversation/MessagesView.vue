@@ -23,6 +23,7 @@ import inboxMixin, { INBOX_FEATURES } from 'shared/mixins/inboxMixin';
 // utils
 import { emitter } from 'shared/helpers/mitt';
 import { getTypingUsersText } from '../../../helper/commons';
+import { TEXTO_IA_ENVIANDO, iaEnviando } from 'dashboard/turuta/iaEnviando';
 import { calculateScrollTop } from './helpers/scrollTopCalculationHelper';
 import { LocalStorage } from 'shared/helpers/localStorage';
 import {
@@ -88,6 +89,9 @@ export default {
       isProgrammaticScroll: false,
       messageSentSinceOpened: false,
       labelSuggestions: [],
+      // [turuta] El reloj del aviso "La IA esta enviando la ficha".
+      turutaAhora: Date.now(),
+      turutaReloj: null,
     };
   },
 
@@ -125,6 +129,13 @@ export default {
     isAnyoneTyping() {
       const userList = this.typingUsersList;
       return userList.length !== 0;
+    },
+    // [turuta] La IA esta mandando una ficha en este chat (turuta/iaEnviando.js).
+    turutaIaEnviando() {
+      return iaEnviando(this.currentChat, this.turutaAhora);
+    },
+    turutaTextoIaEnviando() {
+      return TEXTO_IA_ENVIANDO;
     },
     typingUserNames() {
       const userList = this.typingUsersList;
@@ -284,11 +295,16 @@ export default {
     this.addScrollListener();
     this.fetchAllAttachmentsFromCurrentChat();
     this.fetchSuggestions();
+    // [turuta] Para que el aviso de la IA se vaya solo si la API no lo borra.
+    this.turutaReloj = setInterval(() => {
+      this.turutaAhora = Date.now();
+    }, 5000);
   },
 
   unmounted() {
     this.removeBusListeners();
     this.removeScrollListener();
+    clearInterval(this.turutaReloj);
   },
 
   methods: {
@@ -534,13 +550,13 @@ export default {
     </MessageList>
     <div class="flex relative flex-col bg-n-surface-1">
       <div
-        v-if="isAnyoneTyping"
+        v-if="isAnyoneTyping || turutaIaEnviando"
         class="absolute flex items-center w-full h-0 -top-7"
       >
         <div
           class="flex py-2 pr-4 pl-5 shadow-md rounded-full bg-white dark:bg-n-solid-3 text-n-slate-11 text-xs font-semibold my-2.5 mx-auto"
         >
-          {{ typingUserNames }}
+          {{ turutaIaEnviando ? turutaTextoIaEnviando : typingUserNames }}
           <img
             class="w-6 ltr:ml-2 rtl:mr-2"
             src="assets/images/typing.gif"

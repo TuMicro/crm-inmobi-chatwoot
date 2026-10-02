@@ -10,6 +10,7 @@ import { useUISettings } from 'dashboard/composables/useUISettings';
 import { copyTextToClipboard } from 'shared/helpers/clipboard';
 import CustomAttribute from 'dashboard/components/CustomAttribute.vue';
 import NextButton from 'dashboard/components-next/button/Button.vue';
+import { conValorPrimero } from 'dashboard/turuta/atributos/orden';
 
 const props = defineProps({
   attributeType: {
@@ -101,10 +102,11 @@ const combinedElements = computed(() => {
     ...filteredCustomAttributes.value,
   ];
 
+  // [turuta] Los que tienen valor, arriba (turuta/atributos/orden.js).
   // If no saved order exists, return in default order
-  if (!savedOrder.length) return allElements;
+  if (!savedOrder.length) return conValorPrimero(allElements);
 
-  return allElements.sort((a, b) => {
+  const ordenados = allElements.sort((a, b) => {
     // Find positions of elements in saved order
     const aPosition = savedOrder.indexOf(a.key);
     const bPosition = savedOrder.indexOf(b.key);
@@ -118,6 +120,7 @@ const combinedElements = computed(() => {
 
     return aPosition - bPosition;
   });
+  return conValorPrimero(ordenados);
 });
 
 const displayedElements = computed(() => {
