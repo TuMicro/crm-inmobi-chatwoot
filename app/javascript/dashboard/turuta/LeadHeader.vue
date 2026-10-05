@@ -186,24 +186,16 @@ const claseEtapa = computed(() => {
     </p>
 
     <template v-else-if="lead">
-      <!-- La etapa y el asesor, en una linea. -->
-      <div class="flex items-center justify-between gap-2">
+      <!-- La etapa. El asesor no va aqui (05/10): "Agente asignado", justo
+           debajo, es el de Chatwoot y esta siempre al dia; el nuestro llega
+           por webhook y, con un agente recien creado, tardaba en salir. -->
+      <div class="flex items-center gap-2">
         <span
           class="px-2 py-0.5 text-xs font-medium rounded-md"
           :class="claseEtapa"
           :title="`Etapa: ${lead.etapa.name}`"
         >
           {{ lead.etapa.name }}
-        </span>
-        <span
-          class="flex items-center min-w-0 gap-1 text-sm"
-          :class="lead.asesor ? 'text-n-slate-12' : 'text-n-slate-10'"
-          :title="lead.asesor ? `Asesor: ${lead.asesor}` : 'Sin asesor'"
-        >
-          <span
-            class="flex-shrink-0 i-lucide-user-round size-3.5 text-n-slate-10"
-          />
-          <span class="truncate">{{ lead.asesor || 'Sin asesor' }}</span>
         </span>
       </div>
       <!-- La IA en este chat: es como sabe el asesor si sigue respondiendo
