@@ -3,7 +3,9 @@
 // persona de esta cuenta para volver a probar como si escribiera por primera
 // vez. Lo mismo que infra/reset-lead.sh en la maquina, contra nuestra API
 // (dashboard-app/leads/reinicio). Primero se ve lo que se borraria; borrar
-// pide escribir BORRAR.
+// pide escribir BORRAR. Se busca por telefono, por el usuario de WhatsApp
+// (@usuario) o por el numero del chat (#63): quien escribe con un nombre de
+// usuario de Meta llega sin telefono (05/10).
 import { ref, computed, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import { useStore, useMapGetter } from 'dashboard/composables/store';
@@ -22,7 +24,7 @@ const apps = useMapGetter('dashboardApps/getRecords');
 const currentUser = useMapGetter('getCurrentUser');
 const config = computed(() => leadAppConfig(apps.value));
 
-const telefono = ref('');
+const busqueda = ref('');
 const confirmacion = ref('');
 const vista = ref(null);
 const buscando = ref(false);
@@ -54,7 +56,7 @@ async function pedir(path, init = {}) {
 }
 
 async function buscar() {
-  if (!telefono.value.trim() || buscando.value) return;
+  if (!busqueda.value.trim() || buscando.value) return;
   buscando.value = true;
   errorBusqueda.value = '';
   vista.value = null;
@@ -62,7 +64,7 @@ async function buscar() {
   try {
     const q = new URLSearchParams({
       accountId: String(route.params.accountId),
-      phone: telefono.value,
+      q: busqueda.value,
     });
     vista.value = await pedir(`/dashboard-app/leads/reinicio?${q}`);
   } catch (e) {
@@ -80,13 +82,13 @@ async function borrar() {
       method: 'POST',
       body: JSON.stringify({
         accountId: Number(route.params.accountId),
-        phone: vista.value.phone,
+        q: vista.value.q,
         confirmacion: confirmacion.value.trim(),
         updatedBy: currentUser.value?.name || '',
       }),
     });
     useAlert(
-      `Listo: el siguiente mensaje desde ${r.phone} entra como lead nuevo.`
+      `Listo: el siguiente mensaje de ${r.etiqueta || r.phone} entra como lead nuevo.`
     );
     vista.value = null;
     confirmacion.value = '';
@@ -142,10 +144,10 @@ const TARJETA =
         <form class="flex flex-wrap items-end gap-3" @submit.prevent="buscar">
           <div class="grow basis-64">
             <Input
-              v-model="telefono"
-              label="Número de WhatsApp"
-              placeholder="+51 966 723 347"
-              message="Con el código de país. Un celular de Perú de 9 dígitos también vale."
+              v-model="busqueda"
+              label="Número, usuario de WhatsApp o número del chat"
+              placeholder="+51 966 723 347 · @usuario · #63"
+              message="El número con el código de país (un celular de Perú de 9 dígitos también vale). Si escribe sin mostrar su número, su usuario de WhatsApp (@…) o el número del chat (#63, arriba del chat)."
             />
           </div>
           <Button
@@ -155,7 +157,7 @@ const TARJETA =
             variant="faded"
             color="slate"
             :is-loading="buscando"
-            :disabled="!telefono.trim()"
+            :disabled="!busqueda.trim()"
           />
         </form>
 
@@ -166,7 +168,7 @@ const TARJETA =
         <div v-if="vista" class="flex flex-col gap-4">
           <div class="p-4 rounded-lg bg-n-alpha-1">
             <p class="mb-2 text-sm font-medium text-n-slate-12">
-              Esto es lo que hay de {{ vista.phone }}
+              Esto es lo que hay de {{ vista.etiqueta || vista.phone }}
             </p>
             <ul
               v-if="hayAlgo"
@@ -182,8 +184,8 @@ const TARJETA =
               </li>
             </ul>
             <p v-else class="mb-0 text-sm text-n-slate-10">
-              Ningún contacto ni lead con ese número en esta cuenta: no hay nada
-              que borrar.
+              Ningún contacto ni lead con eso en esta cuenta: no hay nada que
+              borrar.
             </p>
           </div>
 

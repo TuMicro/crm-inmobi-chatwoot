@@ -66,6 +66,16 @@ export default {
     additionalAttributes() {
       return this.contact.additional_attributes || {};
     },
+    // [turuta] El usuario de WhatsApp (los nombres de usuario de Meta): quien
+    // lo usa puede escribir sin mostrar su numero. Chatwoot lo guarda aqui.
+    usuarioWhatsapp() {
+      const a = this.additionalAttributes;
+      const u = a.social_whatsapp_user_name || a.social_profiles?.whatsapp;
+      return u ? `@${String(u).replace(/^@+/, '')}` : '';
+    },
+    tituloUsuarioWhatsapp() {
+      return 'Usuario de WhatsApp';
+    },
     location() {
       const {
         country = '',
@@ -265,7 +275,17 @@ export default {
             editable
             @update="value => onFieldUpdate('email', value)"
           />
+          <!-- [turuta] Sin numero pero con usuario de WhatsApp: el usuario en
+               vez de un "No Disponible". -->
           <ContactInfoRow
+            v-if="usuarioWhatsapp"
+            :value="usuarioWhatsapp"
+            icon="chat-outline"
+            emoji="💬"
+            :title="tituloUsuarioWhatsapp"
+          />
+          <ContactInfoRow
+            v-if="contact.phone_number || !usuarioWhatsapp"
             :href="contact.phone_number ? `tel:${contact.phone_number}` : ''"
             :value="contact.phone_number"
             icon="call"
