@@ -252,7 +252,10 @@ export default {
           {{ additionalAttributes.description }}
         </p>
         <div class="flex flex-col items-start w-full gap-2">
+          <!-- [turuta] Correo y empresa solo si los hay: en WhatsApp casi nunca
+               estan y dos "No Disponible" eran ruido. Se anaden con el lapiz. -->
           <ContactInfoRow
+            v-if="contact.email"
             :href="contact.email ? `mailto:${contact.email}` : ''"
             :value="contact.email"
             icon="mail"
@@ -280,6 +283,7 @@ export default {
             :title="$t('CONTACT_PANEL.IDENTIFIER')"
           />
           <ContactInfoRow
+            v-if="additionalAttributes.company_name"
             :value="additionalAttributes.company_name"
             icon="building-bank"
             emoji="🏢"

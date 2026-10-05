@@ -145,6 +145,10 @@ async function confirmarMotivo() {
   if (ok) motivoPara.value = null;
 }
 
+// La IA atendiendo, en verde; en pausa, en gris (05/10: fila compacta con
+// su boton al lado, en vez de un boton a todo lo ancho).
+const iaAtendiendo = computed(() => lead.value?.ia?.estado === 'atendiendo');
+
 // Perdido va en gris, no en rojo: en rojo llamaba demasiado la atencion en
 // un panel que el asesor mira todo el dia.
 const claseEtapa = computed(() => {
@@ -182,63 +186,71 @@ const claseEtapa = computed(() => {
     </p>
 
     <template v-else-if="lead">
+      <!-- La etapa y el asesor, en una linea. -->
       <div class="flex items-center justify-between gap-2">
-        <span class="text-xs text-n-slate-11">Etapa</span>
         <span
           class="px-2 py-0.5 text-xs font-medium rounded-md"
           :class="claseEtapa"
+          :title="`Etapa: ${lead.etapa.name}`"
         >
           {{ lead.etapa.name }}
         </span>
-      </div>
-      <div class="flex items-center justify-between gap-2 mt-1">
-        <span class="text-xs text-n-slate-11">Asesor</span>
-        <span class="text-sm truncate text-n-slate-12">
-          {{ lead.asesor || 'sin asignar' }}
+        <span
+          class="flex items-center min-w-0 gap-1 text-sm"
+          :class="lead.asesor ? 'text-n-slate-12' : 'text-n-slate-10'"
+          :title="lead.asesor ? `Asesor: ${lead.asesor}` : 'Sin asesor'"
+        >
+          <span
+            class="flex-shrink-0 i-lucide-user-round size-3.5 text-n-slate-10"
+          />
+          <span class="truncate">{{ lead.asesor || 'Sin asesor' }}</span>
         </span>
       </div>
       <!-- La IA en este chat: es como sabe el asesor si sigue respondiendo
-           ella o si ya es cosa suya, y por que (docs/12 del repo crm-inmobi). -->
+           ella o si ya es cosa suya, y por que (docs/12 del repo crm-inmobi).
+           El boton va en la misma fila. -->
       <div
         v-if="muestraIa(lead.ia)"
-        class="flex items-center justify-between gap-2 mt-1"
+        class="flex items-center justify-between gap-2 py-1 mt-2 rounded-lg ltr:pl-2 ltr:pr-1 rtl:pr-2 rtl:pl-1"
+        :class="iaAtendiendo ? 'bg-n-teal-2' : 'bg-n-alpha-1'"
         data-turuta="lead-ia"
       >
-        <span class="text-xs text-n-slate-11">IA</span>
-        <span
-          class="text-sm truncate"
-          :class="
-            lead.ia.estado === 'atendiendo'
-              ? 'text-n-teal-11'
-              : 'text-n-slate-12'
-          "
-        >
-          {{ textoIa(lead.ia) }}
+        <span class="flex items-center min-w-0 gap-1.5 text-xs">
+          <span
+            class="flex-shrink-0 rounded-full size-2"
+            :class="iaAtendiendo ? 'bg-n-teal-9' : 'bg-n-slate-8'"
+          />
+          <span
+            class="font-semibold"
+            :class="iaAtendiendo ? 'text-n-teal-11' : 'text-n-slate-12'"
+          >
+            IA
+          </span>
+          <span class="truncate text-n-slate-11" :title="textoIa(lead.ia)">
+            {{ textoIa(lead.ia) }}
+          </span>
         </span>
-      </div>
-      <div
-        v-if="lead.ia && (lead.ia.puedePausar || lead.ia.puedeReanudar)"
-        class="mt-2"
-      >
         <Button
           v-if="lead.ia.puedePausar"
-          label="Pausar la IA en este chat"
+          v-tooltip.top="'Pausar la IA en este chat'"
+          label="Pausar"
           icon="i-lucide-pause"
-          variant="faded"
+          variant="ghost"
           color="slate"
-          size="sm"
-          class="w-full"
+          size="xs"
+          class="flex-shrink-0"
           :disabled="state.busy"
           @click="cambiarIa(false)"
         />
         <Button
-          v-else
-          label="Que la IA siga con este chat"
+          v-else-if="lead.ia.puedeReanudar"
+          v-tooltip.top="'Que la IA siga con este chat'"
+          label="Reanudar"
           icon="i-lucide-play"
-          variant="faded"
-          color="slate"
-          size="sm"
-          class="w-full"
+          variant="ghost"
+          color="teal"
+          size="xs"
+          class="flex-shrink-0"
           :disabled="state.busy"
           @click="cambiarIa(true)"
         />
@@ -252,20 +264,20 @@ const claseEtapa = computed(() => {
         <div v-if="lead.perdida.nota">{{ lead.perdida.nota }}</div>
       </div>
 
+      <!-- La ventana de 24 h: abierta, una linea discreta; cerrada, un aviso. -->
       <div
-        class="flex items-start gap-1.5 mt-2 text-xs"
-        :class="lead.ventana24h ? 'text-n-teal-11' : 'text-n-amber-11'"
+        v-if="lead.ventana24h"
+        class="flex items-center gap-1.5 mt-2 text-xs text-n-slate-11"
       >
-        <span
-          class="flex-shrink-0 size-3.5 mt-px"
-          :class="
-            lead.ventana24h ? 'i-lucide-clock' : 'i-lucide-alert-triangle'
-          "
-        />
-        <span v-if="lead.ventana24h">
-          <b>Dentro de la ventana de 24 h.</b> Responder es gratis.
-        </span>
-        <span v-else>
+        <span class="flex-shrink-0 i-lucide-clock size-3.5 text-n-teal-10" />
+        <span>Ventana de 24 h abierta: responder es gratis.</span>
+      </div>
+      <div
+        v-else
+        class="flex items-start gap-1.5 px-2 py-1.5 mt-2 text-xs rounded-lg bg-n-amber-2 text-n-amber-11"
+      >
+        <span class="flex-shrink-0 i-lucide-alert-triangle size-3.5 mt-px" />
+        <span>
           <b>Fuera de la ventana de 24 h.</b> Solo se puede escribir con una
           plantilla aprobada, y tiene coste.
         </span>
@@ -441,7 +453,7 @@ const claseEtapa = computed(() => {
           :label="abierto ? 'Cerrar' : 'Mover a otra etapa'"
           :icon="abierto ? 'i-lucide-chevron-up' : 'i-lucide-chevron-down'"
           trailing-icon
-          variant="faded"
+          variant="ghost"
           color="slate"
           size="sm"
           class="w-full"

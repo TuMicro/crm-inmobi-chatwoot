@@ -37,14 +37,15 @@ const ORDEN_CHATWOOT = [
 ];
 
 /** Nuestro orden, pensado para un asesor inmobiliario en WhatsApp: primero
- *  lo que toca cada dia (asignar, etiquetas, notas, macros), luego lo que
- *  sabe de la persona (atributos) y lo que se han mandado (adjuntos). El
- *  historial del lead, el ultimo. */
+ *  lo que toca cada dia (asignar, etiquetas), luego lo que ya se sabe de la
+ *  persona (atributos, que la IA va llenando y salen con valor arriba; y las
+ *  notas), las macros y lo que se han mandado (adjuntos). El historial del
+ *  lead, el ultimo. */
 export const ORDEN_TURUTA = [
   'conversation_actions',
+  'contact_attributes',
   'contact_notes',
   'macros',
-  'contact_attributes',
   'shared_files',
   'linear_issues',
   'shopify_orders',
@@ -56,6 +57,17 @@ export const ORDEN_TURUTA = [
  *  guardado exactamente uno de estos no lo eligio, se lo dimos nosotros, y le
  *  toca el nuevo. Con cualquier otro orden guardado, se respeta el suyo. */
 const ORDENES_TURUTA_ANTERIORES = [
+  // Hasta 4.17.1-45: los atributos iban debajo de las notas y las macros.
+  [
+    'conversation_actions',
+    'contact_notes',
+    'macros',
+    'contact_attributes',
+    'shared_files',
+    'linear_issues',
+    'shopify_orders',
+    LEAD_SIDEBAR_ITEM,
+  ],
   // Hasta 4.17.1-20: los adjuntos iban encima de las macros.
   [
     'conversation_actions',

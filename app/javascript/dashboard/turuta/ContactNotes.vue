@@ -39,10 +39,27 @@ const editando = ref(null); // la nota que se edita, o null si es nueva
 const texto = ref('');
 const guardando = ref(false);
 
+// Las que deja la IA empiezan por "IA:" y van con el token del administrador:
+// salian como "Tu". Se firman como IA.
 const quien = nota => {
-  if (nota?.user?.id === currentUser.value?.id) return 'Tu';
+  if (/^\s*IA:/.test(nota?.content || '')) return 'IA';
+  if (nota?.user?.id === currentUser.value?.id) return 'Tú';
   return nota?.user?.name || 'Bot';
 };
+
+// Una nota larga (los resumenes de la IA) se ve recortada, con "Ver más".
+const abiertas = ref(new Set());
+const esLarga = nota => {
+  const t = nota?.content || '';
+  return t.length > 260 || t.split('\n').length > 5;
+};
+const plegada = nota => esLarga(nota) && !abiertas.value.has(nota.id);
+function alternar(nota) {
+  const s = new Set(abiertas.value);
+  if (s.has(nota.id)) s.delete(nota.id);
+  else s.add(nota.id);
+  abiertas.value = s;
+}
 
 const hace = nota =>
   nota?.createdAt
@@ -134,7 +151,7 @@ watch(
   <div data-turuta="contact-notes">
     <div class="px-4 pt-3 pb-2">
       <Button
-        label="Anadir nota"
+        label="Añadir nota"
         icon="i-lucide-plus"
         variant="ghost"
         color="blue"
@@ -187,12 +204,21 @@ watch(
         <p
           v-dompurify-html="formatMessage(nota.content || '')"
           class="mt-1 mb-0 prose-sm prose-p:text-sm prose-p:leading-relaxed prose-p:mb-1 prose-p:mt-0 prose-ul:mb-1 prose-ul:mt-0 text-n-slate-12"
+          :class="{ 'line-clamp-5': plegada(nota) }"
         />
+        <button
+          v-if="esLarga(nota)"
+          type="button"
+          class="p-0 mt-1 text-xs text-n-blue-11 hover:underline"
+          @click="alternar(nota)"
+        >
+          {{ plegada(nota) ? 'Ver más' : 'Ver menos' }}
+        </button>
       </li>
     </ul>
 
     <p v-else class="px-6 py-6 text-sm leading-6 text-center text-n-slate-11">
-      Todavia no hay notas de este contacto.
+      Todavía no hay notas de este contacto.
     </p>
 
     <woot-modal
@@ -203,7 +229,7 @@ watch(
     >
       <div class="flex flex-col w-full gap-6 px-6 py-6">
         <h3 class="text-lg font-semibold text-n-slate-12">
-          {{ editando ? 'Editar nota' : 'Anadir nota' }}
+          {{ editando ? 'Editar nota' : 'Añadir nota' }}
         </h3>
         <Editor
           v-model="texto"

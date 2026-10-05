@@ -94,9 +94,27 @@ describe('withLeadItems', () => {
     expect(withLeadItems(order)).toEqual(order);
   });
 
-  it('adjuntos va justo debajo de los atributos de contacto', () => {
-    const i = ORDEN_TURUTA.indexOf('contact_attributes');
-    expect(ORDEN_TURUTA[i + 1]).toBe('shared_files');
+  it('los atributos, justo debajo de las acciones; los adjuntos, debajo de los atributos', () => {
+    expect(ORDEN_TURUTA[1]).toBe('contact_attributes');
+    expect(ORDEN_TURUTA.indexOf('shared_files')).toBeGreaterThan(
+      ORDEN_TURUTA.indexOf('contact_attributes')
+    );
+  });
+
+  it('quien tenia el orden de hasta 4.17.1-45 pasa al nuevo', () => {
+    const hasta45 = [
+      'conversation_actions',
+      'contact_notes',
+      'macros',
+      'contact_attributes',
+      'shared_files',
+      'linear_issues',
+      'shopify_orders',
+      LEAD_SIDEBAR_ITEM,
+    ];
+    expect(nombres(withLeadItems(hasta45.map(name => ({ name }))))).toEqual(
+      ORDEN_TURUTA
+    );
   });
 
   it('quien tenia guardado nuestro orden anterior pasa al nuevo', () => {
