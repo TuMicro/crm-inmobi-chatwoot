@@ -99,6 +99,17 @@ export function barrasPorDia(porDia) {
   }));
 }
 
+/** Los modelos que se pueden elegir (y comparar). */
+export const MODELOS = [
+  { valor: 'claude-sonnet-5-5', texto: 'Claude Sonnet 5.5' },
+  { valor: 'gemini-3.8-flash', texto: 'Gemini 3.8 Flash (más barato)' },
+  { valor: 'claude-sonnet-5', texto: 'Claude Sonnet 5 (el anterior)' },
+];
+
+/** El nombre de un modelo para la pagina: el de la lista, o su id tal cual. */
+export const nombreDeModelo = id =>
+  MODELOS.find(m => m.valor === id)?.texto.replace(/ \(.*\)$/, '') || id;
+
 /** Los campos de la configuracion, en el orden en que se enseñan. */
 export const CAMPOS = [
   {
@@ -153,13 +164,30 @@ export const CAMPOS = [
     ayuda:
       'Quién piensa las respuestas. El prompt y las herramientas son los mismos: sirve para compararlos.',
     tipo: 'opciones',
-    opciones: [
-      { valor: '', texto: 'El del servidor (Claude Sonnet 5)' },
-      { valor: 'claude-sonnet-5', texto: 'Claude Sonnet 5' },
-      { valor: 'gemini-3.8-flash', texto: 'Gemini 3.8 Flash (más barato)' },
-    ],
+    opciones: [{ valor: '', texto: 'El del servidor' }, ...MODELOS],
+  },
+  {
+    clave: 'compararCon',
+    titulo: 'Comparar con otro modelo (temporal)',
+    ayuda:
+      'En cada respuesta deja una nota privada con lo que habría contestado este otro modelo. No le manda nada al lead. Mientras esté puesto, cada respuesta cuesta las dos.',
+    tipo: 'opciones',
+    opciones: [{ valor: '', texto: 'No comparar' }, ...MODELOS],
   },
 ];
+
+/** Las opciones de un campo; en "Modelo", la del servidor dice cual es. */
+export function opcionesDe(campo, datos) {
+  if (campo.clave !== 'modelo' || !datos?.modeloServidor) return campo.opciones;
+  return campo.opciones.map(o =>
+    o.valor === ''
+      ? {
+          ...o,
+          texto: `El del servidor (${nombreDeModelo(datos.modeloServidor)})`,
+        }
+      : o
+  );
+}
 
 /** El formulario de configuracion a partir de lo que devuelve la API. */
 export function formularioDe(config) {

@@ -9,6 +9,8 @@ import {
   hayCambios,
   motivos,
   textoMotivo,
+  CAMPOS,
+  opcionesDe,
 } from './ia';
 
 describe('dinero', () => {
@@ -145,5 +147,28 @@ describe('avisos', () => {
       /no está conectado/
     );
     expect(avisos({ ...ok, sitios: [] })[0]).toMatch(/ninguna web elegida/);
+  });
+});
+
+describe('opcionesDe', () => {
+  const modelo = CAMPOS.find(c => c.clave === 'modelo');
+  it('la del servidor dice cual es; sin dato, tal cual', () => {
+    expect(
+      opcionesDe(modelo, { modeloServidor: 'claude-sonnet-5-5' })[0].texto
+    ).toBe('El del servidor (Claude Sonnet 5.5)');
+    expect(
+      opcionesDe(modelo, { modeloServidor: 'claude-sonnet-5' })[0].texto
+    ).toBe('El del servidor (Claude Sonnet 5)');
+    expect(opcionesDe(modelo, {})[0].texto).toBe('El del servidor');
+    expect(opcionesDe(modelo, {}).map(o => o.valor)).toContain(
+      'claude-sonnet-5-5'
+    );
+  });
+  it('comparar con: sin comparar o un modelo', () => {
+    const comparar = CAMPOS.find(c => c.clave === 'compararCon');
+    expect(comparar.opciones[0]).toEqual({ valor: '', texto: 'No comparar' });
+    expect(opcionesDe(comparar, { modeloServidor: 'x' })).toBe(
+      comparar.opciones
+    );
   });
 });
