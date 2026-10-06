@@ -27,7 +27,9 @@ const { currentAccount } = useAccount();
 const inboxes = useMapGetter('inboxes/getInboxes');
 
 const [showAddPopup, toggleAddPopup] = useToggle(false);
-const selectedTabIndex = ref(0);
+// [turuta] Se abre en "Contacto": ahi estan los atributos que llena la IA
+// (distritos, tipo de propiedad, forma de pago...); los del chat son pocos.
+const selectedTabIndex = ref(1);
 const searchQuery = ref('');
 const uiFlags = computed(() => getters['attributes/getUIFlags'].value);
 const [showEditPopup, toggleEditPopup] = useToggle(false);
