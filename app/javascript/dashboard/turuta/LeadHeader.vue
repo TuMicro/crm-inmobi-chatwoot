@@ -7,8 +7,16 @@
 // Selector "B" (docs/10-plan-fork-ui.md): un boton para la etapa siguiente del
 // embudo, que es el movimiento normal, y un desplegable para el resto.
 import { computed, ref, watch } from 'vue';
+import { useRoute } from 'vue-router';
 import Button from 'dashboard/components-next/button/Button.vue';
 import { useLead } from './useLead';
+import {
+  correosDe,
+  errorDeInvitados,
+  destinoDeLaVisita,
+  textoDelDestino,
+  textoCalendario,
+} from './calendario';
 import {
   textoError,
   cuandoVisita,
@@ -31,10 +39,11 @@ const props = defineProps({
   },
 });
 
-const { state, cambiarEtapa, agendarVisita, quitarVisita, cambiarIa } = useLead(
-  computed(() => props.conversationId),
-  computed(() => props.contact)
-);
+const { state, miId, cambiarEtapa, agendarVisita, quitarVisita, cambiarIa } =
+  useLead(
+    computed(() => props.conversationId),
+    computed(() => props.contact)
+  );
 
 const lead = computed(() => (state.lead?.found ? state.lead : null));
 const siguiente = computed(() => lead.value?.siguiente || null);
@@ -55,9 +64,28 @@ const editandoVisita = ref(false); // cambiar la visita vigente
 const vFecha = ref('');
 const vHora = ref('');
 const vDireccion = ref('');
+const vInvitados = ref('');
 const formularioVisita = computed(
   () => !!visitaPara.value || editandoVisita.value
 );
+
+// Google Calendar (docs/18 del repo crm-inmobi): la visita se pone tambien en
+// el calendario del asesor asignado, o en el de quien agenda. Si ninguno lo
+// tiene conectado no hay a quien invitar: en vez del campo, el enlace para
+// conectar el propio. Sin configurar en el servidor, la ficha no dice nada.
+const route = useRoute();
+const destino = computed(() =>
+  destinoDeLaVisita(lead.value?.calendario, miId.value)
+);
+const errorInvitados = computed(() => errorDeInvitados(vInvitados.value));
+const ayudaInvitados = computed(
+  () =>
+    `${textoDelDestino(destino.value, lead.value?.asesor)} A los invitados les llega la invitación por correo.`
+);
+const rutaCalendario = computed(() => ({
+  name: 'turuta_calendario',
+  params: { accountId: route.params.accountId },
+}));
 
 function abrirVisita(etapa) {
   const actual = lead.value?.visita;
@@ -66,6 +94,7 @@ function abrirVisita(etapa) {
   vFecha.value = fechaInput(actual ? actual.scheduledAt : new Date());
   vHora.value = actual ? horaInput(actual.scheduledAt) : '';
   vDireccion.value = actual ? actual.address : '';
+  vInvitados.value = (actual?.guests || []).join(', ');
   abierto.value = false;
 }
 
@@ -91,18 +120,23 @@ function cerrarVisita() {
 const visitaIso = computed(() => isoDesdeInputs(vFecha.value, vHora.value));
 const puedeGuardarVisita = computed(
   () =>
-    !!visitaIso.value && new Date(visitaIso.value) > new Date() && !state.busy
+    !!visitaIso.value &&
+    new Date(visitaIso.value) > new Date() &&
+    !errorInvitados.value &&
+    !state.busy
 );
 
 async function guardarVisita() {
   if (!puedeGuardarVisita.value) return;
   const direccion = vDireccion.value.trim();
+  const invitados = correosDe(vInvitados.value).correos;
   const ok = visitaPara.value
     ? await cambiarEtapa(visitaPara.value.code, {
         visitAt: visitaIso.value,
         visitAddress: direccion,
+        visitGuests: invitados,
       })
-    : await agendarVisita(visitaIso.value, direccion);
+    : await agendarVisita(visitaIso.value, direccion, invitados);
   if (ok) cerrarVisita();
 }
 
@@ -292,6 +326,43 @@ const claseEtapa = computed(() => {
           {{ lead.visita.address }}
         </div>
         <div class="text-n-slate-11">{{ textoVisita(lead.visita) }}</div>
+        <!-- Google Calendar: en el de quien esta la visita, o por que no. -->
+        <div
+          v-if="lead.visita.calendario"
+          class="flex items-start gap-1.5 mt-1"
+          :class="
+            lead.visita.calendario.estado === 'error'
+              ? 'text-n-amber-11'
+              : 'text-n-slate-11'
+          "
+          data-turuta="visita-calendario"
+        >
+          <span
+            class="flex-shrink-0 size-3.5 mt-px"
+            :class="
+              lead.visita.calendario.estado === 'ok'
+                ? 'i-lucide-calendar-check text-n-teal-10'
+                : 'i-lucide-calendar-x'
+            "
+          />
+          <span>
+            {{ textoCalendario(lead.visita.calendario) }}
+            <router-link
+              v-if="lead.visita.calendario.estado === 'sin_conectar'"
+              :to="rutaCalendario"
+              class="text-n-blue-11 hover:underline"
+            >
+              Conectar el mío
+            </router-link>
+          </span>
+        </div>
+        <div
+          v-if="lead.visita.guests && lead.visita.guests.length"
+          class="truncate text-n-slate-11"
+          :title="lead.visita.guests.join(', ')"
+        >
+          Invitados: {{ lead.visita.guests.join(', ') }}
+        </div>
         <div class="flex gap-3 mt-1">
           <button
             type="button"
@@ -404,6 +475,39 @@ const claseEtapa = computed(() => {
             class="turuta-input"
           />
         </label>
+        <template v-if="lead.calendario">
+          <label
+            v-if="destino"
+            class="block mt-2 text-xs font-medium text-n-slate-11"
+          >
+            Invitar a otros correos
+            <span class="font-normal text-n-slate-10">(opcional)</span>
+            <input
+              v-model="vInvitados"
+              type="text"
+              inputmode="email"
+              autocomplete="off"
+              placeholder="ana@gmail.com, luis@empresa.com"
+              class="turuta-input"
+              data-turuta="visita-invitados"
+            />
+            <span
+              class="block mt-1 font-normal"
+              :class="errorInvitados ? 'text-n-ruby-11' : 'text-n-slate-10'"
+            >
+              {{ errorInvitados || ayudaInvitados }}
+            </span>
+          </label>
+          <p v-else class="mt-2 mb-0 text-xs text-n-slate-10">
+            Para ponerla en Google Calendar e invitar a otros por correo,
+            <router-link
+              :to="rutaCalendario"
+              class="text-n-blue-11 hover:underline"
+            >
+              conecta tu calendario
+            </router-link>
+          </p>
+        </template>
         <div class="flex justify-end gap-2 mt-3">
           <Button
             label="Cancelar"

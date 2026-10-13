@@ -1004,6 +1004,15 @@ const menuItems = computed(() => {
           icon: 'i-lucide-credit-card',
           to: accountScopedRoute('billing_settings_index'),
         },
+        // [turuta] Nuestra pagina: cada persona conecta su Google Calendar
+        // para que sus visitas se pongan tambien ahi. La ven todos.
+        {
+          name: 'Turuta Calendario',
+          label: 'Calendario',
+          icon: 'i-lucide-calendar-days',
+          to: accountScopedRoute('turuta_calendario'),
+          activeOn: ['turuta_calendario'],
+        },
         // [turuta] Nuestra pagina: borrar un numero de prueba para volver a
         // empezar (lo mismo que infra/reset-lead.sh). Solo administradores.
         {

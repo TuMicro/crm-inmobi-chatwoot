@@ -5,6 +5,7 @@ import EmbudoPage from './EmbudoPage.vue';
 import PropiedadesPage from './PropiedadesPage.vue';
 import IaPage from './IaPage.vue';
 import ReiniciarLeadPage from './ReiniciarLeadPage.vue';
+import CalendarioPage from './CalendarioPage.vue';
 
 export const routes = [
   {
@@ -38,5 +39,14 @@ export const routes = [
     // Solo administradores: borra a una persona de la cuenta. Va en Ajustes;
     // el item se esconde solo a los asesores.
     meta: { permissions: ['administrator'] },
+  },
+  {
+    // Nuestra API devuelve aqui al volver de Google (vueltaAlCrm): si cambia
+    // esta direccion, cambia alli tambien.
+    path: frontendURL('accounts/:accountId/turuta/calendario'),
+    name: 'turuta_calendario',
+    component: CalendarioPage,
+    // Todos: cada persona conecta su propio Google Calendar.
+    meta: { permissions: ['administrator', 'agent'] },
   },
 ];

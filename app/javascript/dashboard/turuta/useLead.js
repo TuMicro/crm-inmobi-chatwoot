@@ -129,11 +129,14 @@ export function useLead(conversationId, contact) {
   const transferir = advisorId =>
     act(`/leads/${state.lead.id}/transfer`, { advisorId });
 
-  /** Agendar o cambiar la visita vigente. `at` es ISO con zona horaria. */
-  const agendarVisita = (at, address) =>
+  /**
+   * Agendar o cambiar la visita vigente. `at` es ISO con zona horaria;
+   * `guests`, los correos a invitar al evento de Google Calendar.
+   */
+  const agendarVisita = (at, address, guests = []) =>
     act(
       `/leads/${state.lead.id}/visit`,
-      { scheduledAt: at, address, ...actor() },
+      { scheduledAt: at, address, guests, ...actor() },
       'PUT'
     );
 
@@ -210,6 +213,7 @@ export function useLead(conversationId, contact) {
   return {
     state,
     config,
+    miId: computed(() => currentUser.value?.id ?? null),
     load,
     cambiarEtapa,
     transferir,
