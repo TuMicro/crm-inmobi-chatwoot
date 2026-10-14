@@ -11,6 +11,11 @@
 import { reactive, computed, watch, unref } from 'vue';
 import { useStore, useMapGetter } from 'dashboard/composables/store';
 import { leadAppConfig } from './leadApp';
+import {
+  ESPERA_CALENDARIO_MS,
+  VUELTAS_CALENDARIO,
+  calendarioPendiente,
+} from './calendario';
 
 const state = reactive({
   conversationId: null,
@@ -23,6 +28,32 @@ const state = reactive({
 
 let avisoTimer = null;
 let pedidas = false; // ya se pidieron las dashboard apps al store
+
+// La visita recien agendada se sube a Google Calendar por detras: mientras la
+// ficha diga "Poniendola en el Google Calendar", se vuelve a pedir el lead
+// cada dos segundos (ver calendario.js). Un solo temporizador para toda la
+// pantalla, como el estado.
+let calendarioTimer = null;
+let vueltasCalendario = 0;
+let calendarioDe = null; // la conversacion de la que se cuentan las vueltas
+
+function revisarCalendarioLuego(id, lead, recargar) {
+  clearTimeout(calendarioTimer);
+  if (id !== calendarioDe) {
+    calendarioDe = id;
+    vueltasCalendario = 0;
+  }
+  if (!calendarioPendiente(lead)) {
+    vueltasCalendario = 0;
+    return;
+  }
+  if (vueltasCalendario >= VUELTAS_CALENDARIO) return;
+  vueltasCalendario += 1;
+  calendarioTimer = setTimeout(() => {
+    // Si ya se cambio de conversacion, esta revision ya no toca.
+    if (state.conversationId === id) recargar(id);
+  }, ESPERA_CALENDARIO_MS);
+}
 
 function avisar(texto) {
   state.aviso = texto;
@@ -78,6 +109,7 @@ export function useLead(conversationId, contact) {
       if (state.conversationId !== id) return;
       state.lead = lead;
       state.error = null;
+      revisarCalendarioLuego(id, lead, load);
     } catch (e) {
       if (state.conversationId !== id) return;
       state.lead = null;

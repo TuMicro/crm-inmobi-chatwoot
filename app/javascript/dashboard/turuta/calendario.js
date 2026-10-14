@@ -7,6 +7,19 @@
 /** Como mucho, correos invitados por visita (igual que en la API). */
 export const MAX_INVITADOS = 10;
 
+/**
+ * La visita se sube a Google por detras, un par de segundos despues de
+ * guardarla. Mientras la ficha diga "Poniendola en el Google Calendar", se
+ * vuelve a pedir cada ESPERA_CALENDARIO_MS, hasta VUELTAS_CALENDARIO veces
+ * (medio minuto): sin eso, el resultado solo se veia al recargar la pagina.
+ */
+export const ESPERA_CALENDARIO_MS = 2000;
+export const VUELTAS_CALENDARIO = 15;
+
+/** La ficha esta esperando a que la visita termine de subir a Google. */
+export const calendarioPendiente = lead =>
+  lead?.visita?.calendario?.estado === 'pendiente';
+
 const CORREO = /^[^\s@,;<>()]+@[^\s@,;<>()]+\.[^\s@,;<>()]{2,}$/;
 
 /**

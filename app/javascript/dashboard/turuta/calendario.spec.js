@@ -7,6 +7,7 @@ import {
   textoCopia,
   textoCalendario,
   avisoDeVuelta,
+  calendarioPendiente,
 } from './calendario';
 
 describe('los correos invitados', () => {
@@ -113,6 +114,18 @@ describe('textoCalendario', () => {
 
   it('sin configurar, la ficha no dice nada', () => {
     expect(textoCalendario(null)).toBe('');
+  });
+});
+
+describe('calendarioPendiente', () => {
+  it('solo mientras se esta poniendo en Google', () => {
+    const con = estado => ({ visita: { calendario: { estado } } });
+    expect(calendarioPendiente(con('pendiente'))).toBe(true);
+    expect(calendarioPendiente(con('ok'))).toBe(false);
+    expect(calendarioPendiente(con('error'))).toBe(false);
+    expect(calendarioPendiente({ visita: { calendario: null } })).toBe(false);
+    expect(calendarioPendiente({ visita: null })).toBe(false);
+    expect(calendarioPendiente(null)).toBe(false);
   });
 });
 
