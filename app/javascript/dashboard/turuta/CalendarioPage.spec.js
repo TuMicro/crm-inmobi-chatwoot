@@ -6,6 +6,7 @@ import CalendarioPage from './CalendarioPage.vue';
 const query = ref({});
 const replace = vi.fn();
 const alerta = vi.fn();
+const rol = ref('agent');
 
 vi.mock('dashboard/composables/store', () => ({
   useStore: () => ({ dispatch: vi.fn() }),
@@ -17,6 +18,7 @@ vi.mock('dashboard/composables/store', () => ({
         },
       ]),
       getCurrentUser: ref({ id: 7, name: 'Ana' }),
+      getCurrentRole: rol,
     })[nombre],
 }));
 vi.mock('vue-router', () => ({
@@ -64,6 +66,7 @@ const montar = async () => {
 
 describe('CalendarioPage', () => {
   beforeEach(() => {
+    rol.value = 'agent';
     query.value = {};
     replace.mockClear();
     alerta.mockClear();
@@ -121,6 +124,50 @@ describe('CalendarioPage', () => {
     expect(w.text()).toContain('Todavía no está disponible');
     expect(w.text()).not.toContain('Conectar con Google');
     expect(w.text()).not.toContain('Cómo funciona');
+  });
+
+  it('la copia de todas las visitas solo la ve un administrador', async () => {
+    api({ ...BASE, copia: ['jefe@x.com'] });
+    const asesor = await montar();
+    expect(asesor.text()).not.toContain('Copia de todas las visitas');
+
+    rol.value = 'administrator';
+    const admin = await montar();
+    expect(admin.text()).toContain('Copia de todas las visitas');
+    expect(admin.find('input').element.value).toBe('jefe@x.com');
+  });
+
+  it('guardar la copia manda los correos limpios', async () => {
+    rol.value = 'administrator';
+    const llamada = api({ ...BASE, copia: [] });
+    const w = await montar();
+    await w.find('input').setValue('Jefe@X.com, otra@y.pe');
+    llamada.mockImplementationOnce(async () => ({
+      ok: true,
+      json: async () => ({ copia: ['jefe@x.com', 'otra@y.pe'] }),
+    }));
+    await w.find('form').trigger('submit');
+    await flushPromises();
+    const [url, init] = llamada.mock.calls.at(-1);
+    expect(url).toBe('https://api.crm.x/dashboard-app/calendar/copy');
+    expect(init.method).toBe('PUT');
+    expect(JSON.parse(init.body)).toEqual({
+      accountId: 1,
+      correos: ['jefe@x.com', 'otra@y.pe'],
+    });
+    expect(alerta).toHaveBeenCalledWith(
+      'Guardado: jefe@x.com, otra@y.pe recibirá todas las visitas.'
+    );
+  });
+
+  it('un correo mal escrito en la copia se dice y no deja guardar', async () => {
+    rol.value = 'administrator';
+    api({ ...BASE, copia: [] });
+    const w = await montar();
+    await w.find('input').setValue('jefe@x.com, pepe');
+    expect(w.text()).toContain('No parece un correo: pepe');
+    const guardar = w.findAll('button').find(b => b.text().includes('Guardar'));
+    expect(guardar.attributes('disabled')).toBeDefined();
   });
 
   it('al volver de Google avisa y limpia la direccion', async () => {

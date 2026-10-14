@@ -111,6 +111,24 @@ describe('LeadHeader: la visita y Google Calendar', () => {
     expect(cambiarEtapa).not.toHaveBeenCalled();
   });
 
+  it('dice a quien se copia siempre; y si nadie lo tiene conectado, va al de quien recibe la copia', async () => {
+    state.lead = lead({
+      calendario: {
+        conectados: [1],
+        asesorAgentId: 7,
+        respaldo: 'Jefe',
+        copia: ['jefe@x.com'],
+      },
+    });
+    const w = montar();
+    await boton(w, 'Mover a Visita agendada').trigger('click');
+    expect(invitados(w).exists()).toBe(true);
+    expect(w.text()).toContain(
+      'Se pone también en el Google Calendar de Jefe, que recibe copia de todas.'
+    );
+    expect(w.text()).toContain('Copia de todas las visitas: jefe@x.com.');
+  });
+
   it('nadie con el calendario conectado: en vez del campo, el enlace para conectarlo', async () => {
     state.lead = lead({ calendario: { conectados: [], asesorAgentId: 7 } });
     const w = montar();

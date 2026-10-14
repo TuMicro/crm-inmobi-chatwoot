@@ -15,6 +15,7 @@ import {
   errorDeInvitados,
   destinoDeLaVisita,
   textoDelDestino,
+  textoCopia,
   textoCalendario,
 } from './calendario';
 import {
@@ -78,9 +79,13 @@ const destino = computed(() =>
   destinoDeLaVisita(lead.value?.calendario, miId.value)
 );
 const errorInvitados = computed(() => errorDeInvitados(vInvitados.value));
-const ayudaInvitados = computed(
-  () =>
-    `${textoDelDestino(destino.value, lead.value?.asesor)} A los invitados les llega la invitación por correo.`
+const ayudaInvitados = computed(() =>
+  `${textoDelDestino(destino.value, {
+    asesor: lead.value?.asesor,
+    respaldo: lead.value?.calendario?.respaldo,
+  })} A los invitados les llega la invitación por correo. ${textoCopia(
+    lead.value?.calendario?.copia
+  )}`.trim()
 );
 const rutaCalendario = computed(() => ({
   name: 'turuta_calendario',

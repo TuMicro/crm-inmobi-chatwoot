@@ -45,10 +45,12 @@ export function errorDeInvitados(texto) {
 
 /**
  * En el calendario de quien va a caer la visita, ANTES de agendarla: el del
- * asesor asignado si lo tiene conectado; si no, el de quien agenda.
- * `calendario` es lead.calendario ({ conectados, asesorAgentId }) y `miId` el
- * usuario que tiene la ficha abierta. Devuelve 'mio', 'asesor' o null (nadie
- * lo tiene conectado, o el servidor no lo tiene configurado).
+ * asesor asignado si lo tiene conectado; si no, el de quien agenda; si
+ * tampoco, el de quien recibe copia de todas las visitas, si lo conecto.
+ * `calendario` es lead.calendario ({ conectados, asesorAgentId, respaldo,
+ * copia }) y `miId` el usuario que tiene la ficha abierta. Devuelve 'mio',
+ * 'asesor', 'respaldo' o null (nadie lo tiene conectado, o el servidor no lo
+ * tiene configurado).
  */
 export function destinoDeLaVisita(calendario, miId) {
   if (!calendario) return null;
@@ -57,16 +59,30 @@ export function destinoDeLaVisita(calendario, miId) {
   if (asesor != null && conectados.includes(asesor)) {
     return asesor === miId ? 'mio' : 'asesor';
   }
-  return miId != null && conectados.includes(miId) ? 'mio' : null;
+  if (miId != null && conectados.includes(miId)) return 'mio';
+  return calendario.respaldo ? 'respaldo' : null;
 }
 
-/** La frase del formulario: donde se pone la visita. */
-export function textoDelDestino(destino, asesor) {
+/**
+ * La frase del formulario: donde se pone la visita. `nombres` trae el del
+ * asesor y el de quien recibe la copia (lead.calendario.respaldo).
+ */
+export function textoDelDestino(destino, nombres = {}) {
   if (destino === 'mio') return 'Se pone también en tu Google Calendar.';
   if (destino === 'asesor') {
-    return `Se pone también en el Google Calendar de ${asesor || 'su asesor'}.`;
+    return `Se pone también en el Google Calendar de ${nombres.asesor || 'su asesor'}.`;
+  }
+  if (destino === 'respaldo') {
+    return `Se pone también en el Google Calendar de ${nombres.respaldo}, que recibe copia de todas.`;
   }
   return '';
+}
+
+/** Quienes reciben copia de todas las visitas, en una frase; '' si nadie. */
+export function textoCopia(copia) {
+  return copia?.length
+    ? `Copia de todas las visitas: ${copia.join(', ')}.`
+    : '';
 }
 
 /**

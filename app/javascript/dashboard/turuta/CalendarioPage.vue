@@ -15,19 +15,36 @@ import Button from 'dashboard/components-next/button/Button.vue';
 import Icon from 'dashboard/components-next/icon/Icon.vue';
 import ReportHeader from 'dashboard/routes/dashboard/settings/reports/components/ReportHeader.vue';
 import { leadAppConfig } from './leadApp';
-import { avisoDeVuelta } from './calendario';
+import Input from 'dashboard/components-next/input/Input.vue';
+import { avisoDeVuelta, correosDe, errorDeInvitados } from './calendario';
 
 const route = useRoute();
 const router = useRouter();
 const store = useStore();
 const apps = useMapGetter('dashboardApps/getRecords');
 const currentUser = useMapGetter('getCurrentUser');
+const rol = useMapGetter('getCurrentRole');
 const config = computed(() => leadAppConfig(apps.value));
 
 const estado = ref(null); // respuesta de /dashboard-app/calendar
 const error = ref('');
 const ocupado = ref(false); // saliendo a Google o desconectando
 const confirmando = ref(false); // "Desconectar" pide un segundo clic
+
+// "Copia de todas las visitas" (solo administradores): los correos que
+// reciben la invitacion de cada visita de la empresa, la lleve quien la lleve.
+const esAdmin = computed(() => rol.value === 'administrator');
+const copia = ref('');
+const guardandoCopia = ref(false);
+const errorCopia = computed(() => errorDeInvitados(copia.value));
+const copiaCambiada = computed(
+  () =>
+    correosDe(copia.value).correos.join(',') !==
+    (estado.value?.copia || []).join(',')
+);
+watch(estado, e => {
+  copia.value = (e?.copia || []).join(', ');
+});
 
 const quien = computed(() =>
   new URLSearchParams({
@@ -94,6 +111,30 @@ async function desconectar() {
     useAlert(`No se pudo desconectar: ${e.message}`);
   } finally {
     ocupado.value = false;
+  }
+}
+
+async function guardarCopia() {
+  if (errorCopia.value || guardandoCopia.value) return;
+  guardandoCopia.value = true;
+  try {
+    const r = await pedir('/dashboard-app/calendar/copy', {
+      method: 'PUT',
+      body: JSON.stringify({
+        accountId: Number(route.params.accountId),
+        correos: correosDe(copia.value).correos,
+      }),
+    });
+    estado.value = { ...estado.value, copia: r.copia };
+    useAlert(
+      r.copia.length
+        ? `Guardado: ${r.copia.join(', ')} recibirá todas las visitas.`
+        : 'Guardado: nadie recibe copia de todas las visitas.'
+    );
+  } catch (e) {
+    useAlert(`No se pudo guardar: ${e.message}`);
+  } finally {
+    guardandoCopia.value = false;
   }
 }
 
@@ -233,6 +274,51 @@ const TARJETA =
             />
           </div>
         </template>
+      </section>
+
+      <section
+        v-if="estado && estado.configurado && esAdmin"
+        class="flex flex-col gap-3 mt-6"
+        :class="TARJETA"
+        data-turuta="calendario-copia"
+      >
+        <div>
+          <p class="mb-1 text-sm font-medium text-n-slate-12">
+            Copia de todas las visitas
+          </p>
+          <p class="mb-0 text-sm text-n-slate-11">
+            Estos correos reciben la invitación de cada visita que se agende en
+            la empresa, la lleve quien la lleve. Si una visita no queda en el
+            calendario de nadie y uno de estos correos tiene su calendario
+            conectado aquí, va directamente al suyo. Solo lo ven los
+            administradores.
+          </p>
+        </div>
+        <form
+          class="flex flex-wrap items-end gap-3"
+          @submit.prevent="guardarCopia"
+        >
+          <div class="grow basis-64">
+            <Input
+              v-model="copia"
+              label="Correos"
+              placeholder="gerencia@empresa.com"
+              :message="
+                errorCopia ||
+                'Separados por comas. Las visitas ya agendadas que aún no han pasado también se ponen al día.'
+              "
+              :message-type="errorCopia ? 'error' : 'info'"
+            />
+          </div>
+          <Button
+            type="submit"
+            label="Guardar"
+            variant="faded"
+            color="slate"
+            :is-loading="guardandoCopia"
+            :disabled="!!errorCopia || !copiaCambiada"
+          />
+        </form>
       </section>
 
       <section

@@ -4,6 +4,7 @@ import {
   errorDeInvitados,
   destinoDeLaVisita,
   textoDelDestino,
+  textoCopia,
   textoCalendario,
   avisoDeVuelta,
 } from './calendario';
@@ -59,19 +60,38 @@ describe('destinoDeLaVisita', () => {
     );
   });
 
+  it('si nadie de los dos, el de quien recibe copia de todas', () => {
+    const c = { conectados: [1], asesorAgentId: 7, respaldo: 'Jefe' };
+    expect(destinoDeLaVisita(c, 9)).toBe('respaldo');
+    expect(destinoDeLaVisita({ ...c, conectados: [1, 9] }, 9)).toBe('mio');
+    expect(destinoDeLaVisita({ ...c, respaldo: null }, 9)).toBe(null);
+  });
+
   it('sin configurar en el servidor, ninguno', () => {
     expect(destinoDeLaVisita(null, 9)).toBe(null);
     expect(destinoDeLaVisita(undefined, 9)).toBe(null);
   });
 
   it('la frase del formulario', () => {
-    expect(textoDelDestino('mio', 'Ana')).toBe(
+    const nombres = { asesor: 'Ana', respaldo: 'Jefe' };
+    expect(textoDelDestino('mio', nombres)).toBe(
       'Se pone también en tu Google Calendar.'
     );
-    expect(textoDelDestino('asesor', 'Ana')).toBe(
+    expect(textoDelDestino('asesor', nombres)).toBe(
       'Se pone también en el Google Calendar de Ana.'
     );
-    expect(textoDelDestino(null, 'Ana')).toBe('');
+    expect(textoDelDestino('respaldo', nombres)).toBe(
+      'Se pone también en el Google Calendar de Jefe, que recibe copia de todas.'
+    );
+    expect(textoDelDestino(null, nombres)).toBe('');
+  });
+
+  it('la copia en una frase', () => {
+    expect(textoCopia(['jefe@x.com', 'otra@y.pe'])).toBe(
+      'Copia de todas las visitas: jefe@x.com, otra@y.pe.'
+    );
+    expect(textoCopia([])).toBe('');
+    expect(textoCopia(undefined)).toBe('');
   });
 });
 
