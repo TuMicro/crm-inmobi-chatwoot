@@ -10,6 +10,7 @@ class Object
   def present? = !blank?
   def presence = present? ? self : nil
   def in?(coleccion) = coleccion.include?(self)
+  def try(metodo, *args) = respond_to?(metodo) ? public_send(metodo, *args) : nil
 end
 
 module ActiveRecord
