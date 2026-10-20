@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { conEtapaPrimero, filaDeEtapa, ordenarFiltros, ETAPA } from './filtros';
+import {
+  filasAlAbrir,
+  filaDeEtapa,
+  filaDeEtapaSinCierre,
+  ordenarFiltros,
+  ETAPA,
+} from './filtros';
 
 const lista = [
   { attributeKey: 'status', attributeModel: 'standard' },
@@ -60,18 +66,58 @@ describe('fila inicial del dialogo', () => {
   it('sin el atributo en la cuenta no propone nada', () => {
     expect(filaDeEtapa([])).toBeNull();
     expect(filaDeEtapa(undefined)).toBeNull();
-    const filas = [{ attributeKey: 'status' }];
-    expect(conEtapaPrimero(filas, [])).toBe(filas);
+  });
+});
+
+describe('filas al abrir el dialogo', () => {
+  const definiciones = [
+    {
+      attribute_key: ETAPA,
+      attribute_display_type: 'list',
+      attribute_values: ['Nuevo', 'Contactado', 'Cierre', 'Perdido'],
+    },
+  ];
+  it('etiquetas, vacia, y la etapa del lead no igual a Cierre', () => {
+    expect(filasAlAbrir([], definiciones)).toEqual([
+      {
+        attributeKey: 'labels',
+        filterOperator: 'equal_to',
+        values: [],
+        queryOperator: 'and',
+      },
+      {
+        attributeKey: ETAPA,
+        filterOperator: 'not_equal_to',
+        values: { id: 'Cierre', name: 'Cierre' },
+        queryOperator: 'and',
+      },
+    ]);
   });
 
-  it('va delante de las filas de contexto', () => {
-    const filas = [{ attributeKey: 'status' }];
-    const r = conEtapaPrimero(filas, definiciones);
-    expect(r.map(f => f.attributeKey)).toEqual([ETAPA, 'status']);
+  it('las de contexto de la vista se quedan detras', () => {
+    const contexto = [{ attributeKey: 'inbox_id' }];
+    expect(claves(filasAlAbrir(contexto, definiciones))).toEqual([
+      'labels',
+      ETAPA,
+      'inbox_id',
+    ]);
   });
 
-  it('no la repite si ya esta', () => {
-    const filas = [{ attributeKey: ETAPA }];
-    expect(conEtapaPrimero(filas, definiciones)).toBe(filas);
+  it('en una vista de etiqueta, la suya va en lugar de la vacia', () => {
+    const deLaVista = { attributeKey: 'labels', values: [{ id: 'urgente' }] };
+    const filas = filasAlAbrir([deLaVista], definiciones);
+    expect(filas[0]).toBe(deLaVista);
+    expect(claves(filas)).toEqual(['labels', ETAPA]);
+  });
+
+  it('sin una etapa llamada Cierre, la etapa vacia; sin el atributo, solo etiquetas', () => {
+    const sinCierre = [{ ...definiciones[0], attribute_values: ['Nuevo'] }];
+    expect(filaDeEtapaSinCierre(sinCierre)).toEqual(filaDeEtapa(sinCierre));
+    expect(claves(filasAlAbrir([], []))).toEqual(['labels']);
+  });
+
+  it('con el atributo como texto, el valor es el texto', () => {
+    const texto = [{ ...definiciones[0], attribute_display_type: 'text' }];
+    expect(filaDeEtapaSinCierre(texto).values).toBe('Cierre');
   });
 });

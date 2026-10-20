@@ -1,5 +1,5 @@
 // [turuta] Que filtros de chats se ofrecen y en que orden.
-const ETIQUETAS = 'labels';
+export const ETIQUETAS = 'labels';
 const AGENTE = 'assignee_id';
 export const ETAPA = 'crm_stage_name';
 
@@ -53,9 +53,49 @@ export function filaDeEtapa(definiciones) {
   };
 }
 
-/** Pone la fila de la etapa delante, salvo que ya haya una. */
-export function conEtapaPrimero(filas, definiciones) {
-  if ((filas || []).some(f => f.attributeKey === ETAPA)) return filas;
+/** La etapa en la que se cierra la venta: la que se deja fuera al abrir. */
+const CIERRE = 'cierre';
+
+/**
+ * La etapa del lead "no igual a Cierre". Sin una etapa que se llame Cierre en
+ * la cuenta, la de filaDeEtapa, vacia. null si la cuenta no tiene el atributo.
+ */
+export function filaDeEtapaSinCierre(definiciones) {
   const fila = filaDeEtapa(definiciones);
-  return fila ? [fila, ...(filas || [])] : filas;
+  if (!fila) return null;
+  const definicion = (definiciones || []).find(
+    d => (d.attributeKey || d.attribute_key) === ETAPA
+  );
+  const valores =
+    definicion.attributeValues || definicion.attribute_values || [];
+  const cierre = valores.find(v => String(v).trim().toLowerCase() === CIERRE);
+  if (!cierre) return fila;
+  return {
+    ...fila,
+    filterOperator: 'not_equal_to',
+    values:
+      typeof fila.values === 'string' ? cierre : { id: cierre, name: cierre },
+  };
+}
+
+/**
+ * Las filas con las que se abre el dialogo de filtros (pedido el 20/10):
+ * "Etiquetas", vacia, y "Etapa del lead no igual a Cierre". Las de contexto
+ * de la vista (bandeja, equipo, la etiqueta de una vista de etiqueta) se
+ * quedan detras; si una ya es de etiquetas o de etapa, va en su lugar.
+ */
+export function filasAlAbrir(contexto, definiciones) {
+  const filas = contexto || [];
+  const de = clave => filas.find(f => f.attributeKey === clave);
+  const etiquetas = de(ETIQUETAS) || {
+    attributeKey: ETIQUETAS,
+    filterOperator: 'equal_to',
+    values: [],
+    queryOperator: 'and',
+  };
+  const etapa = de(ETAPA) || filaDeEtapaSinCierre(definiciones);
+  const resto = filas.filter(
+    f => f.attributeKey !== ETIQUETAS && f.attributeKey !== ETAPA
+  );
+  return [etiquetas, ...(etapa ? [etapa] : []), ...resto];
 }

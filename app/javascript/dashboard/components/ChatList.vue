@@ -50,7 +50,7 @@ import {
   filterItemsByPermission,
 } from 'dashboard/helper/permissionsHelper.js';
 import { matchesFilters } from '../store/modules/conversations/helpers/filterHelpers';
-import { conEtapaPrimero } from 'dashboard/turuta/filtros';
+import { filasAlAbrir } from 'dashboard/turuta/filtros';
 import { definicionesDeContacto } from 'dashboard/turuta/filtrosDeContacto';
 import { pestanaVisible } from 'dashboard/turuta/chatsPropios';
 import { CONVERSATION_EVENTS } from '../helper/AnalyticsHelper/events';
@@ -127,10 +127,9 @@ const {
   onRemoveLabels,
 } = useBulkActions();
 
-const {
-  initializeStatusAndAssigneeFilterToModal,
-  initializeInboxTeamAndLabelFilterToModal,
-} = useFilter({
+// [turuta] Sin initializeStatusAndAssigneeFilterToModal: ver
+// initializeExistingFilterToModal.
+const { initializeInboxTeamAndLabelFilterToModal } = useFilter({
   filteri18nKey: 'FILTER',
   attributeModel: 'conversation_attribute',
 });
@@ -169,10 +168,8 @@ const hasAppliedFiltersOrActiveFolders = computed(() => {
   return hasAppliedFilters.value || hasActiveFolders.value;
 });
 
-const currentUserDetails = computed(() => {
-  const { id, name } = currentUser.value;
-  return { id, name };
-});
+// [turuta] Sin currentUserDetails: solo lo usaba la fila del agente al abrir
+// los filtros, que ya no se pone (initializeExistingFilterToModal).
 
 const rolActual = useMapGetter('getCurrentRole'); // [turuta]
 const userPermissions = computed(() => {
@@ -513,15 +510,8 @@ function setParamsForEditFolderModal() {
 }
 
 function initializeExistingFilterToModal() {
-  const statusFilter = initializeStatusAndAssigneeFilterToModal(
-    activeStatus.value,
-    currentUserDetails.value,
-    activeAssigneeTab.value
-  );
-  // TODO: Remove the usage of useCamelCase after migrating useFilter to camelcase
-  if (statusFilter) {
-    appliedFilter.value = [...appliedFilter.value, useCamelCase(statusFilter)];
-  }
+  // [turuta] Sin la fila del estado (ni la del agente) de Chatwoot: al abrir
+  // van "Etiquetas" y "Etapa del lead no igual a Cierre" (20/10), mas abajo.
 
   // TODO: Remove the usage of useCamelCase after migrating useFilter to camelcase
   const otherFilters = initializeInboxTeamAndLabelFilterToModal(
@@ -533,10 +523,10 @@ function initializeExistingFilterToModal() {
   ).map(useCamelCase);
 
   appliedFilter.value = [...appliedFilter.value, ...otherFilters];
-  // [turuta] Al abrir, la primera fila es la etapa del lead. Las de contexto
-  // (estado, agente, etiqueta de la vista) se quedan detras: sin ellas el
-  // filtro mezclaria chats resueltos y de otros asesores.
-  appliedFilter.value = conEtapaPrimero(
+  // [turuta] Al abrir: "Etiquetas" y "Etapa del lead no igual a Cierre"
+  // (turuta/filtros.js). Las de contexto de la vista (bandeja, equipo,
+  // etiqueta) se quedan detras.
+  appliedFilter.value = filasAlAbrir(
     appliedFilter.value,
     conversationCustomAttributes.value
   );

@@ -25,17 +25,22 @@ module Filters::CustomAttributeFilterHelper
     query_operator = query_hash[:query_operator]
     table_name = attribute_model == 'conversation_attribute' ? 'conversations' : 'contacts'
 
-    query = if attribute_data_type == 'text'
-              ActiveRecord::Base.sanitize_sql_array(
-                ["LOWER(#{table_name}.custom_attributes ->> ?)::#{attribute_data_type} #{filter_operator_value} #{query_operator} ", @attribute_key]
-              )
-            else
-              ActiveRecord::Base.sanitize_sql_array(
-                ["(#{table_name}.custom_attributes ->> ?)::#{attribute_data_type} #{filter_operator_value} #{query_operator} ", @attribute_key]
-              )
-            end
+    # [turuta] Cada condicion entre parentesis y el AND/OR que la une con la
+    # siguiente DESPUES. Chatwoot ponia el operador antes del "OR ... IS NULL"
+    # de "no igual a": "... NOT IN (...) AND OR ... IS NULL", y la consulta
+    # fallaba si esa condicion no era la ultima (20/10). Siendo la ultima no
+    # fallaba, pero el OR se llevaba por delante las condiciones anteriores.
+    condition = if attribute_data_type == 'text'
+                  ActiveRecord::Base.sanitize_sql_array(
+                    ["LOWER(#{table_name}.custom_attributes ->> ?)::#{attribute_data_type} #{filter_operator_value}", @attribute_key]
+                  )
+                else
+                  ActiveRecord::Base.sanitize_sql_array(
+                    ["(#{table_name}.custom_attributes ->> ?)::#{attribute_data_type} #{filter_operator_value}", @attribute_key]
+                  )
+                end
 
-    query + not_in_custom_attr_query(table_name, query_hash, attribute_data_type)
+    "(#{condition}#{not_in_custom_attr_query(table_name, query_hash, attribute_data_type).rstrip}) #{query_operator} "
   end
 
   def validate_custom_attribute_values!(query_hash)
