@@ -169,4 +169,54 @@ describe('SidebarSubGroup', () => {
     expect(wrapper.find('.sidebar-leaf').isVisible()).toBe(true);
     expect(storedSections).toEqual({});
   });
+
+  // [turuta] La flecha de arriba (20/10).
+  describe('las flechas de una lista larga', () => {
+    const muchos = Array.from({ length: 9 }, (_, i) => ({
+      name: `Etiqueta-${i}`,
+      label: `etiqueta-${i}`,
+      to: { name: 'label_conversations' },
+    }));
+    const bajarA = async (wrapper, scrollTop) => {
+      const lista = wrapper.find('.max-h-60');
+      const fijar = (clave, valor) =>
+        Object.defineProperty(lista.element, clave, {
+          value: valor,
+          configurable: true,
+        });
+      fijar('scrollHeight', 400);
+      fijar('clientHeight', 240);
+      fijar('scrollTop', scrollTop);
+      await lista.trigger('scroll');
+    };
+    // Por su v-show: isVisible() no lo ve en estas pruebas.
+    const seVe = elemento =>
+      !(elemento.attributes('style') || '').includes('display: none');
+    const arriba = wrapper =>
+      seVe(wrapper.find('[data-turuta="flecha-arriba"]'));
+    const abajo = wrapper => seVe(wrapper.find('.bg-gradient-to-t'));
+
+    it('al principio, solo la de abajo', () => {
+      const wrapper = mountSubGroup({ children: muchos });
+      expect(abajo(wrapper)).toBe(true);
+      expect(arriba(wrapper)).toBe(false);
+    });
+
+    it('a mitad, las dos; al final, solo la de arriba', async () => {
+      const wrapper = mountSubGroup({ children: muchos });
+      await bajarA(wrapper, 80);
+      expect(abajo(wrapper)).toBe(true);
+      expect(arriba(wrapper)).toBe(true);
+      await bajarA(wrapper, 160);
+      expect(abajo(wrapper)).toBe(false);
+      expect(arriba(wrapper)).toBe(true);
+    });
+
+    it('con pocas, ninguna', () => {
+      const wrapper = mountSubGroup();
+      expect(wrapper.find('[data-turuta="flecha-arriba"]').exists()).toBe(
+        false
+      );
+    });
+  });
 });

@@ -71,6 +71,8 @@ const isScrollable = computed(() => {
 });
 
 const scrollEnd = ref(false);
+// [turuta] Tambien arriba: si se bajo, la flecha hacia arriba dice que hay mas.
+const scrollStart = ref(true);
 
 const CHILDREN_TRUNK =
   "before:content-[''] before:absolute before:top-0 before:bottom-0 before:w-0.5 before:bg-n-slate-4 before:start-[-0.5rem]";
@@ -108,13 +110,17 @@ const shouldShowItem = child => {
 };
 
 // set scrollEnd to true when the scroll reaches the end
-useEventListener(scrollableContainer, 'scroll', () => {
+// [turuta] Con @scroll en la plantilla, no con useEventListener: lo mismo en
+// el navegador, y se puede probar (en las pruebas el oyente no llegaba a
+// ponerse). Ver SidebarSubGroup.spec.js.
+const alDesplazar = () => {
   const { scrollHeight, scrollTop, clientHeight } = scrollableContainer.value;
   // [turuta] Con zoom o pantallas de alta densidad scrollTop trae decimales y
   // la igualdad exacta no se cumple nunca: el velo no se quitaba al llegar al
   // final. Se compara con un pixel de margen.
   scrollEnd.value = scrollHeight - scrollTop - clientHeight <= 1;
-});
+  scrollStart.value = scrollTop <= 1; // [turuta]
+};
 
 useEventListener(window, 'storage', event => {
   if (event.key === minimizedSectionsKey) {
@@ -158,6 +164,7 @@ watch([hasActiveChild, storageKey], expandSubGroupOnActiveChild, {
           :class="{
             'max-h-60 overflow-y-scroll no-scrollbar pb-6': isScrollable,
           }"
+          @scroll="alDesplazar"
         >
           <SidebarGroupLeaf
             v-for="child in children"
@@ -177,6 +184,20 @@ watch([hasActiveChild, storageKey], expandSubGroupOnActiveChild, {
           <Icon
             icon="i-woot-chevrons-down"
             class="w-4 h-6 text-n-slate-9 opacity-50 group-hover:opacity-100"
+          />
+        </div>
+        <!-- [turuta] La misma flecha arriba, hacia arriba, mientras haya algo
+             por encima (20/10). Al llegar al final de la lista no quedaba
+             ninguna senal y parecia que la lista era solo eso. -->
+        <div
+          v-if="isScrollable && isExpanded"
+          v-show="!scrollStart"
+          data-turuta="flecha-arriba"
+          class="absolute bg-gradient-to-b from-n-background w-full h-12 to-transparent -top-1 pointer-events-none flex items-start justify-end px-2 animate-fade-in-up"
+        >
+          <Icon
+            icon="i-woot-chevrons-down"
+            class="w-4 h-6 text-n-slate-9 opacity-50 group-hover:opacity-100 rotate-180"
           />
         </div>
       </ul>
