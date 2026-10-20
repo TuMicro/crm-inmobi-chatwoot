@@ -52,6 +52,7 @@ import {
   vistaPrevia,
   websParaElegir,
 } from './propiedades';
+import { ocultarWebs, rotulosDeWebs } from './webs';
 
 const route = useRoute();
 const router = useRouter();
@@ -164,10 +165,23 @@ const burbujas = computed(() =>
 );
 const websConectadas = computed(() => webs.value.filter(w => w.conectada));
 
+// Con una marca generica (Flyboard) las webs no se nombran: "Web 1"...
+const webOculta = ocultarWebs();
+const rotuloDeWeb = computed(() =>
+  rotulosDeWebs(
+    sitios.value,
+    webs.value.map(w => w.site),
+    webOculta
+  )
+);
+
 // Pestañas: el filtro por web.
 const pestanasWeb = computed(() => [
   { label: textoDeWeb(''), site: '' },
-  ...sitios.value.map(s => ({ label: textoDeWeb(s), site: s })),
+  ...sitios.value.map(s => ({
+    label: textoDeWeb(s, rotuloDeWeb.value),
+    site: s,
+  })),
 ]);
 const pestanaWeb = computed(() =>
   Math.max(
@@ -849,7 +863,7 @@ const TITULO = 'mb-0 text-base font-medium text-n-slate-12';
                 :key="w.site"
                 class="px-2 py-0.5 text-xs font-medium rounded-md bg-n-alpha-2 text-n-slate-12"
               >
-                {{ w.site }}
+                {{ rotuloDeWeb(w.site) }}
               </span>
               <span v-if="!websConectadas.length" class="text-n-amber-11">
                 ninguna
@@ -882,8 +896,8 @@ const TITULO = 'mb-0 text-base font-medium text-n-slate-12';
                 <input v-model="w.conectada" type="checkbox" class="mt-1" />
                 <span class="min-w-0">
                   <span class="block text-sm font-medium text-n-slate-12">
-                    {{ w.nombre }}
-                    <span class="font-normal text-n-slate-10">
+                    {{ rotuloDeWeb(w.site, w.nombre) }}
+                    <span v-if="!webOculta" class="font-normal text-n-slate-10">
                       · {{ w.site }}
                     </span>
                   </span>
@@ -1093,7 +1107,7 @@ const TITULO = 'mb-0 text-base font-medium text-n-slate-12';
                   <span class="font-medium">{{ precioTexto(elegida) }}</span>
                 </p>
                 <p class="mt-0.5 mb-0 text-xs text-n-slate-10">
-                  {{ origen(elegida) }}
+                  {{ origen(elegida, rotuloDeWeb) }}
                   <template v-if="elegida.fichaActualizadaPor">
                     · guardado por {{ elegida.fichaActualizadaPor }}
                   </template>

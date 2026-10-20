@@ -3,6 +3,8 @@
   <head>
     <%# [turuta] Marca de la instalacion por variables de entorno TURUTA_*. Solo cambia lo que pinta esta pagina: no escribe en installation_configs. Sin las variables, todo queda como en Chatwoot. %>
     <% ({ 'INSTALLATION_NAME' => 'TURUTA_BRAND_NAME', 'BRAND_NAME' => 'TURUTA_BRAND_NAME', 'LOGO' => 'TURUTA_LOGO', 'LOGO_DARK' => 'TURUTA_LOGO_DARK', 'LOGO_THUMBNAIL' => 'TURUTA_LOGO_THUMBNAIL', 'LOGO_THUMBNAIL_DARK' => 'TURUTA_LOGO_THUMBNAIL_DARK', 'TURUTA_AGENTS_SEE_ALL' => 'TURUTA_AGENTS_SEE_ALL', 'TERMS_URL' => 'TURUTA_TERMS_URL', 'PRIVACY_URL' => 'TURUTA_PRIVACY_URL' }).each { |clave, variable| @global_config[clave] = ENV[variable] if ENV[variable].present? } %>
+    <%# [turuta] Otra marca segun el dominio por el que se entra (TURUTA_MARCAS_POR_DOMINIO): app/services/turuta/marca_por_dominio.rb. Sin la variable, ninguna. %>
+    <% marca_del_dominio = Turuta::MarcaPorDominio.de(request.host); @global_config.merge!(marca_del_dominio) if marca_del_dominio %>
     <title>
       <%= @global_config['INSTALLATION_NAME'] %>
     </title>

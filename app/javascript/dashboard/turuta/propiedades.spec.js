@@ -72,6 +72,10 @@ describe('textos de la lista', () => {
       'Departamento en San Isidro · 3 dorm · 168 m²'
     );
     expect(origen(prop())).toBe('madhouse · código MH-7 · Av. Camino Real 123');
+    // Con una marca generica la web va con su rotulo (webs.js).
+    expect(origen(prop(), () => 'Web 1')).toBe(
+      'Web 1 · código MH-7 · Av. Camino Real 123'
+    );
   });
 
   it('el filtro sin web se llama Todas', () => {

@@ -15,6 +15,7 @@ import Icon from 'dashboard/components-next/icon/Icon.vue';
 import Dialog from 'dashboard/components-next/dialog/Dialog.vue';
 import ReportHeader from 'dashboard/routes/dashboard/settings/reports/components/ReportHeader.vue';
 import { leadAppConfig, textoError } from './leadApp';
+import { rotulosDeWebs } from './webs';
 import {
   CAMPOS,
   avisos,
@@ -36,6 +37,12 @@ const apps = useMapGetter('dashboardApps/getRecords');
 const config = computed(() => leadAppConfig(apps.value));
 
 const datos = ref(null);
+// Las webs del inventario; con una marca generica (Flyboard), "Web 1"...
+const websDelInventario = computed(() => {
+  const sitios = datos.value?.sitios || [];
+  const rotulo = rotulosDeWebs(sitios);
+  return sitios.map(s => rotulo(s));
+});
 const cargando = ref(false);
 const guardando = ref(false);
 const error = ref(null);
@@ -361,8 +368,8 @@ const CAMPO =
           <p class="mt-4 mb-0 text-xs text-n-slate-10">
             Inventario:
             {{
-              datos.sitios && datos.sitios.length
-                ? datos.sitios.join(' + ')
+              websDelInventario.length
+                ? websDelInventario.join(' + ')
                 : 'ninguna web'
             }}. Las propiedades se editan en
             <span class="text-n-slate-11">Propiedades</span>.

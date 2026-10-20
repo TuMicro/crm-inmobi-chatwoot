@@ -44,8 +44,12 @@ export const NEGOCIABLES = [
   { value: 'no', label: 'No, precio fijo' },
 ];
 
-/** El texto del filtro por web: vacio es "Todas". */
-export const textoDeWeb = site => site || 'Todas';
+/**
+ * El texto del filtro por web: vacio es "Todas". `rotulo` nombra la web (ver
+ * webs.js: con una marca generica, "Web 1"...).
+ */
+export const textoDeWeb = (site, rotulo = s => s) =>
+  site ? rotulo(site) : 'Todas';
 
 /**
  * Las webs para el bloque "Webs conectadas": las que hay en Supabase, y
@@ -94,8 +98,12 @@ export function subtitulo(p) {
 }
 
 /** De donde sale: la web, el codigo que usa el cliente y la direccion. */
-export function origen(p) {
-  return [p?.site, p?.codigo ? `código ${p.codigo}` : null, p?.direccion]
+export function origen(p, rotulo = s => s) {
+  return [
+    p?.site ? rotulo(p.site) : null,
+    p?.codigo ? `código ${p.codigo}` : null,
+    p?.direccion,
+  ]
     .filter(Boolean)
     .join(' · ');
 }

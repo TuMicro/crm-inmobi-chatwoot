@@ -49,6 +49,17 @@ jobs:
           ruby -c app/services/filter_service.rb
           ruby -c app/services/conversations/filter_service.rb
           ruby -c app/services/turuta/contact_attribute_filters.rb
+          ruby -c app/services/turuta/marca_por_dominio.rb
+          ruby -e '
+            require "./app/services/turuta/marca_por_dominio"
+            m = Turuta::MarcaPorDominio
+            lista = "flyboard.crm.inmobipro.com=flyboard, otro.com=nada"
+            raise "flyboard" unless m.de("Flyboard.crm.inmobipro.com", lista)["BRAND_NAME"] == "Flyboard CRM"
+            raise "otro dominio" unless m.de("staging.crm.inmobipro.com", lista).nil?
+            raise "marca que no existe" unless m.de("otro.com", lista).nil?
+            raise "sin variable" unless m.de("flyboard.crm.inmobipro.com", "").nil?
+            m::MARCAS.each_value { |marca| marca.each_value { |v| raise "falta #{v}" if v.is_a?(String) && v.start_with?("/brand-assets/") && !File.exist?("public#{v}") } }
+            puts "Marcas por dominio OK"'
           for f in app/services/turuta/own_conversations.rb app/services/turuta/own_conversations/*.rb; do ruby -c "$f"; done
           ruby -c app/services/conversations/permission_filter_service.rb
           ruby -c app/policies/conversation_policy.rb

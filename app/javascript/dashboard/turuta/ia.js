@@ -115,7 +115,8 @@ export const CAMPOS = [
   {
     clave: 'nombreEquipo',
     titulo: 'Cómo se presenta',
-    ayuda: 'El nombre con el que la IA habla: "en nombre de MadHouse".',
+    ayuda:
+      'El nombre de la inmobiliaria con el que habla la IA, por ejemplo «Inmobiliaria Los Olivos».',
     tipo: 'texto',
   },
   {
