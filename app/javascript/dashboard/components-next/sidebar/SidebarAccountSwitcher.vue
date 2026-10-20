@@ -6,6 +6,7 @@ import { useI18n } from 'vue-i18n';
 import ButtonNext from 'next/button/Button.vue';
 import Icon from 'next/icon/Icon.vue';
 import Logo from 'next/icon/Logo.vue';
+import { nombreEnElMenu } from 'dashboard/turuta/marca'; // [turuta]
 
 import {
   DropdownContainer,
@@ -29,6 +30,12 @@ const currentUser = useMapGetter('getCurrentUser');
 const globalConfig = useMapGetter('globalConfig/get');
 
 const userAccounts = useMapGetter('getUserAccounts');
+
+// [turuta] Con la marca de otro dominio (Flyboard), su nombre en vez del de
+// la cuenta. La lista para cambiar de cuenta sigue con los nombres reales.
+const nombreArriba = computed(
+  () => nombreEnElMenu() || currentAccount.value.name
+);
 
 const showAccountSwitcher = computed(
   () => userAccounts.value.length > 1 && currentAccount.value.name
@@ -58,7 +65,7 @@ const emitNewAccount = () => {
         v-if="isCollapsed"
         class="grid flex-shrink-0 place-content-center p-2 rounded-lg cursor-pointer hover:bg-n-alpha-1"
         :class="{ 'bg-n-alpha-1': isOpen }"
-        :title="currentAccount.name"
+        :title="nombreArriba"
         @click="toggle"
       >
         <Logo class="size-7" />
@@ -83,7 +90,7 @@ const emitNewAccount = () => {
           class="text-sm font-medium leading-5 text-n-slate-12 truncate"
           aria-live="polite"
         >
-          {{ currentAccount.name }}
+          {{ nombreArriba }}
         </span>
 
         <span

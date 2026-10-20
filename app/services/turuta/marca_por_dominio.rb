@@ -21,6 +21,9 @@ module Turuta
         'LOGO_DARK' => '/brand-assets/flyboard-logo-white.png',
         'LOGO_THUMBNAIL' => '/brand-assets/flyboard-icon.png',
         'LOGO_THUMBNAIL_DARK' => '/brand-assets/flyboard-icon.png',
+        # Arriba del menu, junto al icono, Chatwoot pone el nombre de la
+        # cuenta; con esta marca va el de la marca (turuta/marca.js).
+        'TURUTA_NOMBRE_EN_MENU' => 'Flyboard',
         # Marca generica: no se ensena de que webs salen las propiedades
         # (turuta/webs.js las llama "Web 1", "Web 2"...).
         'TURUTA_OCULTAR_WEBS' => true

@@ -6,3 +6,10 @@
 
 export const iconoParaFondoOscuro = (config = window.globalConfig) =>
   config?.LOGO_THUMBNAIL_DARK || '';
+
+// [turuta] Arriba del menu, junto al icono, Chatwoot pone el nombre de la
+// cuenta. Con la marca de otro dominio (Flyboard: docs/19 del repo crm-inmobi)
+// va el de la marca: la cuenta es la misma en los dos dominios. Vacio: el de
+// la cuenta, como en Chatwoot. Lo pone app/services/turuta/marca_por_dominio.rb.
+export const nombreEnElMenu = (config = window.globalConfig) =>
+  config?.TURUTA_NOMBRE_EN_MENU || '';
