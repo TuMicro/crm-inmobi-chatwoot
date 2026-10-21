@@ -28,7 +28,7 @@ import {
   TEXTO_TOAST_IA,
   TEXTO_TOAST_IA_FIN,
   iaEnviando,
-  iaEnviandoPorMensajes,
+  estadoDelEnvio,
   seguirEnvioDeLaIa,
 } from 'dashboard/turuta/iaEnviando';
 import { useAlert } from 'dashboard/composables';
@@ -141,11 +141,20 @@ export default {
     },
     // [turuta] La IA esta mandando una ficha en este chat (turuta/iaEnviando.js):
     // por la marca de la API o, si no llega, por sus mensajes.
-    turutaIaEnviando() {
-      return (
-        iaEnviando(this.currentChat, this.turutaAhora) ||
-        iaEnviandoPorMensajes(this.currentChat?.messages, this.turutaAhora)
+    // 'enviando', 'terminada' (salio la ultima pieza) o null.
+    turutaEstadoIa() {
+      const porMensajes = estadoDelEnvio(
+        this.currentChat?.messages,
+        this.turutaAhora
       );
+      if (porMensajes === 'terminada') return 'terminada';
+      return porMensajes === 'enviando' ||
+        iaEnviando(this.currentChat, this.turutaAhora)
+        ? 'enviando'
+        : null;
+    },
+    turutaIaEnviando() {
+      return this.turutaEstadoIa === 'enviando';
     },
     turutaTextoIaEnviando() {
       return TEXTO_IA_ENVIANDO;
@@ -288,8 +297,8 @@ export default {
     // las macros (22/10). Al cambiar de chat se quita sin decir nada.
     // Con margen al final: los huecos entre archivos no lo cierran
     // (seguirEnvioDeLaIa, 23/10).
-    turutaIaEnviando(enviando) {
-      this.turutaAvisoIa.actualizar(enviando);
+    turutaEstadoIa(estado) {
+      this.turutaAvisoIa.actualizar(estado);
     },
     'currentChat.id'() {
       this.turutaAvisoIa.cancelar();

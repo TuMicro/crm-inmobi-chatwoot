@@ -28,6 +28,12 @@ const llego = m => ['delivered', 'read', 'failed'].includes(m?.status);
 const haceMenosDe = (m, ms, ahora) => ahora - (m?.created_at || 0) * 1000 < ms;
 
 /**
+ * La marca que pone nuestra API en cada mensaje de una ficha (23/10): que
+ * ficha es y que pieza, { id, paso, de } ("3 de 4").
+ */
+export const marcaDeFicha = m => m?.content_attributes?.turuta_ficha || null;
+
+/**
  * La IA esta mandando una ficha, visto en los mensajes del chat (22/10): un
  * archivo suyo de hace menos de dos minutos, y su ultimo mensaje es de hace
  * menos de 8 s o aun no ha llegado al movil. Asi el aviso sale aunque no
@@ -39,9 +45,12 @@ export function iaEnviandoPorMensajes(mensajes, ahora = Date.now()) {
   );
   const ultimo = salientes[salientes.length - 1];
   if (!deLaIa(ultimo)) return false;
+  // Las fichas marcadas las cuenta estadoDelEnvio; aqui, solo las de antes o
+  // las que salen por una macro.
   const conArchivo = salientes.some(
     m =>
       deLaIa(m) &&
+      !marcaDeFicha(m) &&
       (m.attachments || []).length > 0 &&
       haceMenosDe(m, 120000, ahora)
   );
@@ -50,6 +59,24 @@ export function iaEnviandoPorMensajes(mensajes, ahora = Date.now()) {
     haceMenosDe(ultimo, 10000, ahora) ||
     (!llego(ultimo) && haceMenosDe(ultimo, 60000, ahora))
   );
+}
+
+/**
+ * Como va la ficha de la IA, por sus mensajes: 'enviando', 'terminada' (acaba
+ * de salir su ultima pieza: el aviso dice "terminó" al momento, sin esperar a
+ * que llegue al movil) o null. Con la marca se sabe exacto; sin ella (fichas
+ * por macro), se deduce como antes (iaEnviandoPorMensajes).
+ */
+export function estadoDelEnvio(mensajes, ahora = Date.now()) {
+  const salientes = (mensajes || []).filter(
+    m => m?.message_type === SALIENTE && !m.private
+  );
+  const ultimo = salientes[salientes.length - 1];
+  const marca = deLaIa(ultimo) ? marcaDeFicha(ultimo) : null;
+  if (marca && haceMenosDe(ultimo, 120000, ahora)) {
+    return Number(marca.paso) >= Number(marca.de) ? 'terminada' : 'enviando';
+  }
+  return iaEnviandoPorMensajes(mensajes, ahora) ? 'enviando' : null;
 }
 
 /**
@@ -62,9 +89,10 @@ export const ESPERA_FIN_AVISO_MS = 15000;
 
 /**
  * El aviso de abajo para una ficha: se abre una vez, y "terminó" sale una
- * sola vez, cuando lleva ESPERA_FIN_AVISO_MS sin enviarse nada. `actualizar`
- * se llama con si la IA esta enviando ahora; `cancelar`, al cambiar de chat
- * (cierra sin decir nada).
+ * sola vez: al momento si se sabe que salio la ultima pieza ('terminada'), o
+ * cuando lleva ESPERA_FIN_AVISO_MS sin enviarse nada. `actualizar` se llama
+ * con 'enviando', 'terminada' o null; `cancelar`, al cambiar de chat (cierra
+ * sin decir nada).
  */
 export function seguirEnvioDeLaIa({
   abrir,
@@ -79,12 +107,20 @@ export function seguirEnvioDeLaIa({
     fin = null;
   };
   return {
-    actualizar(enviando) {
-      if (enviando) {
+    actualizar(estado) {
+      if (estado === 'enviando') {
         quitarFin();
         if (!abierto) {
           abierto = true;
           abrir();
+        }
+        return;
+      }
+      if (estado === 'terminada') {
+        quitarFin();
+        if (abierto) {
+          abierto = false;
+          cerrar(true);
         }
         return;
       }
