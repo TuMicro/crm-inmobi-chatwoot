@@ -47,7 +47,58 @@ export function iaEnviandoPorMensajes(mensajes, ahora = Date.now()) {
   );
   if (!conArchivo) return false;
   return (
-    haceMenosDe(ultimo, 8000, ahora) ||
+    haceMenosDe(ultimo, 10000, ahora) ||
     (!llego(ultimo) && haceMenosDe(ultimo, 60000, ahora))
   );
+}
+
+/**
+ * Cuanto tiene que llevar la IA sin mandar nada para dar la ficha por
+ * terminada (23/10). Entre un archivo y el siguiente hay huecos (se sube el
+ * video antes de mandarlo): sin este margen el aviso se cerraba y abria, y
+ * salia "terminó" tras cada archivo.
+ */
+export const ESPERA_FIN_AVISO_MS = 15000;
+
+/**
+ * El aviso de abajo para una ficha: se abre una vez, y "terminó" sale una
+ * sola vez, cuando lleva ESPERA_FIN_AVISO_MS sin enviarse nada. `actualizar`
+ * se llama con si la IA esta enviando ahora; `cancelar`, al cambiar de chat
+ * (cierra sin decir nada).
+ */
+export function seguirEnvioDeLaIa({
+  abrir,
+  cerrar,
+  espera = ESPERA_FIN_AVISO_MS,
+  temporizador = { poner: setTimeout, quitar: clearTimeout },
+}) {
+  let abierto = false;
+  let fin = null;
+  const quitarFin = () => {
+    if (fin) temporizador.quitar(fin);
+    fin = null;
+  };
+  return {
+    actualizar(enviando) {
+      if (enviando) {
+        quitarFin();
+        if (!abierto) {
+          abierto = true;
+          abrir();
+        }
+        return;
+      }
+      if (!abierto || fin) return;
+      fin = temporizador.poner(() => {
+        fin = null;
+        abierto = false;
+        cerrar(true);
+      }, espera);
+    },
+    cancelar() {
+      quitarFin();
+      if (abierto) cerrar(false);
+      abierto = false;
+    },
+  };
 }

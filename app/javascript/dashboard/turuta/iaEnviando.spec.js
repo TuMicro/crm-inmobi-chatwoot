@@ -2,6 +2,7 @@ import {
   CLAVE_IA_ENVIANDO,
   iaEnviando,
   iaEnviandoPorMensajes,
+  seguirEnvioDeLaIa,
 } from './iaEnviando';
 
 describe('iaEnviando', () => {
@@ -62,5 +63,60 @@ describe('iaEnviandoPorMensajes', () => {
     expect(iaEnviandoPorMensajes([ia(2)], ahora)).toBe(false);
     expect(iaEnviandoPorMensajes([], ahora)).toBe(false);
     expect(iaEnviandoPorMensajes(undefined, ahora)).toBe(false);
+  });
+});
+
+describe('seguirEnvioDeLaIa: un aviso por ficha, y "terminó" una sola vez (23/10)', () => {
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => vi.useRealTimers());
+
+  const montar = () => {
+    const abrir = vi.fn();
+    const cerrar = vi.fn();
+    return {
+      abrir,
+      cerrar,
+      aviso: seguirEnvioDeLaIa({ abrir, cerrar, espera: 15000 }),
+    };
+  };
+
+  it('huecos entre archivos no lo cierran: se abre una vez y termina una vez', () => {
+    const { abrir, cerrar, aviso } = montar();
+    aviso.actualizar(true); // texto
+    aviso.actualizar(false); // se sube el video
+    vi.advanceTimersByTime(12000);
+    aviso.actualizar(true); // sale el video
+    aviso.actualizar(false);
+    vi.advanceTimersByTime(5000);
+    aviso.actualizar(true); // el PDF
+    aviso.actualizar(false);
+    vi.advanceTimersByTime(14999);
+    expect(cerrar).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(1);
+    expect(abrir).toHaveBeenCalledTimes(1);
+    expect(cerrar).toHaveBeenCalledTimes(1);
+    expect(cerrar).toHaveBeenCalledWith(true);
+  });
+
+  it('repetir "no esta enviando" no alarga ni repite el final', () => {
+    const { cerrar, aviso } = montar();
+    aviso.actualizar(true);
+    for (let i = 0; i < 20; i += 1) {
+      aviso.actualizar(false);
+      vi.advanceTimersByTime(1000);
+    }
+    expect(cerrar).toHaveBeenCalledTimes(1);
+  });
+
+  it('al cambiar de chat se cierra sin decir que termino; sin aviso abierto, nada', () => {
+    const { cerrar, aviso } = montar();
+    aviso.actualizar(false);
+    vi.advanceTimersByTime(20000);
+    expect(cerrar).not.toHaveBeenCalled();
+    aviso.actualizar(true);
+    aviso.cancelar();
+    expect(cerrar).toHaveBeenCalledWith(false);
+    vi.advanceTimersByTime(20000);
+    expect(cerrar).toHaveBeenCalledTimes(1);
   });
 });

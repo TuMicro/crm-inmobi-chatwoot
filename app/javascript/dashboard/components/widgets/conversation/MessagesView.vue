@@ -29,6 +29,7 @@ import {
   TEXTO_TOAST_IA_FIN,
   iaEnviando,
   iaEnviandoPorMensajes,
+  seguirEnvioDeLaIa,
 } from 'dashboard/turuta/iaEnviando';
 import { useAlert } from 'dashboard/composables';
 import { calculateScrollTop } from './helpers/scrollTopCalculationHelper';
@@ -285,12 +286,13 @@ export default {
   watch: {
     // [turuta] El aviso de abajo mientras la IA manda una ficha, como el de
     // las macros (22/10). Al cambiar de chat se quita sin decir nada.
+    // Con margen al final: los huecos entre archivos no lo cierran
+    // (seguirEnvioDeLaIa, 23/10).
     turutaIaEnviando(enviando) {
-      if (enviando) this.turutaAbrirAvisoIa();
-      else this.turutaCerrarAvisoIa(true);
+      this.turutaAvisoIa.actualizar(enviando);
     },
     'currentChat.id'() {
-      this.turutaCerrarAvisoIa(false);
+      this.turutaAvisoIa.cancelar();
     },
     currentChat(newChat, oldChat) {
       if (newChat.id === oldChat.id) {
@@ -304,6 +306,11 @@ export default {
   },
 
   created() {
+    // [turuta] El aviso de abajo de una ficha de la IA (turuta/iaEnviando.js).
+    this.turutaAvisoIa = seguirEnvioDeLaIa({
+      abrir: () => this.turutaAbrirAvisoIa(),
+      cerrar: terminada => this.turutaCerrarAvisoIa(terminada),
+    });
     emitter.on(BUS_EVENTS.SCROLL_TO_MESSAGE, this.onScrollToMessage);
     // when a message is sent we set the flag to true this hides the label suggestions,
     // until the chat is changed and the flag is reset in the watch for currentChat
@@ -326,7 +333,7 @@ export default {
     this.removeBusListeners();
     this.removeScrollListener();
     clearInterval(this.turutaReloj);
-    this.turutaCerrarAvisoIa(false);
+    this.turutaAvisoIa.cancelar();
   },
 
   methods: {
@@ -336,7 +343,7 @@ export default {
       this.turutaClaveAviso = `ia-ficha-${this.currentChat?.id}-${Date.now()}`;
       useAlert(TEXTO_TOAST_IA, {
         turutaClave: this.turutaClaveAviso,
-        duration: 3 * 60 * 1000,
+        duration: 10 * 60 * 1000,
       });
     },
     turutaCerrarAvisoIa(terminada) {
