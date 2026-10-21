@@ -156,6 +156,39 @@ describe('LeadHeader: la visita y Google Calendar', () => {
     expect(w.text()).toContain('Invitados: ana@x.com');
   });
 
+  it('las horas del recordatorio van con la visita, y se dice cuando le llega', async () => {
+    const w = montar();
+    await boton(w, 'Mover a Visita agendada').trigger('click');
+    await ponerHora(w);
+    expect(w.find('[data-turuta="visita-horas"]').element.value).toBe('2');
+    expect(w.find('[data-turuta="visita-horas-aviso"]').text()).toContain(
+      'Le llegará'
+    );
+    await w.find('[data-turuta="visita-horas"]').setValue('6');
+    await boton(w, 'Agendar').trigger('click');
+    await flushPromises();
+    expect(cambiarEtapa).toHaveBeenCalledWith(
+      'visita_agendada',
+      expect.objectContaining({ visitReminderHours: 6 })
+    );
+  });
+
+  it('el dia anterior sin la plantilla aprobada no deja agendar', async () => {
+    state.lead = lead({
+      recordatorio: { zonaHoraria: 'America/Lima', plantillaDelDia: false },
+    });
+    const w = montar();
+    await boton(w, 'Mover a Visita agendada').trigger('click');
+    await ponerHora(w);
+    await w.find('[data-turuta="visita-horas"]').setValue('48');
+    expect(w.find('[data-turuta="visita-horas-aviso"]').text()).toContain(
+      'saldría el día anterior'
+    );
+    await boton(w, 'Agendar').trigger('click');
+    await flushPromises();
+    expect(cambiarEtapa).not.toHaveBeenCalled();
+  });
+
   it('cambiar la visita trae los invitados que tenia', async () => {
     state.lead = lead({ visita: visita() });
     const w = montar();
@@ -166,7 +199,8 @@ describe('LeadHeader: la visita y Google Calendar', () => {
     expect(agendarVisita).toHaveBeenCalledWith(
       expect.any(String),
       'Av. Larco 1234',
-      ['ana@x.com']
+      ['ana@x.com'],
+      2
     );
   });
 });

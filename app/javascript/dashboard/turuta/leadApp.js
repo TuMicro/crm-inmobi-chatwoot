@@ -220,11 +220,11 @@ export function textoVisita(v) {
     case 'SENT':
       return 'Recordatorio enviado, sin respuesta todavia.';
     case 'SKIPPED':
-      return 'Sin recordatorio: se agendo con menos de 2 h de margen.';
+      return `Sin recordatorio: se agendo con menos de ${v.reminderHours || 2} h de margen.`;
     case 'FAILED':
       return `El recordatorio fallo: ${v.reminderError || 'sin detalle'}.`;
     default:
-      return 'Le llegara un recordatorio por WhatsApp 2 h antes.';
+      return `Le llegara un recordatorio por WhatsApp ${v.reminderHours || 2} h antes.`;
   }
 }
 

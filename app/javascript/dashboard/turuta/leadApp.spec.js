@@ -237,6 +237,14 @@ describe('visita', () => {
     expect(
       textoVisita({ status: 'SCHEDULED', reminderStatus: 'PENDING' })
     ).toMatch(/2 h antes/);
+    // Las horas de esa visita, si se eligieron otras (21/10).
+    expect(
+      textoVisita({
+        status: 'SCHEDULED',
+        reminderStatus: 'PENDING',
+        reminderHours: 24,
+      })
+    ).toMatch(/24 h antes/);
     expect(
       textoVisita({ status: 'SCHEDULED', reminderStatus: 'SENT' })
     ).toMatch(/enviado/);

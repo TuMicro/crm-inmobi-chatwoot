@@ -11,6 +11,13 @@ import { useRoute } from 'vue-router';
 import Button from 'dashboard/components-next/button/Button.vue';
 import { useLead } from './useLead';
 import {
+  HORAS_POR_DEFECTO,
+  MAX_HORAS,
+  MIN_HORAS,
+  avisoDelRecordatorio,
+  horasValidas,
+} from './recordatorio';
+import {
   correosDe,
   errorDeInvitados,
   destinoDeLaVisita,
@@ -66,6 +73,8 @@ const vFecha = ref('');
 const vHora = ref('');
 const vDireccion = ref('');
 const vInvitados = ref('');
+// Cuantas horas antes le llega el recordatorio: lo elige quien agenda (21/10).
+const vHorasRecordatorio = ref(HORAS_POR_DEFECTO);
 const formularioVisita = computed(
   () => !!visitaPara.value || editandoVisita.value
 );
@@ -100,6 +109,7 @@ function abrirVisita(etapa) {
   vHora.value = actual ? horaInput(actual.scheduledAt) : '';
   vDireccion.value = actual ? actual.address : '';
   vInvitados.value = (actual?.guests || []).join(', ');
+  vHorasRecordatorio.value = actual?.reminderHours || HORAS_POR_DEFECTO;
   abierto.value = false;
 }
 
@@ -123,11 +133,21 @@ function cerrarVisita() {
 }
 
 const visitaIso = computed(() => isoDesdeInputs(vFecha.value, vHora.value));
+// Cuando le llega el recordatorio, o por que no (turuta/recordatorio.js).
+const avisoRecordatorio = computed(() =>
+  avisoDelRecordatorio({
+    visitaIso: visitaIso.value,
+    horas: vHorasRecordatorio.value,
+    zona: lead.value?.recordatorio?.zonaHoraria,
+    plantillaDelDia: !!lead.value?.recordatorio?.plantillaDelDia,
+  })
+);
 const puedeGuardarVisita = computed(
   () =>
     !!visitaIso.value &&
     new Date(visitaIso.value) > new Date() &&
     !errorInvitados.value &&
+    !avisoRecordatorio.value?.error &&
     !state.busy
 );
 
@@ -135,13 +155,15 @@ async function guardarVisita() {
   if (!puedeGuardarVisita.value) return;
   const direccion = vDireccion.value.trim();
   const invitados = correosDe(vInvitados.value).correos;
+  const horas = horasValidas(vHorasRecordatorio.value) ?? HORAS_POR_DEFECTO;
   const ok = visitaPara.value
     ? await cambiarEtapa(visitaPara.value.code, {
         visitAt: visitaIso.value,
         visitAddress: direccion,
         visitGuests: invitados,
+        visitReminderHours: horas,
       })
-    : await agendarVisita(visitaIso.value, direccion, invitados);
+    : await agendarVisita(visitaIso.value, direccion, invitados, horas);
   if (ok) cerrarVisita();
 }
 
@@ -449,7 +471,7 @@ const claseEtapa = computed(() => {
           {{ visitaPara ? 'Agendar la visita' : 'Cambiar la visita' }}
         </div>
         <p class="mt-0.5 text-xs text-n-slate-11">
-          Dos horas antes le llega al lead un recordatorio por WhatsApp.
+          Antes de la visita le llega al lead un recordatorio por WhatsApp.
         </p>
         <label class="block mt-3 text-xs font-medium text-n-slate-11">
           Fecha
@@ -469,6 +491,32 @@ const claseEtapa = computed(() => {
             class="turuta-input"
             @click="abrirSelector"
           />
+        </label>
+        <label class="block mt-2 text-xs font-medium text-n-slate-11">
+          Recordatorio por WhatsApp
+          <span class="flex items-center gap-2 mt-1">
+            <input
+              v-model.number="vHorasRecordatorio"
+              type="number"
+              inputmode="numeric"
+              :min="MIN_HORAS"
+              :max="MAX_HORAS"
+              step="1"
+              class="turuta-input !w-20 !mt-0"
+              data-turuta="visita-horas"
+            />
+            <span class="font-normal text-n-slate-11">horas antes</span>
+          </span>
+          <span
+            v-if="avisoRecordatorio"
+            class="block mt-1 font-normal"
+            :class="
+              avisoRecordatorio.error ? 'text-n-ruby-11' : 'text-n-slate-10'
+            "
+            data-turuta="visita-horas-aviso"
+          >
+            {{ avisoRecordatorio.texto }}
+          </span>
         </label>
         <label class="block mt-2 text-xs font-medium text-n-slate-11">
           Direccion
