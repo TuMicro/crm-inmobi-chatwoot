@@ -294,6 +294,15 @@ async function cargar() {
     webs.value = websParaElegir(respuestaWebs);
     // La propiedad abierta se mantiene, con lo recien guardado; si ya no esta
     // en la lista (se despublico en la web), se cierra.
+    // Desde Ajustes → Macros se llega con ?propiedad=<id>: se abre esa.
+    const pedida =
+      !elegidaId.value && route.query.propiedad
+        ? propiedades.value.find(p => p.id === String(route.query.propiedad))
+        : null;
+    if (pedida) {
+      abrir(pedida);
+      return;
+    }
     const sigue = propiedades.value.find(p => p.id === elegidaId.value);
     if (elegidaId.value && !sigue) {
       elegidaId.value = null;
@@ -701,6 +710,18 @@ async function cargarMacro(macroId) {
     return false;
   } finally {
     cargandoMacro.value = false;
+  }
+}
+
+/** La macro se edito en Ajustes → Macros: sus cambios pasan a la propiedad (22/10). */
+async function traerCambiosDeLaMacro() {
+  const p = elegida.value;
+  if (!p?.macroAsesoresId || guardandoMacro.value) return;
+  guardandoMacro.value = 'traer';
+  try {
+    await cargarMacro(p.macroAsesoresId);
+  } finally {
+    guardandoMacro.value = false;
   }
 }
 
@@ -1518,7 +1539,11 @@ const TITULO = 'mb-0 text-base font-medium text-n-slate-12';
                         size="sm"
                         :is-loading="guardandoMacro === accion.clave"
                         :disabled="!!cajaMacro.motivo || !!guardandoMacro"
-                        @click="guardarMacroAsesores(accion.clave)"
+                        @click="
+                          accion.clave === 'traer'
+                            ? traerCambiosDeLaMacro()
+                            : guardarMacroAsesores(accion.clave)
+                        "
                       />
                     </div>
                   </div>

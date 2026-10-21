@@ -10,6 +10,11 @@ import { useStoreGetters, useStore } from 'dashboard/composables/store';
 import Button from 'dashboard/components-next/button/Button.vue';
 import { BaseTable } from 'dashboard/components-next/table';
 import { useAdmin } from 'dashboard/composables/useAdmin';
+// [turuta] Que macro es la de una propiedad (22/10).
+import {
+  enlaceDeMacro,
+  useMacrosDePropiedades,
+} from 'dashboard/turuta/macrosDePropiedades';
 
 const getters = useStoreGetters();
 const store = useStore();
@@ -31,8 +36,11 @@ const filteredRecords = computed(() => {
 
 const deleteMessage = computed(() => ` ${selectedMacro.value.name}?`);
 
+const { enlaces, cargarEnlaces, accountId } = useMacrosDePropiedades(); // [turuta]
+
 onMounted(() => {
   store.dispatch('macros/get');
+  cargarEnlaces(); // [turuta]
 });
 
 const deleteMacro = async id => {
@@ -112,6 +120,8 @@ const tableHeaders = computed(() => {
             :key="macro.id"
             :macro="macro"
             :can-manage-public-macros="isAdmin"
+            :propiedad="enlaceDeMacro(enlaces, macro.id)"
+            :account-id="accountId"
             @delete="openDeletePopup(macro)"
           />
         </template>

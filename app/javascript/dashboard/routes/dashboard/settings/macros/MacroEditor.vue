@@ -10,6 +10,12 @@ import actionQueryGenerator from 'dashboard/helper/actionQueryGenerator.js';
 import { getActionIcon } from 'dashboard/helper/automationHelper';
 import { useMacros } from 'dashboard/composables/useMacros';
 import { useAdmin } from 'dashboard/composables/useAdmin';
+// [turuta] Si la macro es la de una propiedad, guardar puede pasar tambien
+// los cambios a lo que manda la IA (22/10).
+import {
+  enlaceDeMacro,
+  useMacrosDePropiedades,
+} from 'dashboard/turuta/macrosDePropiedades';
 
 const store = useStore();
 const getters = useStoreGetters();
@@ -37,6 +43,13 @@ provide('macroActionTypes', macroActionTypes);
 
 const uiFlags = computed(() => getters['macros/getUIFlags'].value);
 const macroId = computed(() => route.params.macroId);
+
+// [turuta]
+const { enlaces, cargarEnlaces, pasarALaPropiedad } = useMacrosDePropiedades();
+cargarEnlaces();
+const propiedad = computed(() =>
+  macroId.value ? enlaceDeMacro(enlaces.value, macroId.value) : null
+);
 const isPublicMacroReadOnly = computed(
   () => macro.value?.visibility === 'global' && !isAdmin.value
 );
@@ -115,7 +128,7 @@ watch(
   { immediate: true, deep: true }
 );
 
-const saveMacro = async macroData => {
+const saveMacro = async (macroData, opciones = {}) => {
   if (isPublicMacroReadOnly.value) return;
 
   try {
@@ -127,7 +140,22 @@ const saveMacro = async macroData => {
     let serializedMacro = JSON.parse(JSON.stringify(macroData));
     serializedMacro.actions = actionQueryGenerator(serializedMacro.actions);
     await store.dispatch(action, serializedMacro);
-    useAlert(successMessage);
+    // [turuta] "Guardar y actualizar la propiedad": lo que manda la IA de esa
+    // propiedad pasa a ser esta macro, tal como quedo guardada.
+    if (opciones.yPropiedad && propiedad.value) {
+      try {
+        await pasarALaPropiedad(propiedad.value, macroId.value);
+        useAlert(
+          `Macro guardada. La propiedad «${propiedad.value.nombre}» ya manda esto.`
+        );
+      } catch (e) {
+        useAlert(
+          `Macro guardada, pero no se pudo actualizar la propiedad: ${e.message}`
+        );
+      }
+    } else {
+      useAlert(successMessage);
+    }
     router.push({ name: 'macros_wrapper' });
   } catch (error) {
     useAlert(t('MACROS.ERROR'));
@@ -146,6 +174,7 @@ const saveMacro = async macroData => {
       :macro-data="macro"
       :can-manage-public-macros="isAdmin"
       :read-only="isPublicMacroReadOnly"
+      :propiedad="propiedad"
       @update:macro-data="macro = $event"
       @submit="saveMacro"
     />

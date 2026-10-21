@@ -5,6 +5,7 @@ import { useI18n } from 'vue-i18n';
 
 import Button from 'dashboard/components-next/button/Button.vue';
 import { BaseTableRow, BaseTableCell } from 'dashboard/components-next/table';
+import { rutaDeLaPropiedad } from 'dashboard/turuta/macrosDePropiedades'; // [turuta]
 
 const props = defineProps({
   macro: {
@@ -15,8 +16,25 @@ const props = defineProps({
     type: Boolean,
     default: true,
   },
+  // [turuta] La propiedad de la que es esta macro, si es de una (22/10).
+  propiedad: {
+    type: Object,
+    default: null,
+  },
+  accountId: {
+    type: [Number, String],
+    default: null,
+  },
 });
+
 defineEmits(['delete']);
+// [turuta]
+const textoPropiedad = computed(() =>
+  props.propiedad ? `Propiedad · ${props.propiedad.nombre}` : ''
+);
+const tituloPropiedad = computed(() =>
+  props.propiedad ? 'Es la macro de esta propiedad: abrirla en Propiedades' : ''
+);
 const { t } = useI18n();
 
 const createdByName = computed(() => {
@@ -53,6 +71,17 @@ const editTooltip = computed(() =>
         <span class="text-body-main text-n-slate-12 truncate block">
           {{ macro.name }}
         </span>
+        <!-- [turuta] La macro de una propiedad: se ve y se llega a ella. -->
+        <router-link
+          v-if="propiedad"
+          :to="rutaDeLaPropiedad(propiedad, accountId)"
+          :title="tituloPropiedad"
+          class="flex items-center gap-1 mt-0.5 text-xs text-n-slate-11 hover:text-n-blue-11 min-w-0"
+          data-turuta="macro-propiedad"
+        >
+          <span class="flex-shrink-0 i-lucide-building-2 size-3.5" />
+          <span class="truncate">{{ textoPropiedad }}</span>
+        </router-link>
       </BaseTableCell>
 
       <BaseTableCell class="max-w-0">

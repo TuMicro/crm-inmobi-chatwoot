@@ -413,6 +413,33 @@ describe('estadoMacroAsesores', () => {
       estadoMacroAsesores(prop(), { macros, subiendo: true }).motivo
     ).toMatch(/terminen de subir/);
   });
+
+  it('si la macro se edito en Ajustes, pasar sus cambios aqui o volver a poner esto', () => {
+    const conFirma = { ...macros[0], firma: 'nueva' };
+    const p = prop({
+      macroAsesoresId: 12,
+      macroAsesoresAlDia: true,
+      macroAsesoresFirmaMacro: 'vieja',
+    });
+    const e = estadoMacroAsesores(p, { macros: [conFirma] });
+    expect(e.detalle).toMatch(/se editó en Ajustes/);
+    expect(claves(e)).toEqual(['traer', 'actualizar']);
+    // Igual que cuando se guardo: al dia.
+    expect(
+      claves(
+        estadoMacroAsesores(p, { macros: [{ ...conFirma, firma: 'vieja' }] })
+      )
+    ).toEqual(['nueva']);
+    // Guardada antes del 22/10 (sin firma de la macro): no se compara.
+    expect(
+      claves(
+        estadoMacroAsesores(
+          { ...p, macroAsesoresFirmaMacro: null },
+          { macros: [conFirma] }
+        )
+      )
+    ).toEqual(['nueva']);
+  });
 });
 
 describe('los botones de la macro y el resumen para elegirla', () => {

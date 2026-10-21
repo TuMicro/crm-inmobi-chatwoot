@@ -23,7 +23,14 @@ import inboxMixin, { INBOX_FEATURES } from 'shared/mixins/inboxMixin';
 // utils
 import { emitter } from 'shared/helpers/mitt';
 import { getTypingUsersText } from '../../../helper/commons';
-import { TEXTO_IA_ENVIANDO, iaEnviando } from 'dashboard/turuta/iaEnviando';
+import {
+  TEXTO_IA_ENVIANDO,
+  TEXTO_TOAST_IA,
+  TEXTO_TOAST_IA_FIN,
+  iaEnviando,
+  iaEnviandoPorMensajes,
+} from 'dashboard/turuta/iaEnviando';
+import { useAlert } from 'dashboard/composables';
 import { calculateScrollTop } from './helpers/scrollTopCalculationHelper';
 import { LocalStorage } from 'shared/helpers/localStorage';
 import {
@@ -92,6 +99,7 @@ export default {
       // [turuta] El reloj del aviso "La IA esta enviando la ficha".
       turutaAhora: Date.now(),
       turutaReloj: null,
+      turutaClaveAviso: null,
     };
   },
 
@@ -130,9 +138,13 @@ export default {
       const userList = this.typingUsersList;
       return userList.length !== 0;
     },
-    // [turuta] La IA esta mandando una ficha en este chat (turuta/iaEnviando.js).
+    // [turuta] La IA esta mandando una ficha en este chat (turuta/iaEnviando.js):
+    // por la marca de la API o, si no llega, por sus mensajes.
     turutaIaEnviando() {
-      return iaEnviando(this.currentChat, this.turutaAhora);
+      return (
+        iaEnviando(this.currentChat, this.turutaAhora) ||
+        iaEnviandoPorMensajes(this.currentChat?.messages, this.turutaAhora)
+      );
     },
     turutaTextoIaEnviando() {
       return TEXTO_IA_ENVIANDO;
@@ -271,6 +283,15 @@ export default {
   },
 
   watch: {
+    // [turuta] El aviso de abajo mientras la IA manda una ficha, como el de
+    // las macros (22/10). Al cambiar de chat se quita sin decir nada.
+    turutaIaEnviando(enviando) {
+      if (enviando) this.turutaAbrirAvisoIa();
+      else this.turutaCerrarAvisoIa(true);
+    },
+    'currentChat.id'() {
+      this.turutaCerrarAvisoIa(false);
+    },
     currentChat(newChat, oldChat) {
       if (newChat.id === oldChat.id) {
         return;
@@ -298,16 +319,34 @@ export default {
     // [turuta] Para que el aviso de la IA se vaya solo si la API no lo borra.
     this.turutaReloj = setInterval(() => {
       this.turutaAhora = Date.now();
-    }, 5000);
+    }, 1000);
   },
 
   unmounted() {
     this.removeBusListeners();
     this.removeScrollListener();
     clearInterval(this.turutaReloj);
+    this.turutaCerrarAvisoIa(false);
   },
 
   methods: {
+    // [turuta] Ver turutaIaEnviando.
+    turutaAbrirAvisoIa() {
+      if (this.turutaClaveAviso) return;
+      this.turutaClaveAviso = `ia-ficha-${this.currentChat?.id}-${Date.now()}`;
+      useAlert(TEXTO_TOAST_IA, {
+        turutaClave: this.turutaClaveAviso,
+        duration: 3 * 60 * 1000,
+      });
+    },
+    turutaCerrarAvisoIa(terminada) {
+      if (!this.turutaClaveAviso) return;
+      emitter.emit('turutaCerrarToast', this.turutaClaveAviso);
+      this.turutaClaveAviso = null;
+      if (terminada) {
+        useAlert(TEXTO_TOAST_IA_FIN, { turutaTipo: 'exito', duration: 2000 });
+      }
+    },
     async fetchSuggestions() {
       // start empty, this ensures that the label suggestions are not shown
       this.labelSuggestions = [];

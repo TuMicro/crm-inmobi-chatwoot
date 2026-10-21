@@ -25,9 +25,23 @@ export default {
       type: Boolean,
       default: false,
     },
+    // [turuta] La propiedad de la que es esta macro, si es de una (22/10).
+    propiedad: {
+      type: Object,
+      default: null,
+    },
   },
   emits: ['update:name', 'update:visibility', 'submit'],
   computed: {
+    // [turuta] Textos de la caja de la propiedad.
+    turutaTextoPropiedad() {
+      return this.propiedad
+        ? `Es la macro de la propiedad «${this.propiedad.nombre}». Guardar aquí no cambia lo que manda la IA de esa propiedad; para que también lo mande, usa el segundo botón.`
+        : '';
+    },
+    turutaBotonPropiedad() {
+      return 'Guardar y actualizar también la propiedad';
+    },
     isPublicVisibilityDisabled() {
       return !this.canManagePublicMacros;
     },
@@ -158,6 +172,29 @@ export default {
         :disabled="readOnly"
         @click="$emit('submit')"
       />
+      <!-- [turuta] La macro de una propiedad: pasar los cambios tambien a lo
+           que manda la IA (22/10). -->
+      <template v-if="propiedad">
+        <div
+          class="mt-3 flex items-start p-2 gap-2 rounded-md bg-n-blue-2 text-n-blue-11"
+          data-turuta="macro-de-propiedad"
+        >
+          <Icon
+            icon="i-lucide-building-2"
+            class="flex-shrink-0 mt-0.5 size-4"
+          />
+          <p class="mb-0 text-body-para">{{ turutaTextoPropiedad }}</p>
+        </div>
+        <NextButton
+          blue
+          faded
+          :label="turutaBotonPropiedad"
+          class="w-full mt-2"
+          :disabled="readOnly"
+          data-turuta="guardar-y-propiedad"
+          @click="$emit('submit', { yPropiedad: true })"
+        />
+      </template>
     </div>
   </div>
 </template>

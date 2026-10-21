@@ -24,6 +24,11 @@ export default {
       type: Boolean,
       default: false,
     },
+    // [turuta] La propiedad de la que es esta macro, si es de una (22/10).
+    propiedad: {
+      type: Object,
+      default: null,
+    },
   },
   emits: ['submit'],
   setup() {
@@ -94,14 +99,15 @@ export default {
       this.errors = this.removeObjectProperty(this.errors, `action_${index}`);
       this.macro.actions.splice(index, 1);
     },
-    submit() {
+    // [turuta] opciones: { yPropiedad } desde el boton de la propiedad.
+    submit(opciones = {}) {
       this.errors = validateActions(this.macro.actions);
       if (Object.keys(this.errors).length !== 0) return;
 
       this.v$.$touch();
       if (this.v$.$invalid) return;
 
-      this.$emit('submit', this.macro);
+      this.$emit('submit', this.macro, opciones);
     },
     resetNode(index) {
       // remove that index specifically
@@ -139,6 +145,7 @@ export default {
         :macro-visibility="macro.visibility"
         :can-manage-public-macros="canManagePublicMacros"
         :read-only="readOnly"
+        :propiedad="propiedad"
         @update:name="updateName"
         @update:visibility="updateVisibility"
         @submit="submit"

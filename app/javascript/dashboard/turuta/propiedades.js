@@ -493,6 +493,33 @@ export function estadoMacroAsesores(p, { macros = [], sinGuardar, subiendo }) {
   }
   const macro = macros.find(m => String(m.id) === String(p.macroAsesoresId));
   const titulo = macro ? `Macro «${macro.nombre}»` : 'Macro para los asesores';
+  // La editaron en Ajustes → Macros (22/10): ya no es lo que se guardo, y por
+  // tanto no manda lo mismo que la IA. O sus cambios pasan a la propiedad, o
+  // se vuelve a poner en ella lo de la propiedad.
+  const macroEditada =
+    !!macro?.firma &&
+    !!p.macroAsesoresFirmaMacro &&
+    macro.firma !== p.macroAsesoresFirmaMacro;
+  if (macroEditada && !sinGuardar) {
+    return {
+      titulo,
+      detalle:
+        'La macro se editó en Ajustes → Macros y ya no manda lo mismo que la IA. ¿Pasas esos cambios a la propiedad, o vuelves a poner en la macro lo de aquí?',
+      acciones: [
+        {
+          clave: 'traer',
+          label: 'Pasar los cambios de la macro aquí',
+          destacado: true,
+        },
+        {
+          clave: 'actualizar',
+          label: 'Volver a poner esto en la macro',
+          destacado: false,
+        },
+      ],
+      motivo,
+    };
+  }
   if (p.macroAsesoresAlDia && !sinGuardar) {
     return {
       titulo,
