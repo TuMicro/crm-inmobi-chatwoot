@@ -534,21 +534,18 @@ export function estadoMacroAsesores(p, { macros = [], sinGuardar, subiendo }) {
       motivo,
     };
   }
+  // Con cambios, un solo boton (22/10): pasan a la macro de la propiedad.
+  // Otra macro aparte, desde «Copiar en una nueva macro» cuando esta al dia.
   return {
     titulo,
     detalle: sinGuardar
-      ? 'Hay cambios sin guardar. ¿Los pasas a esta macro o creas otra? Se guardan antes.'
-      : 'Cambió la ficha o lo que va detrás. ¿Actualizas esta macro o creas otra?',
+      ? 'Hay cambios sin guardar. Se guardan y pasan a esta macro.'
+      : 'Cambió la ficha o lo que va detrás: la macro ya no manda lo mismo que la IA.',
     acciones: [
       {
         clave: 'actualizar',
-        label: 'Guardar cambios en la misma macro',
+        label: 'Guardar cambios en la macro',
         destacado: true,
-      },
-      {
-        clave: 'nueva',
-        label: 'Guardar cambios en una nueva macro',
-        destacado: false,
       },
     ],
     motivo,

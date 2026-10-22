@@ -389,7 +389,7 @@ describe('estadoMacroAsesores', () => {
     ).toMatch(/se guardan antes/);
   });
 
-  it('al dia: solo crear otra; desactualizada: actualizar esta o crear otra', () => {
+  it('al dia: solo crear otra; desactualizada: solo actualizar esta', () => {
     const alDia = prop({ macroAsesoresId: 12, macroAsesoresAlDia: true });
     const e = estadoMacroAsesores(alDia, { macros });
     expect(e.titulo).toBe('Macro «JR-001 · Dúplex»');
@@ -397,12 +397,11 @@ describe('estadoMacroAsesores', () => {
     const vieja = prop({ macroAsesoresId: 12, macroAsesoresAlDia: false });
     expect(claves(estadoMacroAsesores(vieja, { macros }))).toEqual([
       'actualizar',
-      'nueva',
     ]);
-    // Al dia pero con cambios sin guardar: tambien pregunta.
+    // Al dia pero con cambios sin guardar: tambien, un solo boton (22/10).
     expect(
       claves(estadoMacroAsesores(alDia, { macros, sinGuardar: true }))
-    ).toEqual(['actualizar', 'nueva']);
+    ).toEqual(['actualizar']);
     expect(estadoMacroAsesores(vieja, { macros: [] }).titulo).toBe(
       'Macro para los asesores'
     );
@@ -443,14 +442,11 @@ describe('estadoMacroAsesores', () => {
 });
 
 describe('los botones de la macro y el resumen para elegirla', () => {
-  it('guardar en la misma o en una nueva', () => {
+  it('con cambios, un solo boton: guardarlos en la macro', () => {
     const vieja = prop({ macroAsesoresId: 12, macroAsesoresAlDia: false });
     expect(
       estadoMacroAsesores(vieja, { macros: [] }).acciones.map(a => a.label)
-    ).toEqual([
-      'Guardar cambios en la misma macro',
-      'Guardar cambios en una nueva macro',
-    ]);
+    ).toEqual(['Guardar cambios en la macro']);
   });
 
   it('una macro en una linea', () => {

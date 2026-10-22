@@ -702,7 +702,7 @@ async function cargarMacro(macroId) {
     useAlert(
       faltan
         ? `Macro «${r.macro?.nombre}» cargada, menos: ${faltan}`
-        : `Macro «${r.macro?.nombre}» cargada: edítala aquí y guarda los cambios en la misma macro.`
+        : `Macro «${r.macro?.nombre}» cargada: edítala aquí y guarda los cambios en la macro.`
     );
     return true;
   } catch (e) {
@@ -1759,7 +1759,7 @@ const TITULO = 'mb-0 text-base font-medium text-n-slate-12';
       :description="
         sinGuardar
           ? 'Su contenido reemplaza la ficha y lo que va detrás. Los cambios sin guardar se pierden.'
-          : 'Su contenido reemplaza la ficha y lo que va detrás: el primer mensaje pasa a ser la ficha y el resto, la lista. Luego lo editas aquí y «Guardar cambios en la misma macro» la actualiza.'
+          : 'Su contenido reemplaza la ficha y lo que va detrás: el primer mensaje pasa a ser la ficha y el resto, la lista. Luego lo editas aquí y «Guardar cambios en la macro» la actualiza.'
       "
       confirm-button-label="Cargar"
       cancel-button-label="Cancelar"
