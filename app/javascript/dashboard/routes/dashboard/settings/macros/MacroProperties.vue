@@ -36,11 +36,11 @@ export default {
     // [turuta] Textos de la caja de la propiedad.
     turutaTextoPropiedad() {
       return this.propiedad
-        ? `Es la macro de la propiedad «${this.propiedad.nombre}». Guardar aquí no cambia lo que manda la IA de esa propiedad; para que también lo mande, usa el segundo botón.`
+        ? `Es la macro de la propiedad «${this.propiedad.nombre}». Al guardar, la ficha de la propiedad (lo que manda la IA) pasa a ser esta macro.`
         : '';
     },
     turutaBotonPropiedad() {
-      return 'Guardar y actualizar también la propiedad';
+      return 'Guardar y actualizar también la ficha de la propiedad';
     },
     isPublicVisibilityDisabled() {
       return !this.canManagePublicMacros;
@@ -164,19 +164,12 @@ export default {
       </div>
     </div>
     <div class="mt-4 w-full">
-      <NextButton
-        blue
-        solid
-        :label="$t('MACROS.HEADER_BTN_TXT_SAVE')"
-        class="w-full"
-        :disabled="readOnly"
-        @click="$emit('submit')"
-      />
-      <!-- [turuta] La macro de una propiedad: pasar los cambios tambien a lo
-           que manda la IA (22/10). -->
+      <!-- [turuta] La macro de una propiedad: un solo boton, que guarda la
+           macro y la pasa a la ficha de la propiedad, lo que manda la IA
+           (22/10). Asi no se quedan distintas. -->
       <template v-if="propiedad">
         <div
-          class="mt-3 flex items-start p-2 gap-2 rounded-md bg-n-blue-2 text-n-blue-11"
+          class="mb-3 flex items-start p-2 gap-2 rounded-md bg-n-blue-2 text-n-blue-11"
           data-turuta="macro-de-propiedad"
         >
           <Icon
@@ -187,14 +180,23 @@ export default {
         </div>
         <NextButton
           blue
-          faded
+          solid
           :label="turutaBotonPropiedad"
-          class="w-full mt-2"
+          class="w-full"
           :disabled="readOnly"
           data-turuta="guardar-y-propiedad"
           @click="$emit('submit', { yPropiedad: true })"
         />
       </template>
+      <NextButton
+        v-else
+        blue
+        solid
+        :label="$t('MACROS.HEADER_BTN_TXT_SAVE')"
+        class="w-full"
+        :disabled="readOnly"
+        @click="$emit('submit')"
+      />
     </div>
   </div>
 </template>

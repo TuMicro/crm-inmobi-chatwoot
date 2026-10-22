@@ -79,4 +79,33 @@ describe('MacroProperties.vue', () => {
       'Only administrators can edit public macros.'
     );
   });
+
+  // [turuta] La macro de una propiedad: un solo boton (22/10).
+  describe('la macro de una propiedad', () => {
+    const propiedad = {
+      nombre: 'JR-001 · Dúplex',
+      site: 'joserojas',
+      propertyId: 'p-1',
+    };
+    const botones = wrapper => wrapper.findAll('next-button-stub');
+
+    it('solo el boton que guarda y actualiza la ficha de la propiedad', () => {
+      const wrapper = mountComponent({ propiedad });
+      expect(botones(wrapper)).toHaveLength(1);
+      expect(botones(wrapper)[0].attributes('label')).toBe(
+        'Guardar y actualizar también la ficha de la propiedad'
+      );
+      expect(
+        wrapper.find('[data-turuta="macro-de-propiedad"]').text()
+      ).toContain('JR-001 · Dúplex');
+    });
+
+    it('sin propiedad, el de siempre', () => {
+      const wrapper = mountComponent();
+      expect(botones(wrapper)).toHaveLength(1);
+      expect(wrapper.find('[data-turuta="guardar-y-propiedad"]').exists()).toBe(
+        false
+      );
+    });
+  });
 });
