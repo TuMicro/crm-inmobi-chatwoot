@@ -106,6 +106,21 @@ describe('la configuracion', () => {
     });
   });
 
+  // [turuta] 22/10: el mensaje para propietarios. La API manda las versiones
+  // por defecto si no hay otras: sin tocarlas no se guardan, y siguen al nombre.
+  it('el mensaje para propietarios: sin tocarlo no se manda; cambiarlo, si', () => {
+    expect(CAMPOS.find(c => c.clave === 'mensajesPropietario')?.tipo).toBe(
+      'largo'
+    );
+    const conVersiones = { ...config, mensajesPropietario: 'Hola [nombre]' };
+    const f = formularioDe(conVersiones);
+    expect(f.mensajesPropietario).toBe('Hola [nombre]');
+    expect(cambiosDe(f, conVersiones)).toEqual({});
+    expect(
+      cambiosDe({ ...f, mensajesPropietario: 'Buenas [nombre]' }, conVersiones)
+    ).toEqual({ mensajesPropietario: 'Buenas [nombre]' });
+  });
+
   it('el modelo: vacio es el del servidor; elegir uno lo manda', () => {
     const f = formularioDe(config);
     expect(f.modelo).toBe('');

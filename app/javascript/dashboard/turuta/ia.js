@@ -153,6 +153,14 @@ export const CAMPOS = [
     ayuda: 'Una pregunta y su respuesta por línea. La IA responde con esto.',
     tipo: 'largo',
   },
+  // [turuta] 22/10: lo que escribe a un propietario, en las versiones del equipo.
+  {
+    clave: 'mensajesPropietario',
+    titulo: 'Mensaje para propietarios',
+    ayuda:
+      'Cuando escribe alguien que quiere vender o alquilar su propiedad, la IA le contesta basándose en una de estas versiones (una por párrafo) y la adapta un poco. Lo que va entre corchetes, como [nombre], [tipo de propiedad] o [distrito], lo pone ella. Luego pasa el chat a un asesor. Vacío, vuelven las de por defecto.',
+    tipo: 'largo',
+  },
   {
     clave: 'maxTurnosSinAvance',
     titulo: 'Vueltas antes de pasar a un asesor',
