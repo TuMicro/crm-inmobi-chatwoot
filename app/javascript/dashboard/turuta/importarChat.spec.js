@@ -174,6 +174,16 @@ describe('contactoDelArchivo y negocioProbable', () => {
     expect(negocioProbable(remitentes, null)).toBeNull();
   });
 
+  it('quien exporto ("Tú") es la inmobiliaria, aunque el otro sea un numero', () => {
+    const remitentes = [
+      { nombre: 'Tú', cuantos: 19 },
+      { nombre: '+51 914 570 370', cuantos: 12 },
+    ];
+    expect(negocioProbable(remitentes, null)).toBe('Tú');
+    expect(negocioProbable([...remitentes].reverse(), null)).toBe('Tú');
+    expect(negocioProbable([{ nombre: 'You', cuantos: 1 }], null)).toBe('You');
+  });
+
   it('sin nombre de fichero, el cliente es el que sale con su numero', () => {
     const remitentes = [
       { nombre: '+1 (508) 372-0652', cuantos: 5 },

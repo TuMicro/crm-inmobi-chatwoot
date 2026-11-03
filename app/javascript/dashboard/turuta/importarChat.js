@@ -222,13 +222,22 @@ export function telefonoE164(entrada) {
   return /^\+[1-9]\d{7,14}$/.test(e164) ? e164 : null;
 }
 
+// Como sale en la exportacion quien la hizo, segun el idioma del celular.
+const QUIEN_EXPORTA = /^(tú|tu|yo|you)$/i;
+
 /**
- * Quien es la inmobiliaria, en un chat de dos: el remitente que NO es el
- * contacto del nombre del fichero; o, si el fichero no lo dice, el que no es
- * un numero de telefono (un contacto sin guardar sale con su numero, y ese es
- * el cliente). Null si no se puede saber; entonces lo elige quien importa.
+ * Quien es la inmobiliaria, en un chat de dos. Por orden:
+ *   1. quien exporto, que sale como "Tú" (o "You"): exporta la inmobiliaria,
+ *      desde su celular (03/11/2026, los chats de MadHouse);
+ *   2. el remitente que NO es el contacto del nombre del fichero;
+ *   3. el que no es un numero de telefono (un contacto sin guardar sale con
+ *      su numero, y ese es el cliente).
+ * Con un solo remitente, el si es "Tú". Null si no se puede saber; entonces
+ * lo elige quien importa.
  */
 export function negocioProbable(remitentes, contacto) {
+  const exporta = remitentes.find(r => QUIEN_EXPORTA.test(r.nombre.trim()));
+  if (exporta) return exporta.nombre;
   if (remitentes.length !== 2) return null;
   const [x, y] = remitentes;
   if (contacto && x.nombre === contacto) return y.nombre;

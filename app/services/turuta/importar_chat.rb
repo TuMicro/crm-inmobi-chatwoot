@@ -133,11 +133,16 @@ module Turuta
     # Enteros y no los nombres de los enum: incoming 0 / outgoing 1, text 0,
     # sent 0 (message.rb). Lo de la inmobiliaria sale firmado por el asesor
     # elegido, que es quien lo atendia en su celular.
+    #
+    # source_id propio: en una bandeja de WhatsApp, Chatwoot solo enseña el
+    # visto de "enviado" si el mensaje tiene el id que da Meta, y sin el los
+    # importados salian con el reloj de "enviandose" (MessageMeta.vue). El
+    # prefijo no choca con los de Meta (wamid...).
     def fila_de((fecha, entrante, texto), inbox, conversacion, contacto, asesor)
       {
         account_id: @account.id, inbox_id: inbox.id, conversation_id: conversacion.id,
         message_type: entrante ? 0 : 1, content_type: 0, status: 0, private: false,
-        content: texto,
+        content: texto, source_id: "turuta-importado:#{SecureRandom.uuid}",
         sender_type: entrante ? 'Contact' : asesor && 'User',
         sender_id: entrante ? contacto.id : asesor&.id,
         created_at: fecha, updated_at: fecha
