@@ -5,6 +5,7 @@ import {
   mensajesParaImportar,
   negocioProbable,
   ordenDeFecha,
+  SOLO_CLIENTE,
   telefonoE164,
   textoDelZip,
 } from './importarChat';
@@ -104,6 +105,41 @@ describe('analizarChat', () => {
     expect(r.mensajes[0].fecha).toBe('2026-11-03 17:00:00');
   });
 
+  it('lee el iPhone en ingles de MadHouse: mes primero aunque ningun dia pase de 12', () => {
+    // El formato de los chats que exporto MadHouse (docs/chats, 03/11/2026).
+    const r = analizarChat(
+      [
+        'Los mensajes y las llamadas están cifrados de extremo a extremo.',
+        '[9/10/26, 11:03:48 PM] +1 (508) 372-0652: Hola, ¿sigue disponible?',
+        '[9/10/26, 11:03:49 PM] - Los mensajes y las llamadas están cifrados de extremo a extremo. Toca para obtener más información.',
+        '[9/11/26, 9:15:02 AM] José Rojas: Sí, ¿lo quieres visitar?',
+      ].join('\n')
+    );
+    expect(r.orden).toBe('MDY');
+    expect(r.mensajes.map(m => m.fecha)).toEqual([
+      '2026-09-10 23:03:48',
+      '2026-09-11 09:15:02',
+    ]);
+  });
+
+  it('con fechas ambiguas, gana la lectura en la que no retroceden', () => {
+    // 9/12 -> 10/1: en dia primero seria del 9 de diciembre al 10 de enero.
+    const r = analizarChat(
+      ['[9/12/26, 10:00:00] Juan: Hola', '[10/1/26, 10:00:00] Juan: Sigo'].join(
+        '\n'
+      )
+    );
+    expect(r.orden).toBe('MDY');
+  });
+
+  it('"p. m." con fechas ambiguas es dia primero, y se puede forzar', () => {
+    const texto = '3/11/26, 5:00 p. m. - Juan: Hola';
+    expect(analizarChat(texto).mensajes[0].fecha).toBe('2026-11-03 17:00:00');
+    expect(analizarChat(texto, { orden: 'MDY' }).mensajes[0].fecha).toBe(
+      '2026-03-11 17:00:00'
+    );
+  });
+
   it('no inventa mensajes con un fichero que no es un chat', () => {
     const r = analizarChat('hola\nesto no es un chat');
     expect(r.mensajes).toEqual([]);
@@ -137,6 +173,15 @@ describe('contactoDelArchivo y negocioProbable', () => {
     expect(negocioProbable(remitentes, 'Otro')).toBeNull();
     expect(negocioProbable(remitentes, null)).toBeNull();
   });
+
+  it('sin nombre de fichero, el cliente es el que sale con su numero', () => {
+    const remitentes = [
+      { nombre: '+1 (508) 372-0652', cuantos: 5 },
+      { nombre: 'José Rojas', cuantos: 4 },
+    ];
+    expect(negocioProbable(remitentes, null)).toBe('José Rojas');
+    expect(negocioProbable([remitentes[0]], null)).toBeNull();
+  });
 });
 
 describe('telefonoE164', () => {
@@ -155,6 +200,12 @@ describe('mensajesParaImportar', () => {
     const m = mensajesParaImportar(r.mensajes, 'MadHouse Inmobiliaria');
     expect(m.map(x => x.entrante)).toEqual([true, false, true, false]);
     expect(Object.keys(m[0])).toEqual(['fecha', 'entrante', 'texto']);
+  });
+
+  it('si solo escribio el cliente, todo es entrante', () => {
+    const r = analizarChat(ANDROID_24H);
+    const m = mensajesParaImportar(r.mensajes, SOLO_CLIENTE);
+    expect(m.every(x => x.entrante)).toBe(true);
   });
 });
 

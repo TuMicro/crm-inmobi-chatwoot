@@ -8,12 +8,16 @@
 //   Android: 3/11/26, 17:00 - Kefrin: Hola
 //            3/11/26, 5:00 p. m. - Kefrin: Hola
 //   iPhone:  [3/11/26, 17:00:12] Kefrin: Hola
+//            [11/3/26, 5:00:12 PM] Kefrin: Hola   (en ingles: mes primero)
 //
 // Un mensaje de varias lineas sigue en las lineas siguientes, sin fecha. Las
 // lineas del sistema ("Los mensajes ... estan cifrados") no tienen remitente.
 
 const CABECERA =
-  /^\[?(\d{1,2})[/.-](\d{1,2})[/.-](\d{2,4}),?\s+(\d{1,2}):(\d{2})(?::(\d{2}))?(?:\s*([ap])\.?\s*m\.?)?\]?\s*(?:-\s+)?(.*)$/i;
+  /^\[?(\d{1,2})[/.-](\d{1,2})[/.-](\d{2,4}),?\s+(\d{1,2}):(\d{2})(?::(\d{2}))?(?:\s*([ap]\.?\s*m\.?))?\]?\s*(?:-\s+)?(.*)$/i;
+
+/** Valor de "¿Quien es la inmobiliaria?" cuando solo escribio el cliente. */
+export const SOLO_CLIENTE = '__solo_cliente__';
 
 // Avisos que WhatsApp pone a nombre del chat y que no son mensajes de nadie.
 const AVISOS_DEL_SISTEMA = [
@@ -51,15 +55,24 @@ export function limpiarLinea(linea) {
 }
 
 /**
- * DMY o MDY. Un celular en español escribe 3/11/26 (dia primero) y uno en
- * ingles de EE. UU. 11/3/26. Se decide con el fichero entero: si algun primer
- * numero pasa de 12 es el dia; si algun segundo pasa de 12, el primero es el
- * mes. Si nada lo dice, dia primero, que es lo de Peru.
+ * DMY o MDY. Un celular en español escribe 3/11/26 (dia primero) y un iPhone
+ * en ingles de EE. UU. 11/3/26 (mes primero): asi venian los chats que
+ * exporto MadHouse (03/11/2026). Se decide con el fichero entero:
+ *   1. si algun primer numero pasa de 12 es el dia; si algun segundo, el mes;
+ *   2. si no, la lectura en la que las fechas retroceden menos veces (un chat
+ *      exportado va en orden);
+ *   3. si empatan, "AM"/"PM" a la inglesa (sin puntos) es EE. UU.; "p. m." o
+ *      las 24 h, dia primero.
+ * Si aun asi sale mal, la pagina deja elegirlo a mano.
  */
-export function ordenDeFecha(pares) {
+export function ordenDeFecha(pares, pistas = {}) {
   if (pares.some(([a]) => a > 12)) return 'DMY';
   if (pares.some(([, b]) => b > 12)) return 'MDY';
-  return 'DMY';
+  const { retrocesosDMY = 0, retrocesosMDY = 0, ingles = false } = pistas;
+  if (retrocesosDMY !== retrocesosMDY) {
+    return retrocesosDMY < retrocesosMDY ? 'DMY' : 'MDY';
+  }
+  return ingles ? 'MDY' : 'DMY';
 }
 
 const dos = n => String(n).padStart(2, '0');
@@ -72,7 +85,7 @@ function fechaDe(m, orden) {
   let anio = Number(m[3]);
   if (anio < 100) anio += 2000;
   let hora = Number(m[4]);
-  const ampm = (m[7] || '').toLowerCase();
+  const ampm = (m[7] || '').charAt(0).toLowerCase();
   if (ampm === 'p' && hora < 12) hora += 12;
   if (ampm === 'a' && hora === 12) hora = 0;
   if (mes < 1 || mes > 12 || dia < 1 || dia > 31 || hora > 23) return null;
@@ -87,20 +100,41 @@ function textoDelMensaje(texto) {
   return t;
 }
 
+function retrocesos(cabeceras, orden) {
+  let n = 0;
+  let anterior = '';
+  cabeceras.forEach(m => {
+    const f = m && fechaDe(m, orden);
+    if (!f) return;
+    if (anterior && f < anterior) n += 1;
+    anterior = f;
+  });
+  return n;
+}
+
 /**
  * Lee el texto de una exportacion. Devuelve los mensajes en orden, con
  * fecha local "AAAA-MM-DD HH:MM:SS" (la del celular: la API la pasa a la zona
  * del cliente), quien lo mando y el texto; los remitentes con cuantos
  * mensajes mando cada uno; y cuantas lineas con fecha no se entendieron.
+ * Con { orden: 'DMY' | 'MDY' } se fuerza el orden de las fechas.
  */
-export function analizarChat(texto) {
+export function analizarChat(texto, { orden: forzado } = {}) {
   const lineas = String(texto ?? '')
     .split('\n')
     .map(limpiarLinea);
   const cabeceras = lineas.map(l => CABECERA.exec(l));
-  const orden = ordenDeFecha(
-    cabeceras.filter(Boolean).map(m => [Number(m[1]), Number(m[2])])
-  );
+  const conFecha = cabeceras.filter(Boolean);
+  const orden =
+    forzado ||
+    ordenDeFecha(
+      conFecha.map(m => [Number(m[1]), Number(m[2])]),
+      {
+        retrocesosDMY: retrocesos(cabeceras, 'DMY'),
+        retrocesosMDY: retrocesos(cabeceras, 'MDY'),
+        ingles: conFecha.some(m => /^[ap]m$/i.test(m[7] || '')),
+      }
+    );
 
   const mensajes = [];
   let actual = null;
@@ -171,18 +205,6 @@ export function contactoDelArchivo(nombreArchivo) {
 }
 
 /**
- * Quien es la inmobiliaria: en un chat de dos, el remitente que NO es el
- * contacto del nombre del fichero. Null si no se puede saber; entonces lo
- * elige quien importa.
- */
-export function negocioProbable(remitentes, contacto) {
-  if (!contacto || remitentes.length !== 2) return null;
-  const otro = remitentes.find(r => r.nombre !== contacto);
-  const esta = remitentes.some(r => r.nombre === contacto);
-  return esta && otro ? otro.nombre : null;
-}
-
-/**
  * El numero en formato E.164. Acepta espacios y guiones; un celular de Peru de
  * 9 digitos sin prefijo tambien vale ("966 723 347" -> "+51966723347"). Null
  * si no parece un telefono. Lo mismo que telefonoE164 de la API
@@ -198,6 +220,23 @@ export function telefonoE164(entrada) {
     if (digitos.length === 9 && digitos.startsWith('9')) e164 = `+51${digitos}`;
   }
   return /^\+[1-9]\d{7,14}$/.test(e164) ? e164 : null;
+}
+
+/**
+ * Quien es la inmobiliaria, en un chat de dos: el remitente que NO es el
+ * contacto del nombre del fichero; o, si el fichero no lo dice, el que no es
+ * un numero de telefono (un contacto sin guardar sale con su numero, y ese es
+ * el cliente). Null si no se puede saber; entonces lo elige quien importa.
+ */
+export function negocioProbable(remitentes, contacto) {
+  if (remitentes.length !== 2) return null;
+  const [x, y] = remitentes;
+  if (contacto && x.nombre === contacto) return y.nombre;
+  if (contacto && y.nombre === contacto) return x.nombre;
+  const xEsTelefono = !!telefonoE164(x.nombre);
+  const yEsTelefono = !!telefonoE164(y.nombre);
+  if (xEsTelefono === yEsTelefono) return null;
+  return xEsTelefono ? y.nombre : x.nombre;
 }
 
 /** Los mensajes como los pide la importacion: entrante = lo escribio el cliente. */

@@ -27,9 +27,15 @@ import {
   contactoDelArchivo,
   mensajesParaImportar,
   negocioProbable,
+  SOLO_CLIENTE,
   telefonoE164,
   textoDelZip,
 } from './importarChat';
+
+const FORMATOS = [
+  { value: 'DMY', label: 'Día/mes/año (celular en español)' },
+  { value: 'MDY', label: 'Mes/día/año (celular en inglés)' },
+];
 
 const route = useRoute();
 const store = useStore();
@@ -44,6 +50,8 @@ const errorOpciones = ref('');
 const archivo = ref(null);
 const leyendo = ref(false);
 const errorArchivo = ref('');
+const texto = ref('');
+const formato = ref('DMY');
 const analisis = ref(null);
 const huella = ref('');
 
@@ -110,12 +118,16 @@ const opcionesAsesor = computed(() =>
 const opcionesEtapa = computed(() =>
   (opciones.value?.etapas || []).map(e => ({ value: e.id, label: e.nombre }))
 );
-const opcionesNegocio = computed(() =>
-  (analisis.value?.remitentes || []).map(r => ({
+const opcionesNegocio = computed(() => [
+  ...(analisis.value?.remitentes || []).map(r => ({
     value: r.nombre,
     label: `${r.nombre} (${r.cuantos} ${r.cuantos === 1 ? 'mensaje' : 'mensajes'})`,
-  }))
-);
+  })),
+  {
+    value: SOLO_CLIENTE,
+    label: 'Ninguno: todos los mensajes son del cliente',
+  },
+]);
 
 const telefonoNormalizado = computed(() => telefonoE164(telefono.value));
 const muestra = computed(() => {
@@ -139,10 +151,10 @@ const fechaCorta = f => {
   return d ? `${dia}/${m}/${a} ${(h || '').slice(0, 5)}` : '';
 };
 
-async function sha256(texto) {
+async function sha256(contenido) {
   const bytes = await crypto.subtle.digest(
     'SHA-256',
-    new TextEncoder().encode(texto)
+    new TextEncoder().encode(contenido)
   );
   return [...new Uint8Array(bytes)]
     .map(b => b.toString(16).padStart(2, '0'))
@@ -150,6 +162,7 @@ async function sha256(texto) {
 }
 
 function limpiar() {
+  texto.value = '';
   analisis.value = null;
   huella.value = '';
   negocio.value = '';
@@ -159,6 +172,18 @@ function limpiar() {
   hecho.value = null;
 }
 
+// El nombre y el telefono del cliente salen del otro remitente (si es un
+// contacto sin guardar, su nombre es su numero) o del nombre del fichero.
+function proponerCliente() {
+  const contacto = contactoDelArchivo(archivo.value?.name);
+  const cliente = negocio.value
+    ? (analisis.value?.remitentes || []).find(x => x.nombre !== negocio.value)
+    : null;
+  nombre.value = contacto || cliente?.nombre || '';
+  const tel = telefonoE164(cliente?.nombre) || telefonoE164(contacto);
+  if (tel) telefono.value = tel;
+}
+
 async function elegirArchivo(evento) {
   limpiar();
   const f = evento.target.files?.[0];
@@ -166,25 +191,24 @@ async function elegirArchivo(evento) {
   if (!f) return;
   leyendo.value = true;
   try {
-    const texto = /\.zip$/i.test(f.name)
+    const leido = /\.zip$/i.test(f.name)
       ? await textoDelZip(await f.arrayBuffer())
       : await f.text();
-    const r = analizarChat(texto);
+    const r = analizarChat(leido);
     if (!r.mensajes.length) {
       throw new Error(
         'No parece un chat exportado de WhatsApp: no se encontró ningún mensaje.'
       );
     }
+    texto.value = leido;
+    formato.value = r.orden;
     analisis.value = r;
-    huella.value = await sha256(texto);
-    const contacto = contactoDelArchivo(f.name);
+    huella.value = await sha256(leido);
+    // Si no se sabe quien es la inmobiliaria, se queda sin elegir: mejor que
+    // lo diga quien importa que adivinarlo y cargar el chat al reves.
     negocio.value =
-      negocioProbable(r.remitentes, contacto) ||
-      (r.remitentes.length === 2 ? r.remitentes[1].nombre : '');
-    const cliente = r.remitentes.find(x => x.nombre !== negocio.value);
-    nombre.value = contacto || cliente?.nombre || '';
-    const tel = telefonoE164(cliente?.nombre) || telefonoE164(contacto);
-    if (tel) telefono.value = tel;
+      negocioProbable(r.remitentes, contactoDelArchivo(f.name)) || '';
+    proponerCliente();
   } catch (e) {
     errorArchivo.value = e.message;
   } finally {
@@ -192,13 +216,12 @@ async function elegirArchivo(evento) {
   }
 }
 
-watch(negocio, nuevo => {
-  // Si cambia quien es la inmobiliaria, el nombre del cliente es el otro.
-  const cliente = (analisis.value?.remitentes || []).find(
-    x => x.nombre !== nuevo
-  );
-  if (cliente && !contactoDelArchivo(archivo.value?.name)) {
-    nombre.value = cliente.nombre;
+watch(negocio, proponerCliente);
+
+// Si las fechas del resumen salen al reves, se elige el formato a mano.
+watch(formato, nuevo => {
+  if (texto.value && analisis.value?.orden !== nuevo) {
+    analisis.value = analizarChat(texto.value, { orden: nuevo });
   }
 });
 
@@ -370,6 +393,12 @@ const TARJETA =
             </p>
           </div>
 
+          <CampoSelect
+            v-model="formato"
+            label="Formato de las fechas"
+            ayuda="Mira las fechas de arriba: si salen al revés (un mes que no toca), cámbialo."
+            :options="FORMATOS"
+          />
           <CampoSelect
             v-model="negocio"
             label="¿Quién es la inmobiliaria?"
