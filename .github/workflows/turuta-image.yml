@@ -50,6 +50,9 @@ jobs:
           ruby -c app/services/conversations/filter_service.rb
           ruby -c app/services/turuta/contact_attribute_filters.rb
           ruby -c app/services/turuta/marca_por_dominio.rb
+          ruby -c app/services/turuta/importar_chat.rb
+          ruby -c app/controllers/api/v1/accounts/turuta_importaciones_controller.rb
+          ruby -c config/routes.rb
           ruby -c app/services/filters/custom_attribute_filter_helper.rb
           ruby script/turuta/prueba_filtros_no_igual.rb
           ruby -e '

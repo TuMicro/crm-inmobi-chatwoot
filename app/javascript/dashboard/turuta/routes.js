@@ -5,6 +5,7 @@ import EmbudoPage from './EmbudoPage.vue';
 import PropiedadesPage from './PropiedadesPage.vue';
 import IaPage from './IaPage.vue';
 import ReiniciarLeadPage from './ReiniciarLeadPage.vue';
+import ImportarChatPage from './ImportarChatPage.vue';
 import CalendarioPage from './CalendarioPage.vue';
 
 export const routes = [
@@ -38,6 +39,14 @@ export const routes = [
     component: ReiniciarLeadPage,
     // Solo administradores: borra a una persona de la cuenta. Va en Ajustes;
     // el item se esconde solo a los asesores.
+    meta: { permissions: ['administrator'] },
+  },
+  {
+    path: frontendURL('accounts/:accountId/turuta/importar-chat'),
+    name: 'turuta_importar_chat',
+    component: ImportarChatPage,
+    // Solo administradores: crea contactos, chats y leads. El endpoint de
+    // Chatwoot (turuta_importaciones) tambien lo comprueba.
     meta: { permissions: ['administrator'] },
   },
   {

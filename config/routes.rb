@@ -288,6 +288,7 @@ Rails.application.routes.draw do
           end
 
           resources :custom_attribute_definitions, only: [:index, :show, :create, :update, :destroy]
+          resources :turuta_importaciones, only: [:create] # [turuta] importar un chat exportado de WhatsApp
           resources :custom_filters, only: [:index, :show, :create, :update, :destroy]
           resource :branded_email_layout, only: [:show, :update]
           resources :inboxes, only: [:index, :show, :create, :update, :destroy] do

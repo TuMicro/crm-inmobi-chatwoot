@@ -1022,6 +1022,15 @@ const menuItems = computed(() => {
           to: accountScopedRoute('turuta_reiniciar_lead'),
           activeOn: ['turuta_reiniciar_lead'],
         },
+        // [turuta] Nuestra pagina: subir un chat exportado de WhatsApp para
+        // tener su historial en el CRM. Solo administradores.
+        {
+          name: 'Turuta Importar chat',
+          label: 'Importar un chat',
+          icon: 'i-lucide-file-up',
+          to: accountScopedRoute('turuta_importar_chat'),
+          activeOn: ['turuta_importar_chat'],
+        },
       ],
     },
   ]); // [turuta] turutaPodar
