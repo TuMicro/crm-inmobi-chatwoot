@@ -284,6 +284,7 @@
   "REGISTER.VERIFY_EMAIL.RESEND_SUCCESS": "Correo de verificación enviado. Revisa tu bandeja.",
   "REGISTER.VERIFY_EMAIL.RESEND_ERROR": "No se pudo enviar el correo de verificación. Inténtalo de nuevo.",
   "ONBOARDING_NEXT.CONTINUE": "Continuar",
+  "ONBOARDING.ALL_CONVERSATION.TITLE": "Gestiona todos tus números en un solo lugar",
   "CONVERSATION.BOT_HANDOFF_SUCCESS": "El chat ha pasado a ti",
   "CONVERSATION.BOT_HANDOFF_ERROR": "No se pudo tomar el chat. Inténtalo de nuevo.",
   "FILTER.GROUPS.CUSTOM_ATTRIBUTES": "Atributos del chat"

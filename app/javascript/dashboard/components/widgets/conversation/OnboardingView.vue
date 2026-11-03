@@ -44,13 +44,13 @@ const greetingMessage = computed(() => {
         }}
       </p>
     </div>
+    <!-- [turuta] Solo WhatsApp, que es lo unico que se conecta, y sin enlace
+         para crear bandejas: los numeros los da de alta TuRuta
+         (infra/onboard-whatsapp.sh). Pedido el 03/11/2026. -->
     <OnboardingFeatureCard
-      image-src="/dashboard/images/onboarding/omnichannel-inbox.png"
-      image-alt="Omnichannel"
-      to="settings_inbox_new"
+      image-src="/assets/images/dashboard/channels/whatsapp.png"
+      image-alt="WhatsApp"
       :title="$t('ONBOARDING.ALL_CONVERSATION.TITLE')"
-      :description="$t('ONBOARDING.ALL_CONVERSATION.DESCRIPTION')"
-      :link-text="$t('ONBOARDING.ALL_CONVERSATION.NEW_LINK')"
     />
     <OnboardingFeatureCard
       image-src="/dashboard/images/onboarding/teams.png"

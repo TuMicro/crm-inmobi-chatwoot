@@ -968,7 +968,7 @@
   "ONBOARDING": {
     "ALL_CONVERSATION": {
       "DESCRIPTION": "Ver todos los chats de sus clientes en un solo panel de control. Puede filtrar los chats por el canal entrante, etiqueta y estado.",
-      "TITLE": "Todos sus chats en un solo lugar"
+      "TITLE": "Gestiona todos tus números en un solo lugar"
     },
     "CANNED_RESPONSES": {
       "DESCRIPTION": "Las respuestas predefinidas son plantillas preconfiguradas que le ayudan a responder rápidamente a un chat. Los agentes pueden escribir el carácter '/' seguido por el código corto para insertar una respuesta predefinida durante un chat."
