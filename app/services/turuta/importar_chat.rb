@@ -6,9 +6,10 @@
 # Los mensajes se insertan con su fecha original y SIN callbacks: un
 # Message.create! saliente en una bandeja de WhatsApp lo ENVIARIA al cliente
 # (SendReplyJob), y dispararia webhooks, automatizaciones y avisos. insert_all
-# no hace nada de eso. La conversacion nace resuelta: es historia, no trabajo
-# pendiente. Si el cliente vuelve a escribir, Chatwoot abre otra y esta queda
-# en sus chats anteriores.
+# no hace nada de eso. La conversacion nace abierta, como cualquier chat de la
+# bandeja (03/11/2026: resuelta no se veia), y la bandeja tiene una sola
+# conversacion por cliente (lo enciende la API del CRM): si el cliente vuelve
+# a escribir, su mensaje sigue en esta, con el historial delante.
 #
 # Idempotente por huella (el SHA-256 del fichero): importar dos veces el mismo
 # chat devuelve la conversacion de la primera vez, con duplicado: true, para
@@ -39,7 +40,7 @@ module Turuta
         else
           conversacion = crear_conversacion(inbox, contacto, contact_inbox)
           insertar(filas, inbox, conversacion, contacto, asesor)
-          cerrar(conversacion, contacto, filas, asesor)
+          fechar(conversacion, contacto, filas, asesor)
           resultado(conversacion, contacto, filas.size, duplicado: false)
         end
       end
@@ -119,7 +120,7 @@ module Turuta
     def crear_conversacion(inbox, contacto, contact_inbox)
       Conversation.create!(
         account: @account, inbox: inbox, contact: contacto, contact_inbox: contact_inbox,
-        status: :resolved,
+        status: :open,
         additional_attributes: { 'turuta_importacion' => huella, 'turuta_importado' => true }
       )
     end
@@ -151,10 +152,13 @@ module Turuta
 
     # update_columns y no update!: asignar con update! avisaria al asesor de
     # cada chat importado, y moveria la conversacion al principio de la lista.
-    def cerrar(conversacion, contacto, filas, asesor)
+    # first_reply_created_at, el primer mensaje de la inmobiliaria: sin el, un
+    # chat abierto sale en "Desatendido" aunque ya se le contestara.
+    def fechar(conversacion, contacto, filas, asesor)
       ultima = filas.last[0]
       conversacion.update_columns(
         assignee_id: asesor&.id, created_at: filas.first[0], last_activity_at: ultima,
+        first_reply_created_at: filas.find { |f| !f[1] }&.first,
         waiting_since: nil, updated_at: Time.current
       )
       return unless contacto.last_activity_at.nil? || contacto.last_activity_at < ultima

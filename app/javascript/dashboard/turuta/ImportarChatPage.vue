@@ -8,9 +8,10 @@
 //
 // Dos pasos. Chatwoot crea el contacto y la conversacion con los mensajes y
 // sus fechas, sin enviar nada (turuta_importaciones del fork). Despues
-// nuestra API le da su lead, con el asesor y la etapa elegidos
-// (dashboard-app/importaciones): asi, cuando ese cliente vuelva a escribir, su
-// chat va a su asesor y no a la IA. Repetir con el mismo fichero no duplica.
+// nuestra API le da su lead, con la etapa elegida (dashboard-app/importaciones).
+// Asignado a nadie (lo de serie): cuando el cliente vuelva a escribir, lo
+// atiende la IA. A una persona, asesor o administrador: le llega a ella, y la
+// IA no se mete. Repetir con el mismo fichero no duplica.
 import { ref, computed, watch, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import { useStore, useMapGetter } from 'dashboard/composables/store';
@@ -41,6 +42,7 @@ const route = useRoute();
 const store = useStore();
 const apps = useMapGetter('dashboardApps/getRecords');
 const currentUser = useMapGetter('getCurrentUser');
+const agentes = useMapGetter('agents/getAgents');
 const config = computed(() => leadAppConfig(apps.value));
 const cuenta = computed(() => Number(route.params.accountId));
 
@@ -59,7 +61,8 @@ const negocio = ref('');
 const telefono = ref('');
 const nombre = ref('');
 const bandeja = ref('');
-const asesor = ref('');
+// El id de usuario de Chatwoot (asesor o administrador); '' es nadie.
+const asignado = ref('');
 const etapa = ref('');
 
 const importando = ref(false);
@@ -90,7 +93,6 @@ async function cargarOpciones() {
     const o = opciones.value;
     bandeja.value =
       (o.bandejas.find(b => !b.prueba) || o.bandejas[0])?.inboxId ?? '';
-    asesor.value = o.asesores[0]?.chatwootAgentId ?? '';
     etapa.value = o.etapaPorDefecto ?? o.etapas[0]?.id ?? '';
   } catch (e) {
     errorOpciones.value = e.message;
@@ -100,6 +102,7 @@ async function cargarOpciones() {
 watch(config, cargarOpciones);
 onMounted(() => {
   if (!(apps.value || []).length) store.dispatch('dashboardApps/get');
+  if (!(agentes.value || []).length) store.dispatch('agents/get');
   cargarOpciones();
 });
 
@@ -109,11 +112,15 @@ const opcionesBandeja = computed(() =>
     label: `${b.nombre}${b.telefono ? ` · ${b.telefono}` : ''}`,
   }))
 );
-const opcionesAsesor = computed(() =>
-  (opciones.value?.asesores || []).map(a => ({
-    value: a.chatwootAgentId,
-    label: a.nombre,
-  }))
+const opcionesAsignado = computed(() => [
+  { value: '', label: 'Nadie: cuando escriba, lo atiende la IA' },
+  ...(agentes.value || []).map(a => ({
+    value: a.id,
+    label: a.role === 'administrator' ? `${a.name} (administrador)` : a.name,
+  })),
+]);
+const nombreAsignado = computed(
+  () => (agentes.value || []).find(a => a.id === asignado.value)?.name || ''
 );
 const opcionesEtapa = computed(() =>
   (opciones.value?.etapas || []).map(e => ({ value: e.id, label: e.nombre }))
@@ -140,7 +147,6 @@ const puedeImportar = computed(
     !!negocio.value &&
     !!telefonoNormalizado.value &&
     !!bandeja.value &&
-    !!asesor.value &&
     !!etapa.value &&
     !importando.value
 );
@@ -235,7 +241,7 @@ async function importar() {
         inbox_id: bandeja.value,
         telefono: telefonoNormalizado.value,
         nombre: nombre.value.trim(),
-        assignee_id: asesor.value,
+        assignee_id: asignado.value || null,
         zona: opciones.value?.zona,
         huella: huella.value,
         mensajes: mensajesParaImportar(analisis.value.mensajes, negocio.value),
@@ -250,7 +256,7 @@ async function importar() {
         inboxId: bandeja.value,
         telefono: telefonoNormalizado.value,
         nombre: nombre.value.trim(),
-        chatwootAgentId: asesor.value,
+        chatwootAgentId: asignado.value || null,
         stageId: etapa.value,
         ultimaEntrada: cw.ultima_entrada,
         updatedBy: currentUser.value?.name || '',
@@ -262,6 +268,7 @@ async function importar() {
       nuevo: lead.nuevo,
       etapa: lead.etapa,
       asesor: lead.asesor,
+      asignadoA: nombreAsignado.value,
       enlace: frontendURL(
         `accounts/${cuenta.value}/conversations/${cw.display_id}`
       ),
@@ -314,12 +321,21 @@ const TARJETA =
               }}
             </p>
             <p class="mb-0">
-              {{
-                hecho.nuevo
-                  ? `Lead nuevo en ${hecho.etapa}, con ${hecho.asesor}.`
-                  : `Ya era lead (${hecho.etapa}, con ${hecho.asesor || 'nadie'}): el chat se suma a su historial.`
-              }}
-              Cuando vuelva a escribir, su chat irá a ese asesor.
+              <template v-if="!hecho.nuevo">
+                Ya era lead ({{ hecho.etapa }}, con
+                {{ hecho.asesor || 'nadie' }}): el chat se suma a su historial.
+              </template>
+              <template v-else-if="hecho.asignadoA">
+                Lead nuevo en {{ hecho.etapa }}, asignado a
+                {{ hecho.asignadoA }}. Cuando vuelva a escribir, le llega a esa
+                persona y la IA no se mete.
+              </template>
+              <template v-else>
+                Lead nuevo en {{ hecho.etapa }}, sin asignar. Cuando vuelva a
+                escribir, lo atiende la IA (o el reparto, si la IA está apagada
+                en ese número).
+              </template>
+              El chat sigue en la bandeja con todo su historial.
             </p>
           </div>
         </div>
@@ -402,7 +418,7 @@ const TARJETA =
           <CampoSelect
             v-model="negocio"
             label="¿Quién es la inmobiliaria?"
-            ayuda="Sus mensajes salen como enviados por el asesor; los del otro, como del cliente."
+            ayuda="Sus mensajes salen como enviados por la inmobiliaria; los del otro, como del cliente."
             :options="opcionesNegocio"
           />
           <div class="grid gap-4 sm:grid-cols-2">
@@ -426,10 +442,10 @@ const TARJETA =
           />
           <div class="grid gap-4 sm:grid-cols-2">
             <CampoSelect
-              v-model="asesor"
-              label="Asesor"
-              ayuda="Se queda con el lead: si el cliente vuelve a escribir, le llega a él."
-              :options="opcionesAsesor"
+              v-model="asignado"
+              label="Asignado a"
+              ayuda="Nadie: cuando el cliente escriba, lo atiende la IA. Una persona: le llega a ella, y la IA no se mete."
+              :options="opcionesAsignado"
             />
             <CampoSelect
               v-model="etapa"
