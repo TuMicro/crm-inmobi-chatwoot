@@ -7,10 +7,10 @@ import {
   etiquetaDeDia,
   formularioDe,
   hayCambios,
+  modeloEnUso,
   motivos,
   textoMotivo,
   CAMPOS,
-  opcionesDe,
 } from './ia';
 
 describe('dinero', () => {
@@ -121,18 +121,17 @@ describe('la configuracion', () => {
     ).toEqual({ mensajesPropietario: 'Buenas [nombre]' });
   });
 
-  it('el modelo: vacio es el del servidor; elegir uno lo manda', () => {
-    const f = formularioDe(config);
-    expect(f.modelo).toBe('');
-    expect(cambiosDe({ ...f, modelo: 'gemini-3.8-flash' }, config)).toEqual({
-      modelo: 'gemini-3.8-flash',
-    });
+  // [turuta] 04/11: el modelo lo fija TuRuta; la comparacion ya no sale.
+  it('el modelo y la comparacion no se mandan nunca', () => {
+    const f = formularioDe({ ...config, modelo: 'gemini-3.8-flash' });
+    expect(f.modelo).toBeUndefined();
     expect(
-      cambiosDe(formularioDe({ ...config, modelo: 'gemini-3.8-flash' }), {
-        ...config,
-        modelo: 'gemini-3.8-flash',
-      })
+      cambiosDe(
+        { ...f, modelo: 'claude-sonnet-5-5', compararCon: 'claude-sonnet-5-5' },
+        config
+      )
     ).toEqual({});
+    expect(CAMPOS.find(c => c.clave === 'compararCon')).toBeUndefined();
   });
 });
 
@@ -165,25 +164,20 @@ describe('avisos', () => {
   });
 });
 
-describe('opcionesDe', () => {
-  const modelo = CAMPOS.find(c => c.clave === 'modelo');
-  it('la del servidor dice cual es; sin dato, tal cual', () => {
+describe('modeloEnUso', () => {
+  it('el del tenant; si no tiene, el del servidor; sin ninguno, una raya', () => {
     expect(
-      opcionesDe(modelo, { modeloServidor: 'claude-sonnet-5-5' })[0].texto
-    ).toBe('El del servidor (Claude Sonnet 5.5)');
+      modeloEnUso({
+        config: { modelo: 'gemini-3.8-flash' },
+        modeloServidor: 'claude-sonnet-5-5',
+      })
+    ).toBe('Gemini 3.8 Flash');
     expect(
-      opcionesDe(modelo, { modeloServidor: 'claude-sonnet-5' })[0].texto
-    ).toBe('El del servidor (Claude Sonnet 5)');
-    expect(opcionesDe(modelo, {})[0].texto).toBe('El del servidor');
-    expect(opcionesDe(modelo, {}).map(o => o.valor)).toContain(
-      'claude-sonnet-5-5'
+      modeloEnUso({ config: {}, modeloServidor: 'claude-sonnet-5-5' })
+    ).toBe('Claude Sonnet 5.5');
+    expect(modeloEnUso({ config: { modelo: 'gemini-9-pro' } })).toBe(
+      'gemini-9-pro'
     );
-  });
-  it('comparar con: sin comparar o un modelo', () => {
-    const comparar = CAMPOS.find(c => c.clave === 'compararCon');
-    expect(comparar.opciones[0]).toEqual({ valor: '', texto: 'No comparar' });
-    expect(opcionesDe(comparar, { modeloServidor: 'x' })).toBe(
-      comparar.opciones
-    );
+    expect(modeloEnUso(null)).toBe('—');
   });
 });

@@ -99,16 +99,22 @@ export function barrasPorDia(porDia) {
   }));
 }
 
-/** Los modelos que se pueden elegir (y comparar). */
+/** Los nombres de los modelos, para la pagina. El modelo no se elige aqui. */
 export const MODELOS = [
+  { valor: 'gemini-3.8-flash', texto: 'Gemini 3.8 Flash' },
   { valor: 'claude-sonnet-5-5', texto: 'Claude Sonnet 5.5' },
-  { valor: 'gemini-3.8-flash', texto: 'Gemini 3.8 Flash (más barato)' },
-  { valor: 'claude-sonnet-5', texto: 'Claude Sonnet 5 (el anterior)' },
+  { valor: 'claude-sonnet-5', texto: 'Claude Sonnet 5' },
 ];
 
 /** El nombre de un modelo para la pagina: el de la lista, o su id tal cual. */
 export const nombreDeModelo = id =>
-  MODELOS.find(m => m.valor === id)?.texto.replace(/ \(.*\)$/, '') || id;
+  MODELOS.find(m => m.valor === id)?.texto || id;
+
+/** El modelo que responde: el del tenant o, si no tiene, el del servidor. */
+export function modeloEnUso(datos) {
+  const id = datos?.config?.modelo || datos?.modeloServidor;
+  return id ? nombreDeModelo(id) : '—';
+}
 
 /** Los campos de la configuracion, en el orden en que se enseñan. */
 export const CAMPOS = [
@@ -167,41 +173,24 @@ export const CAMPOS = [
     ayuda: 'Si el chat no avanza en tantas vueltas, lo pasa a una persona.',
     tipo: 'numero',
   },
+  // [turuta] 04/11: el modelo se enseña, no se elige. Lo fija TuRuta con
+  // ./infra/ai-config.sh, porque de el depende a quien se le paga la IA; la
+  // API tampoco lo acepta desde aqui. "Comparar con otro modelo" ya no sale.
   {
     clave: 'modelo',
     titulo: 'Modelo',
-    ayuda:
-      'Quién piensa las respuestas. El prompt y las herramientas son los mismos: sirve para compararlos.',
-    tipo: 'opciones',
-    opciones: [{ valor: '', texto: 'El del servidor' }, ...MODELOS],
-  },
-  {
-    clave: 'compararCon',
-    titulo: 'Comparar con otro modelo (temporal)',
-    ayuda:
-      'En cada respuesta deja una nota privada con lo que habría contestado este otro modelo. No le manda nada al lead. Mientras esté puesto, cada respuesta cuesta las dos.',
-    tipo: 'opciones',
-    opciones: [{ valor: '', texto: 'No comparar' }, ...MODELOS],
+    ayuda: 'Quién piensa las respuestas. Viene fijado: no se cambia aquí.',
+    tipo: 'fijo',
   },
 ];
 
-/** Las opciones de un campo; en "Modelo", la del servidor dice cual es. */
-export function opcionesDe(campo, datos) {
-  if (campo.clave !== 'modelo' || !datos?.modeloServidor) return campo.opciones;
-  return campo.opciones.map(o =>
-    o.valor === ''
-      ? {
-          ...o,
-          texto: `El del servidor (${nombreDeModelo(datos.modeloServidor)})`,
-        }
-      : o
-  );
-}
+/** Los campos que se guardan: todos menos los fijos. */
+const EDITABLES = CAMPOS.filter(c => c.tipo !== 'fijo');
 
 /** El formulario de configuracion a partir de lo que devuelve la API. */
 export function formularioDe(config) {
   const salida = {};
-  CAMPOS.forEach(c => {
+  EDITABLES.forEach(c => {
     const v = config?.[c.clave];
     salida[c.clave] = v === null || v === undefined ? '' : String(v);
   });
@@ -212,7 +201,7 @@ export function formularioDe(config) {
 export function cambiosDe(form, config) {
   const original = formularioDe(config);
   const salida = {};
-  CAMPOS.forEach(c => {
+  EDITABLES.forEach(c => {
     const antes = original[c.clave];
     const ahora = String(form?.[c.clave] ?? '').trim();
     if (ahora === antes.trim()) return;

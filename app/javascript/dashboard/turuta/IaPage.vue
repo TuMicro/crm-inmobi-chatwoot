@@ -25,8 +25,8 @@ import {
   dinero,
   formularioDe,
   hayCambios,
+  modeloEnUso,
   motivos,
-  opcionesDe,
 } from './ia';
 
 const PERIODOS = [7, 30, 90];
@@ -551,14 +551,19 @@ const CAMPO =
                 v-model="form[c.clave]"
                 :class="CAMPO"
               >
-                <option
-                  v-for="o in opcionesDe(c, datos)"
-                  :key="o.valor"
-                  :value="o.valor"
-                >
+                <option v-for="o in c.opciones" :key="o.valor" :value="o.valor">
                   {{ o.texto }}
                 </option>
               </select>
+              <input
+                v-else-if="c.tipo === 'fijo'"
+                :value="modeloEnUso(datos)"
+                type="text"
+                readonly
+                disabled
+                :class="CAMPO"
+                class="cursor-not-allowed opacity-70"
+              />
               <textarea
                 v-else-if="c.tipo === 'largo'"
                 v-model="form[c.clave]"
