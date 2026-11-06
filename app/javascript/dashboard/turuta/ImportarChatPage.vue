@@ -451,8 +451,8 @@ const TARJETA =
                 telefonoNormalizado
                   ? `Se guarda como ${telefonoNormalizado}`
                   : usuarioNormalizado
-                    ? 'Opcional: este cliente escribe con su usuario. Si sabes su número, ponlo.'
-                    : 'Con el código de país. Si no sale en el chat, búscalo en el contacto del celular.'
+                    ? 'Opcional: ponlo si lo sabes.'
+                    : 'Con el código de país: +51…'
               "
             />
             <Input
@@ -461,13 +461,35 @@ const TARJETA =
               placeholder="@usuario"
               :message="
                 usuarioNormalizado
-                  ? telefonoNormalizado
-                    ? `Se guarda como @${usuarioNormalizado}`
-                    : 'Sin teléfono, el chat queda con este usuario y se une al cliente cuando vuelva a escribir.'
-                  : 'Solo si el cliente escribe con usuario, sin enseñar su número.'
+                  ? `Se guarda como @${usuarioNormalizado}`
+                  : 'Solo si escribe sin enseñar su número.'
               "
             />
             <Input v-model="nombre" label="Nombre del cliente" />
+          </div>
+          <div
+            v-if="usuarioNormalizado && !telefonoNormalizado"
+            class="flex gap-3 px-4 py-3 text-sm rounded-lg bg-n-amber-2 text-n-amber-11"
+            data-turuta="importar-solo-usuario"
+          >
+            <Icon
+              icon="i-lucide-alert-triangle"
+              class="flex-none mt-0.5 size-4"
+            />
+            <div>
+              <p class="mb-1 font-medium">
+                Este cliente solo tiene usuario (@{{ usuarioNormalizado }}), sin
+                teléfono: no se le podrá escribir desde el CRM hasta que vuelva
+                a escribir él.
+              </p>
+              <p class="mb-0">
+                El chat se importa igual, y cuando escriba a este número su
+                mensaje entra en este mismo chat. Antes no se le puede mandar
+                nada, ni una plantilla: Meta no da su número. Si el cliente lo
+                dio (por ejemplo, en un formulario dentro del chat), ponlo en
+                «Teléfono del cliente».
+              </p>
+            </div>
           </div>
           <CampoSelect
             v-model="bandeja"
