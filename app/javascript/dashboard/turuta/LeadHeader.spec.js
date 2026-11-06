@@ -237,4 +237,14 @@ describe('LeadHeader: la visita y Google Calendar', () => {
       })
     );
   });
+
+  it('si se pulsa "Dia y hora" antes de elegir la visita, lo propone al elegirla', async () => {
+    const w = montar();
+    await boton(w, 'Mover a Visita agendada').trigger('click');
+    await w.find('[data-turuta="visita-modo-momento"]').trigger('click');
+    const hora = w.find('[data-turuta="visita-recordatorio-hora"]');
+    expect(hora.element.value).toBe('');
+    await ponerHora(w);
+    expect(hora.element.value).toBe('20:00');
+  });
 });

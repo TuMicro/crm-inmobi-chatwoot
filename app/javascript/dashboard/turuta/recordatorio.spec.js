@@ -119,18 +119,15 @@ describe('momentoPorDefecto', () => {
   // En la hora local de quien corre las pruebas, como el formulario.
   const visita = new Date(2026, 9, 23, 15, 5).toISOString();
 
-  it('la vispera a las 8:00 p. m.', () => {
-    expect(momentoPorDefecto(visita, new Date(2026, 9, 19, 10, 0))).toEqual({
+  it('siempre la vispera a las 8:00 p. m.', () => {
+    expect(momentoPorDefecto(visita)).toEqual({
       fecha: '2026-10-22',
       hora: '20:00',
     });
-  });
-
-  it('si esa hora ya paso, dos horas antes de la visita', () => {
-    expect(momentoPorDefecto(visita, new Date(2026, 9, 22, 21, 0))).toEqual({
-      fecha: '2026-10-23',
-      hora: '13:05',
-    });
+    // Visita el dia 1: la vispera es el ultimo del mes anterior.
+    expect(
+      momentoPorDefecto(new Date(2026, 10, 1, 9, 0).toISOString())
+    ).toEqual({ fecha: '2026-10-31', hora: '20:00' });
   });
 
   it('sin visita, nada', () => {

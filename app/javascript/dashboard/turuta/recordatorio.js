@@ -40,26 +40,20 @@ const cuandoEn = (fecha, zona) =>
 
 /**
  * Cuando sale el recordatorio si se elige "Dia y hora" (06/11), para
- * proponerlo al abrir ese modo: el dia anterior a las 8:00 p. m., o, si esa
- * hora ya paso, HORAS_POR_DEFECTO antes de la visita. En la hora local del
- * navegador, como los campos de la visita: { fecha: "2026-10-22", hora:
- * "20:00" }, o null sin visita.
+ * proponerlo al abrir ese modo: siempre la vispera de la visita a las
+ * 8:00 p. m. (lo pidio MadHouse; si ya paso, el aviso lo dice). En la hora
+ * local del navegador, como los campos de la visita: { fecha: "2026-10-22",
+ * hora: "20:00" }, o null sin visita.
  */
-export function momentoPorDefecto(visitaIso, ahora = new Date()) {
+export function momentoPorDefecto(visitaIso) {
   if (!visitaIso) return null;
-  const visita = new Date(visitaIso);
-  if (Number.isNaN(visita.getTime())) return null;
-  const vispera = new Date(visita);
+  const vispera = new Date(visitaIso);
+  if (Number.isNaN(vispera.getTime())) return null;
   vispera.setDate(vispera.getDate() - 1);
-  vispera.setHours(20, 0, 0, 0);
-  const sale =
-    vispera.getTime() > ahora.getTime()
-      ? vispera
-      : new Date(visita.getTime() - HORAS_POR_DEFECTO * HORA_MS);
   const dos = n => String(n).padStart(2, '0');
   return {
-    fecha: `${sale.getFullYear()}-${dos(sale.getMonth() + 1)}-${dos(sale.getDate())}`,
-    hora: `${dos(sale.getHours())}:${dos(sale.getMinutes())}`,
+    fecha: `${vispera.getFullYear()}-${dos(vispera.getMonth() + 1)}-${dos(vispera.getDate())}`,
+    hora: '20:00',
   };
 }
 

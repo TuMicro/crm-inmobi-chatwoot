@@ -126,17 +126,24 @@ function abrirVisita(etapa) {
   abierto.value = false;
 }
 
-// Al pasar a "Dia y hora" sin nada elegido, se propone la vispera a las
-// 8:00 p. m. (momentoPorDefecto).
-function elegirModoRecordatorio(modo) {
-  vModoRecordatorio.value = modo;
-  if (modo !== 'momento' || vFechaRecordatorio.value) return;
+// En "Dia y hora" sin nada elegido, se propone la vispera de la visita a las
+// 8:00 p. m. (momentoPorDefecto): al pulsarlo o, si la visita aun no tenia
+// fecha y hora, en cuanto las tiene (el watch de visitaIso, abajo).
+function proponerMomento() {
+  if (vModoRecordatorio.value !== 'momento' || vFechaRecordatorio.value) {
+    return;
+  }
   const propuesto = momentoPorDefecto(
     isoDesdeInputs(vFecha.value, vHora.value)
   );
   if (!propuesto) return;
   vFechaRecordatorio.value = propuesto.fecha;
   vHoraRecordatorio.value = propuesto.hora;
+}
+
+function elegirModoRecordatorio(modo) {
+  vModoRecordatorio.value = modo;
+  proponerMomento();
 }
 
 // Que cualquier clic en el campo abra el selector de fecha u hora, no solo
@@ -159,6 +166,7 @@ function cerrarVisita() {
 }
 
 const visitaIso = computed(() => isoDesdeInputs(vFecha.value, vHora.value));
+watch(visitaIso, proponerMomento);
 // El dia y la hora del recordatorio, si se eligio ese modo (null si falta un
 // campo); undefined por horas.
 const momentoIso = computed(() =>
