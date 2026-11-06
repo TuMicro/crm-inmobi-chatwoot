@@ -164,12 +164,26 @@ export function useLead(conversationId, contact) {
   /**
    * Agendar o cambiar la visita vigente. `at` es ISO con zona horaria;
    * `guests`, los correos a invitar al evento de Google Calendar;
-   * `reminderHours`, cuantas horas antes sale el recordatorio por WhatsApp.
+   * `reminderHours`, cuantas horas antes sale el recordatorio por WhatsApp;
+   * o `reminderAt`, su dia y hora exactos (ISO, desde el 06/11).
    */
-  const agendarVisita = (at, address, guests = [], reminderHours = undefined) =>
+  const agendarVisita = (
+    at,
+    address,
+    guests = [],
+    reminderHours = undefined,
+    reminderAt = undefined
+  ) =>
     act(
       `/leads/${state.lead.id}/visit`,
-      { scheduledAt: at, address, guests, reminderHours, ...actor() },
+      {
+        scheduledAt: at,
+        address,
+        guests,
+        reminderHours,
+        reminderAt,
+        ...actor(),
+      },
       'PUT'
     );
 

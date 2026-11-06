@@ -16,6 +16,7 @@ import {
   MIN_HORAS,
   avisoDelRecordatorio,
   horasValidas,
+  momentoPorDefecto,
 } from './recordatorio';
 import {
   correosDe,
@@ -75,6 +76,11 @@ const vDireccion = ref('');
 const vInvitados = ref('');
 // Cuantas horas antes le llega el recordatorio: lo elige quien agenda (21/10).
 const vHorasRecordatorio = ref(HORAS_POR_DEFECTO);
+// O su dia y hora (06/11): para el dia anterior ("a las 8 p. m.") es mas
+// facil que contar horas. 'horas' o 'momento'.
+const vModoRecordatorio = ref('horas');
+const vFechaRecordatorio = ref('');
+const vHoraRecordatorio = ref('');
 const formularioVisita = computed(
   () => !!visitaPara.value || editandoVisita.value
 );
@@ -110,7 +116,27 @@ function abrirVisita(etapa) {
   vDireccion.value = actual ? actual.address : '';
   vInvitados.value = (actual?.guests || []).join(', ');
   vHorasRecordatorio.value = actual?.reminderHours || HORAS_POR_DEFECTO;
+  vModoRecordatorio.value = actual?.reminderAt ? 'momento' : 'horas';
+  vFechaRecordatorio.value = actual?.reminderAt
+    ? fechaInput(actual.reminderAt)
+    : '';
+  vHoraRecordatorio.value = actual?.reminderAt
+    ? horaInput(actual.reminderAt)
+    : '';
   abierto.value = false;
+}
+
+// Al pasar a "Dia y hora" sin nada elegido, se propone la vispera a las
+// 8:00 p. m. (momentoPorDefecto).
+function elegirModoRecordatorio(modo) {
+  vModoRecordatorio.value = modo;
+  if (modo !== 'momento' || vFechaRecordatorio.value) return;
+  const propuesto = momentoPorDefecto(
+    isoDesdeInputs(vFecha.value, vHora.value)
+  );
+  if (!propuesto) return;
+  vFechaRecordatorio.value = propuesto.fecha;
+  vHoraRecordatorio.value = propuesto.hora;
 }
 
 // Que cualquier clic en el campo abra el selector de fecha u hora, no solo
@@ -133,11 +159,19 @@ function cerrarVisita() {
 }
 
 const visitaIso = computed(() => isoDesdeInputs(vFecha.value, vHora.value));
+// El dia y la hora del recordatorio, si se eligio ese modo (null si falta un
+// campo); undefined por horas.
+const momentoIso = computed(() =>
+  vModoRecordatorio.value === 'momento'
+    ? isoDesdeInputs(vFechaRecordatorio.value, vHoraRecordatorio.value)
+    : undefined
+);
 // Cuando le llega el recordatorio, o por que no (turuta/recordatorio.js).
 const avisoRecordatorio = computed(() =>
   avisoDelRecordatorio({
     visitaIso: visitaIso.value,
     horas: vHorasRecordatorio.value,
+    momentoIso: momentoIso.value,
     zona: lead.value?.recordatorio?.zonaHoraria,
     plantillaDelDia: !!lead.value?.recordatorio?.plantillaDelDia,
   })
@@ -155,15 +189,26 @@ async function guardarVisita() {
   if (!puedeGuardarVisita.value) return;
   const direccion = vDireccion.value.trim();
   const invitados = correosDe(vInvitados.value).correos;
-  const horas = horasValidas(vHorasRecordatorio.value) ?? HORAS_POR_DEFECTO;
+  // Por dia y hora va el momento y no las horas; por horas, al reves.
+  const momento = momentoIso.value || undefined;
+  const horas = momento
+    ? undefined
+    : (horasValidas(vHorasRecordatorio.value) ?? HORAS_POR_DEFECTO);
   const ok = visitaPara.value
     ? await cambiarEtapa(visitaPara.value.code, {
         visitAt: visitaIso.value,
         visitAddress: direccion,
         visitGuests: invitados,
         visitReminderHours: horas,
+        visitReminderAt: momento,
       })
-    : await agendarVisita(visitaIso.value, direccion, invitados, horas);
+    : await agendarVisita(
+        visitaIso.value,
+        direccion,
+        invitados,
+        horas,
+        momento
+      );
   if (ok) cerrarVisita();
 }
 
@@ -492,9 +537,34 @@ const claseEtapa = computed(() => {
             @click="abrirSelector"
           />
         </label>
-        <label class="block mt-2 text-xs font-medium text-n-slate-11">
+        <div class="mt-2 text-xs font-medium text-n-slate-11">
           Recordatorio por WhatsApp
-          <span class="flex items-center gap-2 mt-1">
+          <!-- Horas antes (lo comodo el mismo dia) o dia y hora (06/11: lo
+               comodo para la vispera, sin contar horas). -->
+          <span class="flex gap-0.5 p-0.5 mt-1 rounded-lg bg-n-alpha-2 w-fit">
+            <button
+              v-for="modo in [
+                { id: 'horas', texto: 'Horas antes' },
+                { id: 'momento', texto: 'Día y hora' },
+              ]"
+              :key="modo.id"
+              type="button"
+              class="px-2 py-0.5 rounded-md"
+              :class="
+                vModoRecordatorio === modo.id
+                  ? 'bg-n-solid-1 text-n-slate-12 shadow-sm'
+                  : 'font-normal text-n-slate-11'
+              "
+              :data-turuta="`visita-modo-${modo.id}`"
+              @click="elegirModoRecordatorio(modo.id)"
+            >
+              {{ modo.texto }}
+            </button>
+          </span>
+          <span
+            v-if="vModoRecordatorio === 'horas'"
+            class="flex items-center gap-2 mt-1"
+          >
             <input
               v-model.number="vHorasRecordatorio"
               type="number"
@@ -507,6 +577,22 @@ const claseEtapa = computed(() => {
             />
             <span class="font-normal text-n-slate-11">horas antes</span>
           </span>
+          <span v-else class="flex gap-2 mt-1">
+            <input
+              v-model="vFechaRecordatorio"
+              type="date"
+              class="turuta-input !mt-0"
+              data-turuta="visita-recordatorio-fecha"
+              @click="abrirSelector"
+            />
+            <input
+              v-model="vHoraRecordatorio"
+              type="time"
+              class="turuta-input !mt-0"
+              data-turuta="visita-recordatorio-hora"
+              @click="abrirSelector"
+            />
+          </span>
           <span
             v-if="avisoRecordatorio"
             class="block mt-1 font-normal"
@@ -517,7 +603,7 @@ const claseEtapa = computed(() => {
           >
             {{ avisoRecordatorio.texto }}
           </span>
-        </label>
+        </div>
         <label class="block mt-2 text-xs font-medium text-n-slate-11">
           Direccion
           <span class="font-normal text-n-slate-10">(opcional)</span>

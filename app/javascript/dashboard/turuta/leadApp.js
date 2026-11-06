@@ -220,11 +220,19 @@ export function textoVisita(v) {
     case 'SENT':
       return 'Recordatorio enviado, sin respuesta todavia.';
     case 'SKIPPED':
-      return `Sin recordatorio: se agendo con menos de ${v.reminderHours || 2} h de margen.`;
+      return v.reminderAt
+        ? 'Sin recordatorio: la hora elegida ya habia pasado.'
+        : `Sin recordatorio: se agendo con menos de ${v.reminderHours || 2} h de margen.`;
     case 'FAILED':
       return `El recordatorio fallo: ${v.reminderError || 'sin detalle'}.`;
-    default:
-      return `Le llegara un recordatorio por WhatsApp ${v.reminderHours || 2} h antes.`;
+    default: {
+      // Con dia y hora (06/11): cuando, que es lo que se eligio.
+      if (!v.reminderAt) {
+        return `Le llegara un recordatorio por WhatsApp ${v.reminderHours || 2} h antes.`;
+      }
+      const cuandoSale = cuandoVisita(v.reminderAt);
+      return `Le llegara un recordatorio por WhatsApp ${cuandoSale}${cuandoSale.endsWith('.') ? '' : '.'}`;
+    }
   }
 }
 

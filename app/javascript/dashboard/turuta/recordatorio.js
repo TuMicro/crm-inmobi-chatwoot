@@ -39,11 +39,54 @@ const cuandoEn = (fecha, zona) =>
     .replace(/\s+/g, ' ')}`;
 
 /**
+ * Cuando sale el recordatorio si se elige "Dia y hora" (06/11), para
+ * proponerlo al abrir ese modo: el dia anterior a las 8:00 p. m., o, si esa
+ * hora ya paso, HORAS_POR_DEFECTO antes de la visita. En la hora local del
+ * navegador, como los campos de la visita: { fecha: "2026-10-22", hora:
+ * "20:00" }, o null sin visita.
+ */
+export function momentoPorDefecto(visitaIso, ahora = new Date()) {
+  if (!visitaIso) return null;
+  const visita = new Date(visitaIso);
+  if (Number.isNaN(visita.getTime())) return null;
+  const vispera = new Date(visita);
+  vispera.setDate(vispera.getDate() - 1);
+  vispera.setHours(20, 0, 0, 0);
+  const sale =
+    vispera.getTime() > ahora.getTime()
+      ? vispera
+      : new Date(visita.getTime() - HORAS_POR_DEFECTO * HORA_MS);
+  const dos = n => String(n).padStart(2, '0');
+  return {
+    fecha: `${sale.getFullYear()}-${dos(sale.getMonth() + 1)}-${dos(sale.getDate())}`,
+    hora: `${dos(sale.getHours())}:${dos(sale.getMinutes())}`,
+  };
+}
+
+/** El error del "Dia y hora" elegido, o null si vale. */
+function errorDelMomento(visita, sale, ahora) {
+  if (!sale) return 'Elige el día y la hora del recordatorio.';
+  if (sale.getTime() <= ahora.getTime()) return 'Esa hora ya pasó.';
+  const antes = visita.getTime() - sale.getTime();
+  if (antes < MIN_HORAS * HORA_MS) {
+    return `Tiene que salir al menos ${MIN_HORAS} h antes de la visita.`;
+  }
+  if (antes > MAX_HORAS * HORA_MS) {
+    return `Como mucho ${MAX_HORAS} h antes de la visita.`;
+  }
+  return null;
+}
+
+/**
  * Lo que el formulario dice del recordatorio, o null si no hay nada que decir
  * todavia (sin fecha y hora). `error` no deja guardar.
  *
+ * Por horas (`horas`):
  * - Horas que no valen: error.
  * - La visita es antes de esas horas: no se mandara (como siempre).
+ * Por dia y hora (`momentoIso`, desde el 06/11; null si falta un campo):
+ * - Sin elegir, ya pasada, o fuera de 1 a 72 h antes de la visita: error.
+ * En los dos:
  * - Saldria un dia antes que la visita y su plantilla no esta aprobada en
  *   Meta: error, porque la de siempre dice "tu visita de hoy".
  * - Si no, cuando sale.
@@ -51,12 +94,14 @@ const cuandoEn = (fecha, zona) =>
 export function avisoDelRecordatorio({
   visitaIso,
   horas,
+  momentoIso = undefined,
   ahora = new Date(),
   zona = 'America/Lima',
   plantillaDelDia = false,
 }) {
-  const h = horasValidas(horas);
-  if (h === null) {
+  const porMomento = momentoIso !== undefined;
+  const h = porMomento ? null : horasValidas(horas);
+  if (!porMomento && h === null) {
     return {
       error: true,
       texto: `Entre ${MIN_HORAS} y ${MAX_HORAS} horas.`,
@@ -64,19 +109,28 @@ export function avisoDelRecordatorio({
   }
   if (!visitaIso) return null;
   const visita = new Date(visitaIso);
-  const sale = new Date(visita.getTime() - h * HORA_MS);
-  if (sale.getTime() < ahora.getTime()) {
-    return {
-      error: false,
-      texto: `La visita es dentro de menos de ${h} h: no se enviará recordatorio.`,
-    };
+  let sale;
+  if (porMomento) {
+    sale = momentoIso ? new Date(momentoIso) : null;
+    const error = errorDelMomento(visita, sale, ahora);
+    if (error) return { error: true, texto: error };
+  } else {
+    sale = new Date(visita.getTime() - h * HORA_MS);
+    if (sale.getTime() < ahora.getTime()) {
+      return {
+        error: false,
+        texto: `La visita es dentro de menos de ${h} h: no se enviará recordatorio.`,
+      };
+    }
   }
   if (diaEn(sale, zona) !== diaEn(visita, zona) && !plantillaDelDia) {
+    const falta =
+      'Meta apruebe la plantilla del recordatorio del día anterior.';
     return {
       error: true,
-      texto:
-        `Con ${h} h saldría el día anterior a la visita, y para eso falta que ` +
-        'Meta apruebe la plantilla del recordatorio del día anterior. Elige menos horas.',
+      texto: porMomento
+        ? `Saldría el día anterior a la visita, y para eso falta que ${falta} Elige una hora del mismo día.`
+        : `Con ${h} h saldría el día anterior a la visita, y para eso falta que ${falta} Elige menos horas.`,
     };
   }
   const cuando = cuandoEn(sale, zona);

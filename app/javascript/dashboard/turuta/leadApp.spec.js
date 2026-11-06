@@ -257,6 +257,24 @@ describe('visita', () => {
     ).toMatch(/fallo: x/);
     expect(textoVisita(null)).toBe('');
   });
+
+  it('textoVisita con dia y hora dice cuando sale (06/11)', () => {
+    const texto = textoVisita({
+      status: 'SCHEDULED',
+      reminderStatus: 'PENDING',
+      reminderHours: 2,
+      reminderAt: new Date(2026, 9, 22, 20, 0).toISOString(),
+    });
+    expect(texto).toMatch(/recordatorio por WhatsApp .*8:00 p\. m\.$/);
+    expect(texto).not.toMatch(/\.\.$/);
+    expect(
+      textoVisita({
+        status: 'SCHEDULED',
+        reminderStatus: 'SKIPPED',
+        reminderAt: new Date(2026, 9, 22, 20, 0).toISOString(),
+      })
+    ).toMatch(/ya habia pasado/);
+  });
 });
 
 describe('textoIa y muestraIa', () => {

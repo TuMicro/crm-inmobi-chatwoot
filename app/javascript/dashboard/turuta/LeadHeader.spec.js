@@ -200,7 +200,41 @@ describe('LeadHeader: la visita y Google Calendar', () => {
       expect.any(String),
       'Av. Larco 1234',
       ['ana@x.com'],
-      2
+      2,
+      undefined
+    );
+  });
+
+  it('por dia y hora propone la vispera a las 8 p. m. y manda ese momento (06/11)', async () => {
+    state.lead = lead({
+      recordatorio: { zonaHoraria: 'America/Lima', plantillaDelDia: true },
+    });
+    const w = montar();
+    await boton(w, 'Mover a Visita agendada').trigger('click');
+    await ponerHora(w);
+    await w.find('[data-turuta="visita-modo-momento"]').trigger('click');
+    const fecha = w.find('[data-turuta="visita-recordatorio-fecha"]');
+    const hora = w.find('[data-turuta="visita-recordatorio-hora"]');
+    const vispera = new Date(`${EN_UNA_SEMANA.slice(0, 10)}T10:30:00`);
+    vispera.setDate(vispera.getDate() - 1);
+    expect(fecha.element.value).toBe(
+      `${vispera.getFullYear()}-${String(vispera.getMonth() + 1).padStart(2, '0')}-${String(vispera.getDate()).padStart(2, '0')}`
+    );
+    expect(hora.element.value).toBe('20:00');
+    expect(w.find('[data-turuta="visita-horas"]').exists()).toBe(false);
+    expect(w.find('[data-turuta="visita-horas-aviso"]').text()).toContain(
+      'Le llegará'
+    );
+    await boton(w, 'Agendar').trigger('click');
+    await flushPromises();
+    expect(cambiarEtapa).toHaveBeenCalledWith(
+      'visita_agendada',
+      expect.objectContaining({
+        visitReminderAt: new Date(
+          `${fecha.element.value}T20:00:00`
+        ).toISOString(),
+        visitReminderHours: undefined,
+      })
     );
   });
 });

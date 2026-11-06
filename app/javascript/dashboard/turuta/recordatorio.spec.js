@@ -1,4 +1,8 @@
-import { avisoDelRecordatorio, horasValidas } from './recordatorio';
+import {
+  avisoDelRecordatorio,
+  horasValidas,
+  momentoPorDefecto,
+} from './recordatorio';
 
 // Viernes 23/10/2026, 3:05 p. m. en Lima.
 const VISITA = '2026-10-23T20:05:00Z';
@@ -64,5 +68,72 @@ describe('avisoDelRecordatorio', () => {
       texto: 'Entre 1 y 72 horas.',
     });
     expect(avisoDelRecordatorio({ visitaIso: null, horas: 2 })).toBe(null);
+  });
+});
+
+describe('avisoDelRecordatorio por dia y hora (06/11)', () => {
+  // Jueves 22, 8:00 p. m. en Lima: la vispera de la visita.
+  const VISPERA = '2026-10-23T01:00:00Z';
+
+  it('el dia anterior a una hora exacta, con la plantilla del dia', () => {
+    expect(aviso({ momentoIso: VISPERA, plantillaDelDia: true })).toEqual({
+      error: false,
+      texto: 'Le llegará el jueves 22, 8:00 p. m.',
+    });
+    const sinPlantilla = aviso({ momentoIso: VISPERA });
+    expect(sinPlantilla.error).toBe(true);
+    expect(sinPlantilla.texto).toContain('Elige una hora del mismo día');
+  });
+
+  it('el mismo dia no necesita la plantilla del dia', () => {
+    expect(aviso({ momentoIso: '2026-10-23T14:00:00Z' })).toEqual({
+      error: false,
+      texto: 'Le llegará el viernes 23, 9:00 a. m.',
+    });
+  });
+
+  it('las horas no cuentan: manda el dia y la hora', () => {
+    expect(
+      aviso({ momentoIso: '2026-10-23T14:00:00Z', horas: 100 }).error
+    ).toBe(false);
+  });
+
+  it('sin elegir, ya pasada, o fuera de 1 a 72 h antes: error', () => {
+    expect(aviso({ momentoIso: null })).toEqual({
+      error: true,
+      texto: 'Elige el día y la hora del recordatorio.',
+    });
+    expect(aviso({ momentoIso: '2026-10-19T14:00:00Z' }).texto).toBe(
+      'Esa hora ya pasó.'
+    );
+    expect(aviso({ momentoIso: '2026-10-23T19:35:00Z' }).texto).toBe(
+      'Tiene que salir al menos 1 h antes de la visita.'
+    );
+    expect(aviso({ momentoIso: '2026-10-19T19:00:00Z' }).texto).toBe(
+      'Como mucho 72 h antes de la visita.'
+    );
+  });
+});
+
+describe('momentoPorDefecto', () => {
+  // En la hora local de quien corre las pruebas, como el formulario.
+  const visita = new Date(2026, 9, 23, 15, 5).toISOString();
+
+  it('la vispera a las 8:00 p. m.', () => {
+    expect(momentoPorDefecto(visita, new Date(2026, 9, 19, 10, 0))).toEqual({
+      fecha: '2026-10-22',
+      hora: '20:00',
+    });
+  });
+
+  it('si esa hora ya paso, dos horas antes de la visita', () => {
+    expect(momentoPorDefecto(visita, new Date(2026, 9, 22, 21, 0))).toEqual({
+      fecha: '2026-10-23',
+      hora: '13:05',
+    });
+  });
+
+  it('sin visita, nada', () => {
+    expect(momentoPorDefecto(null)).toBe(null);
   });
 });
