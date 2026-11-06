@@ -467,30 +467,14 @@ const TARJETA =
             />
             <Input v-model="nombre" label="Nombre del cliente" />
           </div>
-          <div
+          <p
             v-if="usuarioNormalizado && !telefonoNormalizado"
-            class="flex gap-3 px-4 py-3 text-sm rounded-lg bg-n-amber-2 text-n-amber-11"
+            class="flex items-center gap-1.5 -mt-2 mb-0 text-sm text-n-amber-11"
             data-turuta="importar-solo-usuario"
           >
-            <Icon
-              icon="i-lucide-alert-triangle"
-              class="flex-none mt-0.5 size-4"
-            />
-            <div>
-              <p class="mb-1 font-medium">
-                Este cliente solo tiene usuario (@{{ usuarioNormalizado }}), sin
-                teléfono: no se le podrá escribir desde el CRM hasta que vuelva
-                a escribir él.
-              </p>
-              <p class="mb-0">
-                El chat se importa igual, y cuando escriba a este número su
-                mensaje entra en este mismo chat. Antes no se le puede mandar
-                nada, ni una plantilla: Meta no da su número. Si el cliente lo
-                dio (por ejemplo, en un formulario dentro del chat), ponlo en
-                «Teléfono del cliente».
-              </p>
-            </div>
-          </div>
+            <Icon icon="i-lucide-alert-triangle" class="flex-none size-3.5" />
+            Sin teléfono: no se le podrá escribir hasta que vuelva a escribir.
+          </p>
           <CampoSelect
             v-model="bandeja"
             label="Número de WhatsApp de la inmobiliaria"
