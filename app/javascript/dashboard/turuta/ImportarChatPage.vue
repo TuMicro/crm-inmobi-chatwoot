@@ -31,6 +31,7 @@ import {
   SOLO_CLIENTE,
   telefonoE164,
   textoDelZip,
+  usuarioWhatsapp,
 } from './importarChat';
 
 const FORMATOS = [
@@ -59,6 +60,9 @@ const huella = ref('');
 
 const negocio = ref('');
 const telefono = ref('');
+// El usuario de WhatsApp ("@carla"), para quien escribe sin enseñar su numero:
+// con el basta para importar (05/11/2026).
+const usuario = ref('');
 const nombre = ref('');
 const bandeja = ref('');
 // El id de usuario de Chatwoot (asesor o administrador); '' es nadie.
@@ -137,6 +141,7 @@ const opcionesNegocio = computed(() => [
 ]);
 
 const telefonoNormalizado = computed(() => telefonoE164(telefono.value));
+const usuarioNormalizado = computed(() => usuarioWhatsapp(usuario.value));
 const muestra = computed(() => {
   const m = analisis.value?.mensajes || [];
   return m.length > 4 ? [...m.slice(0, 3), m[m.length - 1]] : m;
@@ -145,7 +150,7 @@ const puedeImportar = computed(
   () =>
     !!analisis.value &&
     !!negocio.value &&
-    !!telefonoNormalizado.value &&
+    (!!telefonoNormalizado.value || !!usuarioNormalizado.value) &&
     !!bandeja.value &&
     !!etapa.value &&
     !importando.value
@@ -173,13 +178,15 @@ function limpiar() {
   huella.value = '';
   negocio.value = '';
   telefono.value = '';
+  usuario.value = '';
   nombre.value = '';
   errorArchivo.value = '';
   hecho.value = null;
 }
 
-// El nombre y el telefono del cliente salen del otro remitente (si es un
-// contacto sin guardar, su nombre es su numero) o del nombre del fichero.
+// El nombre, el telefono y el usuario del cliente salen del otro remitente
+// (si es un contacto sin guardar, su nombre es su numero, o "@usuario" si no
+// lo enseña) o del nombre del fichero.
 function proponerCliente() {
   const contacto = contactoDelArchivo(archivo.value?.name);
   const cliente = negocio.value
@@ -188,6 +195,10 @@ function proponerCliente() {
   nombre.value = contacto || cliente?.nombre || '';
   const tel = telefonoE164(cliente?.nombre) || telefonoE164(contacto);
   if (tel) telefono.value = tel;
+  const usu =
+    usuarioWhatsapp(cliente?.nombre, { conArroba: true }) ||
+    usuarioWhatsapp(contacto, { conArroba: true });
+  if (usu) usuario.value = `@${usu}`;
 }
 
 async function elegirArchivo(evento) {
@@ -240,6 +251,7 @@ async function importar() {
       {
         inbox_id: bandeja.value,
         telefono: telefonoNormalizado.value,
+        usuario: usuarioNormalizado.value,
         nombre: nombre.value.trim(),
         assignee_id: asignado.value || null,
         zona: opciones.value?.zona,
@@ -255,6 +267,7 @@ async function importar() {
         contactId: cw.contact_id,
         inboxId: bandeja.value,
         telefono: telefonoNormalizado.value,
+        usuario: usuarioNormalizado.value,
         nombre: nombre.value.trim(),
         chatwootAgentId: asignado.value || null,
         stageId: etapa.value,
@@ -269,6 +282,9 @@ async function importar() {
       etapa: lead.etapa,
       asesor: lead.asesor,
       asignadoA: nombreAsignado.value,
+      soloUsuario: telefonoNormalizado.value
+        ? null
+        : `@${usuarioNormalizado.value}`,
       enlace: frontendURL(
         `accounts/${cuenta.value}/conversations/${cw.display_id}`
       ),
@@ -336,6 +352,11 @@ const TARJETA =
                 en ese número).
               </template>
               El chat sigue en la bandeja con todo su historial.
+            </p>
+            <p v-if="hecho.soloUsuario" class="mt-1 mb-0">
+              Sin teléfono: cuando {{ hecho.soloUsuario }} vuelva a escribir a
+              este número, su mensaje entra en este chat. Hasta entonces no se
+              le puede escribir desde el CRM, porque Meta no da su número.
             </p>
           </div>
         </div>
@@ -429,7 +450,21 @@ const TARJETA =
               :message="
                 telefonoNormalizado
                   ? `Se guarda como ${telefonoNormalizado}`
-                  : 'Con el código de país. Si no sale en el chat, búscalo en el contacto del celular.'
+                  : usuarioNormalizado
+                    ? 'Opcional: este cliente escribe con su usuario. Si sabes su número, ponlo.'
+                    : 'Con el código de país. Si no sale en el chat, búscalo en el contacto del celular.'
+              "
+            />
+            <Input
+              v-model="usuario"
+              label="Usuario de WhatsApp"
+              placeholder="@usuario"
+              :message="
+                usuarioNormalizado
+                  ? telefonoNormalizado
+                    ? `Se guarda como @${usuarioNormalizado}`
+                    : 'Sin teléfono, el chat queda con este usuario y se une al cliente cuando vuelva a escribir.'
+                  : 'Solo si el cliente escribe con usuario, sin enseñar su número.'
               "
             />
             <Input v-model="nombre" label="Nombre del cliente" />

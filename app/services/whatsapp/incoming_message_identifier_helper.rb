@@ -21,7 +21,11 @@ module Whatsapp::IncomingMessageIdentifierHelper
     return if source_ids.blank?
 
     attrs = contact_attributes_from_contact_params(contact_params, source_ids.first)
-    @contact_inbox = find_or_create_contact_inbox(
+    # [turuta] Un chat importado por usuario y sin telefono (Turuta::UsuarioWhatsapp):
+    # su marcador pasa a ser el identificador real y el mensaje entra en ese chat.
+    @contact_inbox = Turuta::UsuarioWhatsapp.reclamar(
+      inbox: inbox, source_ids: source_ids, username: contact_params.dig(:profile, :username)
+    ) || find_or_create_contact_inbox(
       source_ids: source_ids,
       contact_attributes: attrs
     )

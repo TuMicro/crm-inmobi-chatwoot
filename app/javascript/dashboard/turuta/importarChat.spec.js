@@ -8,6 +8,7 @@ import {
   SOLO_CLIENTE,
   telefonoE164,
   textoDelZip,
+  usuarioWhatsapp,
 } from './importarChat';
 
 // Los espacios raros son los de verdad: Android pone U+202F antes de "p. m." y
@@ -192,6 +193,17 @@ describe('contactoDelArchivo y negocioProbable', () => {
     expect(negocioProbable(remitentes, null)).toBe('José Rojas');
     expect(negocioProbable([remitentes[0]], null)).toBeNull();
   });
+
+  it('sin nombre de fichero, el cliente tambien es el que sale con su usuario', () => {
+    const remitentes = [
+      { nombre: '@carlalariena', cuantos: 1 },
+      { nombre: 'Madhousebienesraices', cuantos: 1 },
+    ];
+    expect(negocioProbable(remitentes, null)).toBe('Madhousebienesraices');
+    expect(negocioProbable([...remitentes].reverse(), null)).toBe(
+      'Madhousebienesraices'
+    );
+  });
 });
 
 describe('telefonoE164', () => {
@@ -201,6 +213,26 @@ describe('telefonoE164', () => {
     expect(telefonoE164('+1 (555) 132-5825')).toBe('+15551325825');
     expect(telefonoE164('Juan Pérez')).toBeNull();
     expect(telefonoE164('123')).toBeNull();
+  });
+});
+
+describe('usuarioWhatsapp', () => {
+  it('sin "@" y en minusculas', () => {
+    expect(usuarioWhatsapp('@CarlaLaRiena')).toBe('carlalariena');
+    expect(usuarioWhatsapp(' kefrin.h ')).toBe('kefrin.h');
+    expect(usuarioWhatsapp('@ana_maria.88')).toBe('ana_maria.88');
+  });
+
+  it('null si no parece un usuario', () => {
+    expect(usuarioWhatsapp('')).toBeNull();
+    expect(usuarioWhatsapp('Juan Pérez')).toBeNull();
+    expect(usuarioWhatsapp('@123456')).toBeNull();
+    expect(usuarioWhatsapp('+51 966 723 347')).toBeNull();
+  });
+
+  it('con arroba: solo si empieza por "@" (un nombre como "Juan" no lo es)', () => {
+    expect(usuarioWhatsapp('Juan', { conArroba: true })).toBeNull();
+    expect(usuarioWhatsapp('@juan', { conArroba: true })).toBe('juan');
   });
 });
 

@@ -19,7 +19,7 @@ class Api::V1::Accounts::TurutaImportacionesController < Api::V1::Accounts::Base
   end
 
   def permitidos
-    params.permit(:inbox_id, :telefono, :nombre, :assignee_id, :zona, :huella,
+    params.permit(:inbox_id, :telefono, :usuario, :nombre, :assignee_id, :zona, :huella,
                   mensajes: [:fecha, :entrante, :texto]).to_h
   end
 end

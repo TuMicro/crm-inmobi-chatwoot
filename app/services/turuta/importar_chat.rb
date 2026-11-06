@@ -28,12 +28,12 @@ module Turuta
 
     def perform
       inbox = bandeja
-      telefono = telefono_valido
+      telefono, usuario = identidad
       filas = mensajes
       asesor = asesor_elegido
 
       ActiveRecord::Base.transaction do
-        contact_inbox, contacto = contacto_en(inbox, telefono)
+        contact_inbox, contacto = telefono ? contacto_en(inbox, telefono) : contacto_por_usuario(inbox, usuario)
         previa = ya_importada(contact_inbox)
         if previa
           resultado(previa, contacto, 0, duplicado: true)
@@ -56,11 +56,17 @@ module Turuta
       inbox
     end
 
-    def telefono_valido
-      telefono = @p['telefono'].to_s
-      raise Error, 'El telefono tiene que ir con el codigo de pais: +51...' unless telefono.match?(/\A\+[1-9]\d{7,14}\z/)
-
-      telefono
+    # El telefono o, si el cliente escribia con usuario de WhatsApp sin enseñar
+    # su numero (05/11/2026), el usuario. Hace falta uno de los dos.
+    def identidad
+      telefono = @p['telefono'].to_s.presence
+      usuario = Turuta::UsuarioWhatsapp.normalizar(@p['usuario'])
+      if telefono
+        raise Error, 'El telefono tiene que ir con el codigo de pais: +51...' unless telefono.match?(/\A\+[1-9]\d{7,14}\z/)
+      elsif usuario.nil?
+        raise Error, 'Falta el telefono (+51...) o el usuario de WhatsApp (@...)'
+      end
+      [telefono, usuario]
     end
 
     def asesor_elegido
@@ -104,6 +110,22 @@ module Turuta
                  @account.contacts.find_by(phone_number: telefono) ||
                  @account.contacts.create!(name: @p['nombre'].presence || telefono, phone_number: telefono)
       contact_inbox ||= ContactInbox.create!(contact: contacto, inbox: inbox, source_id: source_id)
+      [contact_inbox, contacto]
+    end
+
+    # Sin telefono, por el usuario: el contacto que ya tiene ese usuario (si
+    # escribio a algun numero), o uno nuevo. En la bandeja, su contact_inbox o,
+    # si aun no escribio a este numero, el marcador de Turuta::UsuarioWhatsapp,
+    # que se cambia por su identificador real cuando escriba.
+    def contacto_por_usuario(inbox, usuario)
+      marcador = Turuta::UsuarioWhatsapp.marcador(usuario)
+      contact_inbox = inbox.contact_inboxes.find_by(source_id: marcador)
+      contacto = contact_inbox&.contact ||
+                 Turuta::UsuarioWhatsapp.contacto(@account, usuario) ||
+                 @account.contacts.create!(name: @p['nombre'].presence || "@#{usuario}",
+                                           additional_attributes: Turuta::UsuarioWhatsapp.atributos(usuario))
+      contact_inbox ||= contacto.contact_inboxes.find_by(inbox: inbox) ||
+                        ContactInbox.create!(contact: contacto, inbox: inbox, source_id: marcador)
       [contact_inbox, contacto]
     end
 

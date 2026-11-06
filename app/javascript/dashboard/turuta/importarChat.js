@@ -222,6 +222,21 @@ export function telefonoE164(entrada) {
   return /^\+[1-9]\d{7,14}$/.test(e164) ? e164 : null;
 }
 
+/**
+ * El usuario de WhatsApp, sin "@" y en minusculas: "@CarlaLaRiena" ->
+ * "carlalariena". Quien escribe con usuario (los nombres de usuario de Meta)
+ * no enseña su numero, y en la exportacion sale asi. Con conArroba, solo si
+ * empieza por "@": un nombre guardado como "Juan" no es un usuario. Null si
+ * no lo parece. Lo mismo que queBuscar de la API
+ * (dashboard-app/reinicio.logic.ts).
+ */
+export function usuarioWhatsapp(entrada, { conArroba = false } = {}) {
+  const texto = String(entrada ?? '').trim();
+  if (conArroba && !texto.startsWith('@')) return null;
+  const m = /^@?([a-z0-9._]{2,40})$/i.exec(texto);
+  return m && /[a-z]/i.test(m[1]) ? m[1].toLowerCase() : null;
+}
+
 // Como sale en la exportacion quien la hizo, segun el idioma del celular.
 const QUIEN_EXPORTA = /^(tú|tu|yo|you)$/i;
 
@@ -230,8 +245,9 @@ const QUIEN_EXPORTA = /^(tú|tu|yo|you)$/i;
  *   1. quien exporto, que sale como "Tú" (o "You"): exporta la inmobiliaria,
  *      desde su celular (03/11/2026, los chats de MadHouse);
  *   2. el remitente que NO es el contacto del nombre del fichero;
- *   3. el que no es un numero de telefono (un contacto sin guardar sale con
- *      su numero, y ese es el cliente).
+ *   3. el que no es un numero de telefono ni un "@usuario" (un contacto sin
+ *      guardar sale con su numero, o con su usuario si no lo enseña, y ese
+ *      es el cliente).
  * Con un solo remitente, el si es "Tú". Null si no se puede saber; entonces
  * lo elige quien importa.
  */
@@ -242,10 +258,12 @@ export function negocioProbable(remitentes, contacto) {
   const [x, y] = remitentes;
   if (contacto && x.nombre === contacto) return y.nombre;
   if (contacto && y.nombre === contacto) return x.nombre;
-  const xEsTelefono = !!telefonoE164(x.nombre);
-  const yEsTelefono = !!telefonoE164(y.nombre);
-  if (xEsTelefono === yEsTelefono) return null;
-  return xEsTelefono ? y.nombre : x.nombre;
+  const esCliente = nombre =>
+    !!telefonoE164(nombre) || !!usuarioWhatsapp(nombre, { conArroba: true });
+  const xEsCliente = esCliente(x.nombre);
+  const yEsCliente = esCliente(y.nombre);
+  if (xEsCliente === yEsCliente) return null;
+  return xEsCliente ? y.nombre : x.nombre;
 }
 
 /** Los mensajes como los pide la importacion: entrante = lo escribio el cliente. */
