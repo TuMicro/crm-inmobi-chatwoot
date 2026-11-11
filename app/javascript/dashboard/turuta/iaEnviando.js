@@ -62,21 +62,60 @@ export function iaEnviandoPorMensajes(mensajes, ahora = Date.now()) {
 }
 
 /**
+ * Lo que dura como mucho la marca de la API (AVISO_ENVIANDO_MS en
+ * services/api ai.service.ts). Una ficha que salio hace menos que esto manda
+ * sobre la marca.
+ */
+const DURA_LA_MARCA_MS = 3 * 60000;
+
+/**
  * Como va la ficha de la IA, por sus mensajes: 'enviando', 'terminada' (acaba
  * de salir su ultima pieza: el aviso dice "terminó" al momento, sin esperar a
  * que llegue al movil) o null. Con la marca se sabe exacto; sin ella (fichas
  * por macro), se deduce como antes (iaEnviandoPorMensajes).
+ *
+ * Tras la ultima pieza la IA aun manda textos sueltos, como "¿Es el tipo de
+ * propiedad que buscas?" (10/11): con ellos la ficha sigue 'terminada'. Y si
+ * tras una pieza llegan solo textos, la ficha acabo aunque faltara alguna (no
+ * se pudo mandar).
  */
 export function estadoDelEnvio(mensajes, ahora = Date.now()) {
   const salientes = (mensajes || []).filter(
     m => m?.message_type === SALIENTE && !m.private
   );
-  const ultimo = salientes[salientes.length - 1];
-  const marca = deLaIa(ultimo) ? marcaDeFicha(ultimo) : null;
-  if (marca && haceMenosDe(ultimo, 120000, ahora)) {
-    return Number(marca.paso) >= Number(marca.de) ? 'terminada' : 'enviando';
+  // La ultima pieza marcada entre los mensajes de la IA del final.
+  let i = salientes.length - 1;
+  while (i >= 0 && deLaIa(salientes[i]) && !marcaDeFicha(salientes[i])) {
+    i -= 1;
+  }
+  const pieza = i >= 0 && deLaIa(salientes[i]) ? salientes[i] : null;
+  if (pieza) {
+    const despues = salientes.slice(i + 1);
+    const conArchivo = despues.some(m => (m.attachments || []).length > 0);
+    const marca = marcaDeFicha(pieza);
+    const acabo =
+      !conArchivo &&
+      (despues.length > 0 || Number(marca.paso) >= Number(marca.de));
+    if (acabo && haceMenosDe(pieza, DURA_LA_MARCA_MS, ahora)) {
+      return 'terminada';
+    }
+    if (!despues.length && haceMenosDe(pieza, 120000, ahora)) {
+      return 'enviando';
+    }
   }
   return iaEnviandoPorMensajes(mensajes, ahora) ? 'enviando' : null;
+}
+
+/**
+ * Lo que enseña el chat (MessagesView): lo que dicen los mensajes y, si no
+ * dicen nada, la marca de la API. Una ficha 'terminada' manda sobre la marca:
+ * la API la quita al acabar la vuelta, y mientras tanto el aviso se volvia a
+ * abrir con la pregunta de despues de la ficha (10/11).
+ */
+export function estadoDeLaIa(chat, ahora = Date.now()) {
+  const porMensajes = estadoDelEnvio(chat?.messages, ahora);
+  if (porMensajes) return porMensajes;
+  return iaEnviando(chat, ahora) ? 'enviando' : null;
 }
 
 /**

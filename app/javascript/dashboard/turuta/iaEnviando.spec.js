@@ -3,6 +3,7 @@ import {
   iaEnviando,
   iaEnviandoPorMensajes,
   estadoDelEnvio,
+  estadoDeLaIa,
   seguirEnvioDeLaIa,
 } from './iaEnviando';
 
@@ -142,22 +143,82 @@ describe('estadoDelEnvio: con la marca de la API se sabe cuando sale la ultima (
     );
   });
 
-  it('un texto de la IA despues de la ficha no vuelve a abrir el aviso', () => {
-    const texto = {
-      message_type: 1,
-      private: false,
-      sender: { type: 'agent_bot' },
-      created_at: ahora / 1000 - 1,
-      status: 'sent',
-    };
-    expect(estadoDelEnvio([pieza(1, 2, 5), pieza(2, 2, 3), texto], ahora)).toBe(
-      null
-    );
+  const texto = (hace = 1) => ({
+    message_type: 1,
+    private: false,
+    sender: { type: 'agent_bot' },
+    created_at: ahora / 1000 - hace,
+    status: 'sent',
+  });
+
+  it('un texto de la IA despues de la ficha la deja terminada (10/11)', () => {
+    expect(
+      estadoDelEnvio([pieza(1, 2, 5), pieza(2, 2, 3), texto()], ahora)
+    ).toBe('terminada');
+  });
+
+  it('solo textos tras una pieza: acabo aunque faltara alguna', () => {
+    expect(
+      estadoDelEnvio([pieza(1, 3, 5), pieza(2, 3, 3), texto()], ahora)
+    ).toBe('terminada');
+  });
+
+  it('una ficha de hace mas de 3 minutos ya no cuenta', () => {
+    expect(
+      estadoDelEnvio([pieza(1, 2, 300), pieza(2, 2, 200), texto(190)], ahora)
+    ).toBe(null);
   });
 
   it('sin marca (una ficha por macro), como antes', () => {
     const sinMarca = { ...pieza(2, 2), content_attributes: {} };
     expect(estadoDelEnvio([sinMarca], ahora)).toBe('enviando');
+  });
+
+  it('tras una ficha marcada, una por macro sigue enviando', () => {
+    const sinMarca = { ...pieza(2, 2, 1), content_attributes: {} };
+    expect(
+      estadoDelEnvio(
+        [pieza(1, 2, 9), pieza(2, 2, 8), texto(5), sinMarca],
+        ahora
+      )
+    ).toBe('enviando');
+  });
+});
+
+describe('estadoDeLaIa: la ficha que ya salio manda sobre la marca de la API (10/11)', () => {
+  const ahora = Date.parse('2026-11-10T23:00:00Z');
+  const marca = {
+    custom_attributes: { turuta_ia_enviando: '2026-11-10T23:02:00Z' },
+  };
+  const mensaje = (hace, extra = {}) => ({
+    message_type: 1,
+    private: false,
+    sender: { type: 'agent_bot' },
+    created_at: ahora / 1000 - hace,
+    status: 'sent',
+    ...extra,
+  });
+  const pieza = (paso, de, hace) =>
+    mensaje(hace, {
+      content_attributes: { turuta_ficha: { id: 'f1', paso, de } },
+    });
+
+  it('con la marca y sin mensajes aun: enviando', () => {
+    expect(estadoDeLaIa({ ...marca, messages: [] }, ahora)).toBe('enviando');
+  });
+
+  it('la pregunta tras la ficha no reabre el aviso aunque la marca siga', () => {
+    const messages = [mensaje(9), pieza(1, 2, 8), pieza(2, 2, 5), mensaje(2)];
+    expect(estadoDeLaIa({ ...marca, messages }, ahora)).toBe('terminada');
+  });
+
+  it('a mitad de ficha: enviando', () => {
+    const messages = [mensaje(9), pieza(1, 3, 8), pieza(2, 3, 5)];
+    expect(estadoDeLaIa({ ...marca, messages }, ahora)).toBe('enviando');
+  });
+
+  it('sin marca y sin ficha: nada', () => {
+    expect(estadoDeLaIa({ messages: [mensaje(2)] }, ahora)).toBe(null);
   });
 });
 

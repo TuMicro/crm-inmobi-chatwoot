@@ -27,8 +27,7 @@ import {
   TEXTO_IA_ENVIANDO,
   TEXTO_TOAST_IA,
   TEXTO_TOAST_IA_FIN,
-  iaEnviando,
-  estadoDelEnvio,
+  estadoDeLaIa,
   seguirEnvioDeLaIa,
 } from 'dashboard/turuta/iaEnviando';
 import { useAlert } from 'dashboard/composables';
@@ -140,18 +139,10 @@ export default {
       return userList.length !== 0;
     },
     // [turuta] La IA esta mandando una ficha en este chat (turuta/iaEnviando.js):
-    // por la marca de la API o, si no llega, por sus mensajes.
+    // por sus mensajes o, si no dicen nada, por la marca de la API.
     // 'enviando', 'terminada' (salio la ultima pieza) o null.
     turutaEstadoIa() {
-      const porMensajes = estadoDelEnvio(
-        this.currentChat?.messages,
-        this.turutaAhora
-      );
-      if (porMensajes === 'terminada') return 'terminada';
-      return porMensajes === 'enviando' ||
-        iaEnviando(this.currentChat, this.turutaAhora)
-        ? 'enviando'
-        : null;
+      return estadoDeLaIa(this.currentChat, this.turutaAhora);
     },
     turutaIaEnviando() {
       return this.turutaEstadoIa === 'enviando';
