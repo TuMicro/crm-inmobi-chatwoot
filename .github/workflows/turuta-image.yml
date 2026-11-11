@@ -34,7 +34,9 @@ concurrency:
 jobs:
   build:
     name: Construir y publicar
-    runs-on: ubuntu-latest
+    # Fija: con ubuntu-26.04 (ubuntu-latest desde noviembre de 2026) su Ruby
+    # rechaza el yield del layout en "ruby -c" y la comprobacion falla (10/11).
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
 
