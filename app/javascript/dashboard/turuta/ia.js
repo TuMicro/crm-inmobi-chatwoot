@@ -13,6 +13,7 @@ export const TEXTO_MOTIVO = {
   fuera_de_alcance: 'Fuera de su alcance',
   sin_avance: 'Muchas vueltas sin avanzar',
   gestion: 'Pidieron una gestión',
+  requerimiento: 'Buscaban algo que no hay: requerimiento',
   ia_apagada: 'Se apagó la IA',
   humano: 'Un asesor escribió en el chat',
   asignado: 'Un asesor se lo asignó',
@@ -23,7 +24,7 @@ export const textoMotivo = motivo =>
   TEXTO_MOTIVO[motivo] || motivo || 'Sin motivo';
 
 /** Los motivos que dejan al lead con la IA todavía atendiendo. */
-const SIGUEN = ['calificado', 'visita', 'gestion'];
+const SIGUEN = ['calificado', 'visita', 'gestion', 'requerimiento'];
 
 /** Dinero con los decimales que hacen falta: centavos o milesimas. */
 export function dinero(n) {

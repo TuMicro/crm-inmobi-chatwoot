@@ -52,6 +52,12 @@ describe('motivos', () => {
     expect(m[1].sigue).toBe(false);
   });
 
+  it('el requerimiento se traduce y sigue con la IA', () => {
+    const [m] = motivos([{ motivo: 'requerimiento', total: 1 }]);
+    expect(m.texto).toBe('Buscaban algo que no hay: requerimiento');
+    expect(m.sigue).toBe(true);
+  });
+
   it('un motivo que no conoce se enseña tal cual', () => {
     expect(textoMotivo('otra_cosa')).toBe('otra_cosa');
     expect(textoMotivo(null)).toBe('Sin motivo');
