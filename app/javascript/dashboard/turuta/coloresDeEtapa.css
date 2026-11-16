@@ -1,0 +1,37 @@
+/* [turuta] El tinte de etapa en la lista de chats (coloresDeEtapa.js).
+ *
+ * Va en background-image y no en background-color: asi siguen debajo los
+ * fondos de Chatwoot para el chat abierto, el seleccionado y el que esta bajo
+ * el cursor, y se distinguen igual. Las variables las pone la tarjeta con la
+ * transparencia ya ajustada para que el texto se lea (alfaLegible). */
+.turuta-tinte {
+  background-image: linear-gradient(var(--te-claro), var(--te-claro));
+}
+
+.turuta-tinte:hover,
+.turuta-tinte.active,
+.turuta-tinte.selected {
+  background-image: linear-gradient(
+    var(--te-claro-fuerte),
+    var(--te-claro-fuerte)
+  );
+}
+
+/* El chat abierto, ademas, con una franja del color a la izquierda: sobre un
+ * fondo de color, el gris de "abierto" de Chatwoot casi no se ve. */
+.turuta-tinte.active {
+  box-shadow: inset 3px 0 0 var(--te-borde);
+}
+
+body.dark .turuta-tinte {
+  background-image: linear-gradient(var(--te-oscuro), var(--te-oscuro));
+}
+
+body.dark .turuta-tinte:hover,
+body.dark .turuta-tinte.active,
+body.dark .turuta-tinte.selected {
+  background-image: linear-gradient(
+    var(--te-oscuro-fuerte),
+    var(--te-oscuro-fuerte)
+  );
+}

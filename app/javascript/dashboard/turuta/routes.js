@@ -7,6 +7,7 @@ import IaPage from './IaPage.vue';
 import ReiniciarLeadPage from './ReiniciarLeadPage.vue';
 import ImportarChatPage from './ImportarChatPage.vue';
 import CalendarioPage from './CalendarioPage.vue';
+import ColoresDeEtapaPage from './ColoresDeEtapaPage.vue';
 
 export const routes = [
   {
@@ -57,5 +58,13 @@ export const routes = [
     component: CalendarioPage,
     // Todos: cada persona conecta su propio Google Calendar.
     meta: { permissions: ['administrator', 'agent'] },
+  },
+  {
+    path: frontendURL('accounts/:accountId/turuta/colores-etapa'),
+    name: 'turuta_colores_etapa',
+    component: ColoresDeEtapaPage,
+    // Solo administradores: son los colores de todo el equipo. Cada persona
+    // cambia los suyos en el perfil. La API tambien lo comprueba.
+    meta: { permissions: ['administrator'] },
   },
 ];

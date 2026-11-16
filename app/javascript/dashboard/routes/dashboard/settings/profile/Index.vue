@@ -23,6 +23,7 @@ import MfaSettingsCard from './MfaSettingsCard.vue';
 import ActiveSessions from './ActiveSessions.vue';
 import Policy from 'dashboard/components/policy.vue';
 import RadioCard from 'dashboard/components-next/radioCard/RadioCard.vue';
+import MisColoresDeEtapa from 'dashboard/turuta/MisColoresDeEtapa.vue'; // [turuta]
 import {
   ROLES,
   CONVERSATION_PERMISSIONS,
@@ -30,6 +31,7 @@ import {
 
 export default {
   components: {
+    MisColoresDeEtapa, // [turuta]
     MessageSignature,
     SectionLayout,
     FontSize,
@@ -273,6 +275,17 @@ export default {
         />
       </div>
     </SectionLayout>
+    <!-- [turuta] El color de cada etapa en la lista de chats, solo para esta
+         persona (turuta/MisColoresDeEtapa.vue). Textos nuestros, sin i18n. -->
+    <!-- eslint-disable vue/no-bare-strings-in-template, @intlify/vue-i18n/no-raw-text -->
+    <SectionLayout
+      with-border
+      title="Mis colores de etapa"
+      description="El color de cada etapa en tu lista de chats. Lo que cambies aquí es solo para ti; lo demás sigue con los colores del equipo."
+    >
+      <MisColoresDeEtapa />
+    </SectionLayout>
+    <!-- eslint-enable vue/no-bare-strings-in-template, @intlify/vue-i18n/no-raw-text -->
     <!-- [turuta] Fuera del perfil: firma, tecla de envio, alertas de audio,
          preferencias de notificacion y token de acceso. -->
     <SectionLayout

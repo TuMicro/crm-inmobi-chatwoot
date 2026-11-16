@@ -1013,6 +1013,15 @@ const menuItems = computed(() => {
           to: accountScopedRoute('turuta_calendario'),
           activeOn: ['turuta_calendario'],
         },
+        // [turuta] Nuestra pagina: el color de cada etapa en la lista de
+        // chats, para todo el equipo. Solo administradores.
+        {
+          name: 'Turuta Colores de etapa',
+          label: 'Colores de etapa',
+          icon: 'i-lucide-palette',
+          to: accountScopedRoute('turuta_colores_etapa'),
+          activeOn: ['turuta_colores_etapa'],
+        },
         // [turuta] Nuestra pagina: borrar un numero de prueba para volver a
         // empezar (lo mismo que infra/reset-lead.sh). Solo administradores.
         {
