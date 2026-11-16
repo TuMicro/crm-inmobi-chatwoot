@@ -4,7 +4,12 @@ import {
   NINGUNO,
   PALETA,
   TEMAS,
+  ALFA_TOPE,
+  alfaCon,
   alfaLegible,
+  intensidadEfectiva,
+  legibleCon,
+  normalizarIntensidad,
   cambiosDelEquipo,
   colorDeEtapa,
   coloresDelEquipo,
@@ -180,5 +185,54 @@ describe('tinte', () => {
 
   it('sin color, nada', () => {
     expect(tinte(null)).toEqual({});
+  });
+});
+
+describe('intensidad (17/11)', () => {
+  it('de 0.5 a 2, redondeada; 1 y null son la de por defecto', () => {
+    expect(normalizarIntensidad(1.5)).toBe(1.5);
+    expect(normalizarIntensidad('0.75')).toBe(0.75);
+    expect(normalizarIntensidad(1)).toBeNull();
+    expect(normalizarIntensidad(null)).toBeNull();
+    expect(normalizarIntensidad(3)).toBeUndefined();
+    expect(normalizarIntensidad('fuerte')).toBeUndefined();
+  });
+
+  it('manda la propia; si no, la del equipo; si no, 1', () => {
+    expect(intensidadEfectiva(1.5, 0.75)).toBe(1.5);
+    expect(intensidadEfectiva(null, 0.75)).toBe(0.75);
+    expect(intensidadEfectiva(undefined, null)).toBe(1);
+    expect(intensidadEfectiva('nada', 2)).toBe(2);
+  });
+
+  it('multiplica la transparencia legible, con un tope', () => {
+    const base = alfaLegible('#16883F', 'claro', TEMAS.claro.alfa);
+    expect(alfaCon('#16883F', 'claro', TEMAS.claro.alfa, 1)).toBe(base);
+    expect(alfaCon('#16883F', 'claro', TEMAS.claro.alfa, 0.5)).toBeCloseTo(
+      base / 2,
+      2
+    );
+    expect(alfaCon('#16883F', 'claro', TEMAS.claro.alfa, 2)).toBeCloseTo(
+      base * 2,
+      2
+    );
+    expect(alfaCon('#F2C230', 'claro', 0.5, 2)).toBe(ALFA_TOPE);
+  });
+
+  it('con la de por defecto o mas suave, todo se lee; mas fuerte, no siempre', () => {
+    PALETA.forEach(({ color }) => {
+      expect(legibleCon(color, 1)).toBe(true);
+      expect(legibleCon(color, 0.5)).toBe(true);
+    });
+    expect(legibleCon('#16883F', 2)).toBe(false);
+    expect(legibleCon(null, 2)).toBe(true);
+  });
+
+  it('el tinte cambia con la intensidad y se guarda por color e intensidad', () => {
+    const normal = tinte('#16883F');
+    const fuerte = tinte('#16883F', 2);
+    expect(fuerte).not.toEqual(normal);
+    expect(tinte('#16883f', 2)).toBe(fuerte);
+    expect(fuerte['--te-borde']).toBe('#16883F');
   });
 });

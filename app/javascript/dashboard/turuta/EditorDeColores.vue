@@ -6,7 +6,13 @@ import { computed } from 'vue';
 import Button from 'dashboard/components-next/button/Button.vue';
 import ColorPicker from 'dashboard/components-next/colorpicker/ColorPicker.vue';
 import StageBadge from './StageBadge.vue';
-import { NINGUNO, PALETA, normalizarColor, tinte } from './coloresDeEtapa';
+import {
+  NINGUNO,
+  PALETA,
+  legibleCon,
+  normalizarColor,
+  tinte,
+} from './coloresDeEtapa';
 
 const props = defineProps({
   /** [{ codigo, nombre, color }]: color es el del equipo. */
@@ -17,6 +23,8 @@ const props = defineProps({
    */
   modelValue: { type: Object, default: () => ({}) },
   personal: { type: Boolean, default: false },
+  /** La intensidad con que se pintan las muestras (1, la de por defecto). */
+  intensidad: { type: Number, default: 1 },
 });
 
 const emit = defineEmits(['update:modelValue']);
@@ -85,7 +93,7 @@ const ponerLibre = (codigo, valor) => {
       <div
         class="flex items-start gap-2 px-3 py-2 border rounded-lg border-n-weak bg-n-surface-1 md:w-64 md:flex-none"
         :class="fila.color ? 'turuta-tinte' : ''"
-        :style="fila.color ? tinte(fila.color) : {}"
+        :style="fila.color ? tinte(fila.color, intensidad) : {}"
         aria-hidden="true"
       >
         <span
@@ -94,8 +102,10 @@ const ponerLibre = (codigo, valor) => {
           AB
         </span>
         <div class="min-w-0">
-          <div class="text-sm font-medium truncate text-n-slate-12">
-            Ana Bravo
+          <div
+            class="flex flex-wrap items-center text-sm font-medium gap-y-1 text-n-slate-12"
+          >
+            <span>Ana Bravo</span>
             <StageBadge :name="fila.nombre" />
           </div>
           <div class="text-sm truncate text-n-slate-11">
@@ -105,10 +115,18 @@ const ponerLibre = (codigo, valor) => {
       </div>
 
       <div class="flex flex-col min-w-0 gap-2">
-        <p class="m-0 text-sm">
-          <span class="font-medium text-n-slate-12">{{ fila.nombre }}</span>
-          <span class="text-n-slate-11"> · {{ fila.texto }}</span>
-        </p>
+        <div class="flex flex-col gap-0.5">
+          <h3 class="m-0 text-base font-semibold text-n-slate-12">
+            {{ fila.nombre }}
+          </h3>
+          <p class="m-0 text-sm text-n-slate-11">{{ fila.texto }}</p>
+          <p
+            v-if="fila.color && !legibleCon(fila.color, intensidad)"
+            class="m-0 text-xs text-n-amber-11"
+          >
+            Con esta intensidad, el texto se lee peor sobre este color.
+          </p>
+        </div>
         <div class="flex flex-wrap items-center gap-2">
           <button
             v-for="p in PALETA"

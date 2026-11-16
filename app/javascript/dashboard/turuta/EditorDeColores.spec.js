@@ -73,3 +73,23 @@ describe('EditorDeColores, colores propios', () => {
     expect(ultimo(w)).toEqual({});
   });
 });
+
+describe('EditorDeColores, la etapa y la intensidad (17/11)', () => {
+  it('el nombre de la etapa va como titulo de cada fila', () => {
+    const w = montar({ modelValue: { nurturing: '#F2C230', cierre: null } });
+    expect(fila(w, 0).find('h3').text()).toBe('En seguimiento');
+  });
+
+  it('con mucha intensidad avisa en los colores donde el texto se lee peor', () => {
+    const w = montar({
+      modelValue: { nurturing: '#16883F', cierre: '#F2C230' },
+      intensidad: 2,
+    });
+    expect(fila(w, 0).text()).toContain('el texto se lee peor');
+  });
+
+  it('con la de por defecto no avisa', () => {
+    const w = montar({ modelValue: { nurturing: '#16883F', cierre: null } });
+    expect(fila(w, 0).text()).not.toContain('el texto se lee peor');
+  });
+});
