@@ -1,9 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import {
-  MINUTOS,
   esPmPorDefecto,
   horaDesdePartes,
-  minutosConEl,
+  minutoValido,
   partesDeHora,
   textoHora,
 } from './hora';
@@ -45,9 +44,14 @@ describe('hora: el campo de hora por partes', () => {
     expect([12, 1, 4, 7].map(esPmPorDefecto)).toEqual([true, true, true, true]);
   });
 
-  it('ofrece los minutos de cinco en cinco, y el que ya tenia si es otro', () => {
-    expect(minutosConEl(30)).toBe(MINUTOS);
-    expect(minutosConEl(37)).toContain(37);
-    expect(minutosConEl(37).indexOf(37)).toBe(8);
+  it('el minuto escrito a mano vale de 0 a 59, y nada mas', () => {
+    expect(minutoValido('0')).toBe(0);
+    expect(minutoValido('07')).toBe(7);
+    expect(minutoValido(' 59 ')).toBe(59);
+    expect(minutoValido('60')).toBeNull();
+    expect(minutoValido('')).toBeNull();
+    expect(minutoValido('1a')).toBeNull();
+    expect(minutoValido('-5')).toBeNull();
+    expect(minutoValido('3.5')).toBeNull();
   });
 });

@@ -3,8 +3,8 @@
 // (CampoHora.vue). Funciones puras: hora.spec.js.
 
 export const HORAS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
-/** De cinco en cinco: casi todas las visitas son a una hora redonda. */
-export const MINUTOS = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55];
+/** En punto o y media, que es casi siempre; cualquier otro se escribe. */
+export const MINUTOS = [0, 30];
 
 export const dosDigitos = n => String(n).padStart(2, '0');
 
@@ -36,9 +36,10 @@ export function textoHora(valor) {
  */
 export const esPmPorDefecto = hora => hora === 12 || hora < 8;
 
-/** Los minutos a ofrecer: los de siempre y, si no es uno de ellos, el que ya
- *  tenia la hora (una visita puesta a las 10:37 no se redondea sola). */
-export function minutosConEl(minuto) {
-  if (MINUTOS.includes(minuto)) return MINUTOS;
-  return [...MINUTOS, minuto].sort((a, b) => a - b);
+/** El minuto escrito a mano, si vale (entero de 0 a 59). Null si no. */
+export function minutoValido(texto) {
+  const limpio = String(texto ?? '').trim();
+  if (!/^\d{1,2}$/.test(limpio)) return null;
+  const n = Number(limpio);
+  return n <= 59 ? n : null;
 }
