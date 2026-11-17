@@ -17,10 +17,11 @@
   );
 }
 
-/* El chat abierto, ademas, con una franja del color a la izquierda: sobre un
- * fondo de color, el gris de "abierto" de Chatwoot casi no se ve. */
+/* El chat abierto, ademas, con una franja a la izquierda: sobre un fondo de
+ * color, el gris de "abierto" de Chatwoot casi no se ve. Un tono mas oscura
+ * que el color, para que se vea tambien con la intensidad solida (17/11). */
 .turuta-tinte.active {
-  box-shadow: inset 3px 0 0 var(--te-borde);
+  box-shadow: inset 4px 0 0 color-mix(in srgb, var(--te-borde) 65%, black);
 }
 
 body.dark .turuta-tinte {

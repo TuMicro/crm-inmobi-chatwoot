@@ -11,7 +11,7 @@ const BotonFalso = {
 
 const montar = props =>
   mount(ControlDeIntensidad, {
-    props,
+    props: { id: 'prueba', ...props },
     global: { stubs: { Button: BotonFalso } },
   });
 
@@ -21,7 +21,7 @@ describe('ControlDeIntensidad', () => {
   it('sin elegir, enseña la de por defecto', () => {
     const w = montar({ modelValue: null });
     expect(w.text()).toContain('100 %');
-    expect(w.text()).toContain('por defecto');
+    expect(w.text()).toContain('· por defecto');
     expect(w.find('.boton').exists()).toBe(false);
   });
 
@@ -54,8 +54,11 @@ describe('ControlDeIntensidad', () => {
     expect(w.text()).toContain('la del equipo');
   });
 
-  it('por encima de 100 % avisa de que algunos colores se leen peor', () => {
-    expect(montar({ modelValue: 2 }).text()).toContain('se lee peor');
-    expect(montar({ modelValue: null }).text()).not.toContain('se lee peor');
+  it('al final de la barra el valor dice Sólido', () => {
+    // «Sólido» ya esta siempre en el extremo de la barra: se cuenta el del valor.
+    const veces = w => (w.text().match(/Sólido/g) || []).length;
+    expect(veces(montar({ modelValue: 2 }))).toBe(2);
+    expect(veces(montar({ modelValue: 1.75 }))).toBe(1);
+    expect(montar({ modelValue: 1.75 }).text()).toContain('175 %');
   });
 });

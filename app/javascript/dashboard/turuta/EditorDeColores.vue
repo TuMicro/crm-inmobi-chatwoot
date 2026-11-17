@@ -1,70 +1,99 @@
 <script setup>
-// [turuta] La lista de etapas con su color, para Ajustes -> Colores de etapa
-// (los del equipo) y para el Perfil (los propios). Cada fila trae un chat de
-// muestra pintado como va a quedar, para verlo antes de guardar.
+// [turuta] La lista de etapas con su color y su intensidad, para Ajustes ->
+// Colores de etapa (los del equipo) y para el Perfil (los propios). Cada fila
+// trae un chat de muestra pintado como va a quedar, para verlo antes de
+// guardar, y avisa si con esa intensidad el texto se lee peor.
 import { computed } from 'vue';
 import Button from 'dashboard/components-next/button/Button.vue';
 import ColorPicker from 'dashboard/components-next/colorpicker/ColorPicker.vue';
 import StageBadge from './StageBadge.vue';
+import ControlDeIntensidad from './ControlDeIntensidad.vue';
 import {
   NINGUNO,
   PALETA,
+  esSolido,
+  intensidadPropia,
   legibleCon,
   normalizarColor,
+  normalizarIntensidad,
   tinte,
 } from './coloresDeEtapa';
 
 const props = defineProps({
-  /** [{ codigo, nombre, color }]: color es el del equipo. */
+  /** [{ codigo, nombre, color, intensidad }]: lo del equipo. */
   etapas: { type: Array, default: () => [] },
   /**
    * Del equipo: { codigo: "#RRGGBB" | null }.
    * Propios: { codigo: "#RRGGBB" | NINGUNO }; sin la clave, el del equipo.
    */
   modelValue: { type: Object, default: () => ({}) },
+  /**
+   * Del equipo: { codigo: intensidad | null } (null, la de por defecto).
+   * Propias: { codigo: intensidad }; sin la clave, la del equipo.
+   */
+  intensidades: { type: Object, default: () => ({}) },
   personal: { type: Boolean, default: false },
-  /** La intensidad con que se pintan las muestras (1, la de por defecto). */
-  intensidad: { type: Number, default: 1 },
 });
 
-const emit = defineEmits(['update:modelValue']);
+const emit = defineEmits(['update:modelValue', 'update:intensidades']);
 
 const nombreDe = color => PALETA.find(p => p.color === color)?.nombre || color;
 
+/** El color de la fila y como decirlo. */
+function colorDe(etapa) {
+  const delEquipo = normalizarColor(etapa.color) || null;
+  const elegido = props.modelValue[etapa.codigo];
+  if (!props.personal) {
+    const color =
+      elegido === undefined ? delEquipo : normalizarColor(elegido) || null;
+    return { color, texto: color ? nombreDe(color) : 'Sin color' };
+  }
+  if (elegido === NINGUNO) {
+    return { color: null, propio: true, texto: 'Sin color, solo para ti' };
+  }
+  const propio = normalizarColor(elegido);
+  if (propio) {
+    return {
+      color: propio,
+      propio: true,
+      texto: `${nombreDe(propio)}, solo para ti`,
+    };
+  }
+  return {
+    color: delEquipo,
+    propio: false,
+    texto: delEquipo
+      ? `${nombreDe(delEquipo)}, el del equipo`
+      : 'Sin color, como el equipo',
+  };
+}
+
+/** La intensidad de la fila: la elegida (o null) y la que se ve. */
+function intensidadDe(etapa) {
+  const delEquipo = normalizarIntensidad(etapa.intensidad) ?? 1;
+  if (!props.personal) {
+    const elegida = normalizarIntensidad(props.intensidades[etapa.codigo]);
+    return { elegida: elegida ?? null, vale: elegida ?? 1, porDefecto: 1 };
+  }
+  const propia = intensidadPropia(props.intensidades[etapa.codigo]);
+  return {
+    elegida: propia ?? null,
+    vale: propia ?? delEquipo,
+    porDefecto: delEquipo,
+  };
+}
+
 const filas = computed(() =>
   props.etapas.map(etapa => {
-    const delEquipo = normalizarColor(etapa.color) || null;
-    const elegido = props.modelValue[etapa.codigo];
-    if (!props.personal) {
-      const color =
-        elegido === undefined ? delEquipo : normalizarColor(elegido) || null;
-      return { ...etapa, color, texto: color ? nombreDe(color) : 'Sin color' };
+    const c = colorDe(etapa);
+    const i = intensidadDe(etapa);
+    let aviso = '';
+    if (c.color && esSolido(i.vale)) {
+      aviso = 'Sin transparencia: sobre este color el texto puede no leerse.';
+    } else if (c.color && !legibleCon(c.color, i.vale)) {
+      aviso = 'Con esta intensidad, el texto se lee peor sobre este color.';
     }
-    if (elegido === NINGUNO) {
-      return {
-        ...etapa,
-        color: null,
-        propio: true,
-        texto: 'Sin color, solo para ti',
-      };
-    }
-    const propio = normalizarColor(elegido);
-    if (propio) {
-      return {
-        ...etapa,
-        color: propio,
-        propio: true,
-        texto: `${nombreDe(propio)}, solo para ti`,
-      };
-    }
-    return {
-      ...etapa,
-      color: delEquipo,
-      propio: false,
-      texto: delEquipo
-        ? `${nombreDe(delEquipo)}, el del equipo`
-        : 'Sin color, como el equipo',
-    };
+    return { ...etapa, ...c, intensidad: i, aviso };
   })
 );
 
@@ -79,6 +108,14 @@ const ponerLibre = (codigo, valor) => {
   const color = normalizarColor(valor);
   if (color) poner(codigo, color);
 };
+
+/** null es "la de por defecto" (o "la del equipo", en el perfil). */
+function ponerIntensidad(codigo, valor) {
+  const siguiente = { ...props.intensidades };
+  if (props.personal && valor === null) delete siguiente[codigo];
+  else siguiente[codigo] = valor;
+  emit('update:intensidades', siguiente);
+}
 </script>
 
 <template>
@@ -93,7 +130,7 @@ const ponerLibre = (codigo, valor) => {
       <div
         class="flex items-start gap-2 px-3 py-2 border rounded-lg border-n-weak bg-n-surface-1 md:w-64 md:flex-none"
         :class="fila.color ? 'turuta-tinte' : ''"
-        :style="fila.color ? tinte(fila.color, intensidad) : {}"
+        :style="fila.color ? tinte(fila.color, fila.intensidad.vale) : {}"
         aria-hidden="true"
       >
         <span
@@ -120,12 +157,6 @@ const ponerLibre = (codigo, valor) => {
             {{ fila.nombre }}
           </h3>
           <p class="m-0 text-sm text-n-slate-11">{{ fila.texto }}</p>
-          <p
-            v-if="fila.color && !legibleCon(fila.color, intensidad)"
-            class="m-0 text-xs text-n-amber-11"
-          >
-            Con esta intensidad, el texto se lee peor sobre este color.
-          </p>
         </div>
         <div class="flex flex-wrap items-center gap-2">
           <button
@@ -164,6 +195,18 @@ const ponerLibre = (codigo, valor) => {
             @click="poner(fila.codigo, undefined)"
           />
         </div>
+        <ControlDeIntensidad
+          v-if="fila.color"
+          :id="`turuta-intensidad-${fila.codigo}`"
+          :model-value="fila.intensidad.elegida"
+          :por-defecto="fila.intensidad.porDefecto"
+          :texto-por-defecto="personal ? 'Usar la del equipo' : 'Por defecto'"
+          :etiqueta-por-defecto="personal ? 'la del equipo' : 'por defecto'"
+          @update:model-value="valor => ponerIntensidad(fila.codigo, valor)"
+        />
+        <p v-if="fila.aviso" class="m-0 text-xs text-n-amber-11">
+          {{ fila.aviso }}
+        </p>
       </div>
     </li>
   </ul>

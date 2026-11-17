@@ -4,11 +4,17 @@ import {
   NINGUNO,
   PALETA,
   TEMAS,
-  ALFA_TOPE,
+  SOLIDO,
   alfaCon,
   alfaLegible,
-  intensidadEfectiva,
+  cambiosDeIntensidad,
+  esSolido,
+  intensidadDeEtapa,
+  intensidadPropia,
+  intensidadesDelEquipo,
+  intensidadesParaGuardar,
   legibleCon,
+  mismasIntensidades,
   normalizarIntensidad,
   cambiosDelEquipo,
   colorDeEtapa,
@@ -188,7 +194,7 @@ describe('tinte', () => {
   });
 });
 
-describe('intensidad (17/11)', () => {
+describe('intensidad por etapa (17/11)', () => {
   it('de 0.5 a 2, redondeada; 1 y null son la de por defecto', () => {
     expect(normalizarIntensidad(1.5)).toBe(1.5);
     expect(normalizarIntensidad('0.75')).toBe(0.75);
@@ -198,25 +204,48 @@ describe('intensidad (17/11)', () => {
     expect(normalizarIntensidad('fuerte')).toBeUndefined();
   });
 
-  it('manda la propia; si no, la del equipo; si no, 1', () => {
-    expect(intensidadEfectiva(1.5, 0.75)).toBe(1.5);
-    expect(intensidadEfectiva(null, 0.75)).toBe(0.75);
-    expect(intensidadEfectiva(undefined, null)).toBe(1);
-    expect(intensidadEfectiva('nada', 2)).toBe(2);
+  it('2 es solido', () => {
+    expect(SOLIDO).toBe(2);
+    expect(esSolido(2)).toBe(true);
+    expect(esSolido(1.75)).toBe(false);
   });
 
-  it('multiplica la transparencia legible, con un tope', () => {
+  it('una propia puede ser 1 aunque el equipo use otra', () => {
+    expect(intensidadPropia(1)).toBe(1);
+    expect(intensidadPropia(1.5)).toBe(1.5);
+    expect(intensidadPropia(null)).toBeUndefined();
+    expect(intensidadPropia(9)).toBeUndefined();
+  });
+
+  it('la de cada etapa: la propia; si no, la del equipo; si no, 1', () => {
+    const equipo = { nurturing: 1.5, cierre: 2 };
+    expect(intensidadDeEtapa('nurturing', equipo, { nurturing: 0.5 })).toBe(
+      0.5
+    );
+    expect(intensidadDeEtapa('nurturing', equipo, { nurturing: 1 })).toBe(1);
+    expect(intensidadDeEtapa('cierre', equipo, {})).toBe(2);
+    expect(intensidadDeEtapa('separacion', equipo, undefined)).toBe(1);
+  });
+
+  it('hasta 1 reduce la transparencia legible; por encima sube hasta solido', () => {
     const base = alfaLegible('#16883F', 'claro', TEMAS.claro.alfa);
     expect(alfaCon('#16883F', 'claro', TEMAS.claro.alfa, 1)).toBe(base);
     expect(alfaCon('#16883F', 'claro', TEMAS.claro.alfa, 0.5)).toBeCloseTo(
       base / 2,
       2
     );
-    expect(alfaCon('#16883F', 'claro', TEMAS.claro.alfa, 2)).toBeCloseTo(
-      base * 2,
-      2
-    );
-    expect(alfaCon('#F2C230', 'claro', 0.5, 2)).toBe(ALFA_TOPE);
+    const medio = alfaCon('#16883F', 'claro', TEMAS.claro.alfa, 1.5);
+    expect(medio).toBeGreaterThan(base);
+    expect(medio).toBeLessThan(1);
+    expect(alfaCon('#16883F', 'claro', TEMAS.claro.alfa, 2)).toBe(1);
+    expect(alfaCon('#F2C230', 'oscuro', TEMAS.oscuro.alfaFuerte, 2)).toBe(1);
+  });
+
+  it('el tinte solido no tiene transparencia, en los dos temas', () => {
+    const t = tinte('#16883F', 2);
+    expect(t['--te-claro']).toBe('rgba(22, 136, 63, 1)');
+    expect(t['--te-oscuro']).toBe('rgba(22, 136, 63, 1)');
+    expect(t['--te-claro-fuerte']).toBe('rgba(22, 136, 63, 1)');
   });
 
   it('con la de por defecto o mas suave, todo se lee; mas fuerte, no siempre', () => {
@@ -230,9 +259,46 @@ describe('intensidad (17/11)', () => {
 
   it('el tinte cambia con la intensidad y se guarda por color e intensidad', () => {
     const normal = tinte('#16883F');
-    const fuerte = tinte('#16883F', 2);
+    const fuerte = tinte('#16883F', 1.5);
     expect(fuerte).not.toEqual(normal);
-    expect(tinte('#16883f', 2)).toBe(fuerte);
+    expect(tinte('#16883f', 1.5)).toBe(fuerte);
     expect(fuerte['--te-borde']).toBe('#16883F');
+  });
+});
+
+describe('lo que se guarda de las intensidades', () => {
+  it('las del equipo, por codigo; la de por defecto, null', () => {
+    expect(
+      intensidadesDelEquipo([
+        { codigo: 'nurturing', intensidad: 1.5 },
+        { codigo: 'cierre', intensidad: 1 },
+      ])
+    ).toEqual({ nurturing: 1.5, cierre: null });
+  });
+
+  it('Ajustes manda solo las que cambiaron', () => {
+    const guardado = { nurturing: 1.5, cierre: null };
+    expect(
+      cambiosDeIntensidad({ nurturing: 1.5, cierre: null }, guardado)
+    ).toEqual({});
+    expect(
+      cambiosDeIntensidad({ nurturing: null, cierre: 2 }, guardado)
+    ).toEqual({
+      nurturing: null,
+      cierre: 2,
+    });
+  });
+
+  it('las propias: solo las validas, tambien 1', () => {
+    expect(
+      intensidadesParaGuardar({ nurturing: 1, cierre: 2, separacion: 'x' })
+    ).toEqual({
+      nurturing: 1,
+      cierre: 2,
+    });
+    expect(mismasIntensidades({ nurturing: 1.5 }, { nurturing: '1.5' })).toBe(
+      true
+    );
+    expect(mismasIntensidades({ nurturing: 1.5 }, {})).toBe(false);
   });
 });

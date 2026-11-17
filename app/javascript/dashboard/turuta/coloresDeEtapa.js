@@ -19,14 +19,20 @@ import './coloresDeEtapa.css';
 export const CLAVE_PERSONAL = 'turuta_colores_etapa';
 /** Un color propio que dice "esta etapa, para mi, sin color". */
 export const NINGUNO = 'ninguno';
-/** La clave de la intensidad propia en los ui_settings del usuario. */
+/**
+ * La clave de las intensidades propias en los ui_settings del usuario:
+ * { codigo: intensidad }.
+ */
 export const CLAVE_INTENSIDAD = 'turuta_intensidad_etapa';
 
 /**
- * La intensidad del tinte (17/11) multiplica la transparencia que deja leer
- * el texto: 1 es la de por defecto. Va de 0.5 a 2, igual que en la API.
+ * La intensidad del tinte, una por etapa (17/11). 1 es la de por defecto: la
+ * transparencia que deja leer el texto. Por debajo la reduce; por encima sube
+ * hasta 2, que es solido, sin transparencia. Igual que en la API.
  */
 export const INTENSIDAD = { minima: 0.5, maxima: 2, paso: 0.25 };
+export const SOLIDO = INTENSIDAD.maxima;
+export const esSolido = intensidad => intensidad >= SOLIDO;
 
 /** De 0.5 a 2, redondeada a 0.05; null es la de por defecto (1). Igual que la API. */
 export function normalizarIntensidad(valor) {
@@ -43,9 +49,22 @@ export function normalizarIntensidad(valor) {
   return redondeada === 1 ? null : redondeada;
 }
 
-/** La que se usa: la propia; si no, la del equipo; si no, 1. */
-export const intensidadEfectiva = (propia, delEquipo) =>
-  normalizarIntensidad(propia) ?? normalizarIntensidad(delEquipo) ?? 1;
+/**
+ * Una intensidad propia tal como se guarda: el numero, tambien 1 (quien
+ * quiere la de por defecto aunque el equipo use otra). undefined si no vale.
+ */
+export function intensidadPropia(valor) {
+  if (valor === null || valor === undefined) return undefined;
+  const n = normalizarIntensidad(valor);
+  if (n === undefined) return undefined;
+  return n ?? 1;
+}
+
+/** La de una etapa para esta persona: la suya; si no, la del equipo; si no, 1. */
+export const intensidadDeEtapa = (codigo, equipo, propias) =>
+  intensidadPropia(propias?.[codigo]) ??
+  normalizarIntensidad(equipo?.[codigo]) ??
+  1;
 
 /** Los que se ofrecen de entrada; con el selector se puede elegir cualquier otro. */
 export const PALETA = [
@@ -119,6 +138,41 @@ export function propiosParaGuardar(borrador) {
 export const mismosPropios = (a, b) => {
   const x = propiosParaGuardar(a);
   const y = propiosParaGuardar(b);
+  const claves = new Set([...Object.keys(x), ...Object.keys(y)]);
+  return [...claves].every(c => x[c] === y[c]);
+};
+
+/** Las intensidades del equipo de cada etapa: { codigo: numero | null }. */
+export const intensidadesDelEquipo = etapas =>
+  Object.fromEntries(
+    (etapas || []).map(e => [
+      e.codigo,
+      normalizarIntensidad(e.intensidad) ?? null,
+    ])
+  );
+
+/** Las intensidades que cambiaron en Ajustes: lo que se manda a la API. */
+export function cambiosDeIntensidad(borrador, guardado) {
+  return Object.fromEntries(
+    Object.entries(borrador || {})
+      .map(([codigo, valor]) => [codigo, normalizarIntensidad(valor) ?? null])
+      .filter(([codigo, valor]) => valor !== (guardado?.[codigo] ?? null))
+  );
+}
+
+/** Las propias tal como se guardan: solo intensidades validas. */
+export function intensidadesParaGuardar(borrador) {
+  return Object.fromEntries(
+    Object.entries(borrador || {})
+      .map(([codigo, valor]) => [codigo, intensidadPropia(valor)])
+      .filter(([, valor]) => valor !== undefined)
+  );
+}
+
+/** Si dos juegos de intensidades propias dicen lo mismo. */
+export const mismasIntensidades = (a, b) => {
+  const x = intensidadesParaGuardar(a);
+  const y = intensidadesParaGuardar(b);
   const claves = new Set([...Object.keys(x), ...Object.keys(y)]);
   return [...claves].every(c => x[c] === y[c]);
 };
@@ -197,13 +251,18 @@ export function alfaLegible(hex, tema, maximo) {
 const rgba = (hex, alfa) => `rgba(${rgb(hex).join(', ')}, ${alfa})`;
 const tintes = new Map();
 
-/** Por mucha intensidad que se pida, el tinte no pasa de aqui. */
-export const ALFA_TOPE = 0.6;
-
-/** La transparencia de un color en un tema, con la intensidad aplicada. */
+/**
+ * La transparencia de un color en un tema, con la intensidad aplicada. Hasta
+ * 1 es una parte de la legible; por encima sube de la legible a 1 (solido),
+ * que llega con la intensidad maxima.
+ */
 export function alfaCon(hex, tema, maximo, intensidad = 1) {
-  const alfa = alfaLegible(hex, tema, maximo) * intensidad;
-  return Math.min(ALFA_TOPE, Math.round(alfa * 100) / 100);
+  const base = alfaLegible(hex, tema, maximo);
+  const alfa =
+    intensidad <= 1
+      ? base * intensidad
+      : base + (1 - base) * Math.min(1, (intensidad - 1) / (SOLIDO - 1));
+  return Math.min(1, Math.round(alfa * 100) / 100);
 }
 
 /**
@@ -244,10 +303,16 @@ export function tinte(hex, intensidad = 1) {
 
 // ---------------------------------------------------------------- estado
 
-/** Las etapas de la cuenta, en orden: [{ codigo, nombre, color }]. */
+/** Las etapas de la cuenta, en orden: [{ codigo, nombre, color, intensidad }]. */
 const etapas = ref([]);
-/** La intensidad del equipo (1, la de por defecto). */
-const intensidadEquipo = ref(1);
+/** La intensidad del equipo de cada etapa que no usa la de por defecto. */
+const intensidadesEquipo = computed(() =>
+  Object.fromEntries(
+    etapas.value
+      .filter(e => normalizarIntensidad(e.intensidad))
+      .map(e => [e.codigo, e.intensidad])
+  )
+);
 /** El color del equipo de cada etapa: { codigo: "#RRGGBB" }. */
 const equipo = computed(() =>
   Object.fromEntries(
@@ -285,7 +350,6 @@ export function cargarEtapas() {
   )
     .then(body => {
       etapas.value = body.etapas || [];
-      intensidadEquipo.value = body.intensidad ?? 1;
       ultimaCarga = Date.now();
     })
     .catch(() => {
@@ -343,9 +407,10 @@ export function useTinteDeEtapa(codigo) {
     const ui = store.getters.getUISettings || {};
     const color = colorDeEtapa(unref(codigo), equipo.value, ui[CLAVE_PERSONAL]);
     if (!color) return SIN_TINTE;
-    const intensidad = intensidadEfectiva(
-      ui[CLAVE_INTENSIDAD],
-      intensidadEquipo.value
+    const intensidad = intensidadDeEtapa(
+      unref(codigo),
+      intensidadesEquipo.value,
+      ui[CLAVE_INTENSIDAD]
     );
     return { clase: 'turuta-tinte', estilo: tinte(color, intensidad) };
   });
@@ -358,43 +423,42 @@ export function useColoresDeEtapa() {
   const personales = computed(
     () => store.getters.getUISettings?.[CLAVE_PERSONAL] || {}
   );
-  /** La intensidad propia; null, la del equipo. */
-  const intensidadPersonal = computed(
-    () =>
-      normalizarIntensidad(store.getters.getUISettings?.[CLAVE_INTENSIDAD]) ??
-      null
-  );
+  /** Las intensidades propias por etapa; la que falta, la del equipo. */
+  const intensidadesPersonales = computed(() => {
+    const guardadas = store.getters.getUISettings?.[CLAVE_INTENSIDAD];
+    return guardadas && typeof guardadas === 'object' ? guardadas : {};
+  });
 
   /**
-   * Guarda lo del equipo: los colores que cambiaron y, si cambio, la
-   * intensidad. Solo un administrador: lo comprueba la API.
+   * Guarda lo del equipo: los colores y las intensidades que cambiaron. Solo
+   * un administrador: lo comprueba la API.
    */
-  async function guardarEquipo({ colores, intensidad } = {}) {
+  async function guardarEquipo({ colores, intensidades } = {}) {
     if (!configActual) throw new Error('Falta la configuracion del panel');
     const usuario = store.getters.getCurrentUser;
     const cambios = { accountId: Number(cuentaActual) };
     if (colores && Object.keys(colores).length) cambios.colores = colores;
-    if (intensidad !== undefined) cambios.intensidad = intensidad;
+    if (intensidades && Object.keys(intensidades).length)
+      cambios.intensidades = intensidades;
     const body = await pedir(configActual, '/dashboard-app/etapas/colores', {
       method: 'PUT',
       headers: { 'X-Chatwoot-Usuario': usuario?.access_token || '' },
       body: JSON.stringify(cambios),
     });
     etapas.value = body.etapas || etapas.value;
-    intensidadEquipo.value = body.intensidad ?? intensidadEquipo.value;
   }
 
   /**
-   * Guarda lo propio: { codigo: "#RRGGBB" | NINGUNO } y la intensidad (null,
-   * la del equipo).
+   * Guarda lo propio: { codigo: "#RRGGBB" | NINGUNO } y { codigo: intensidad }.
+   * Lo que falta en cada uno, lo del equipo.
    */
-  async function guardarPersonales(colores, intensidad = null) {
+  async function guardarPersonales(colores, intensidades = {}) {
     const actuales = store.getters.getUISettings || {};
     await store.dispatch('updateUISettings', {
       uiSettings: {
         ...actuales,
         [CLAVE_PERSONAL]: colores,
-        [CLAVE_INTENSIDAD]: normalizarIntensidad(intensidad) ?? null,
+        [CLAVE_INTENSIDAD]: intensidadesParaGuardar(intensidades),
       },
     });
   }
@@ -403,8 +467,7 @@ export function useColoresDeEtapa() {
     etapas,
     equipo,
     personales,
-    intensidadEquipo,
-    intensidadPersonal,
+    intensidadesPersonales,
     cargarEtapas,
     guardarEquipo,
     guardarPersonales,

@@ -74,22 +74,68 @@ describe('EditorDeColores, colores propios', () => {
   });
 });
 
-describe('EditorDeColores, la etapa y la intensidad (17/11)', () => {
+describe('EditorDeColores, la etapa y la intensidad por etapa (17/11)', () => {
+  const ultimaIntensidad = w => w.emitted('update:intensidades').at(-1)[0];
+
   it('el nombre de la etapa va como titulo de cada fila', () => {
     const w = montar({ modelValue: { nurturing: '#F2C230', cierre: null } });
     expect(fila(w, 0).find('h3').text()).toBe('En seguimiento');
   });
 
-  it('con mucha intensidad avisa en los colores donde el texto se lee peor', () => {
+  it('cada etapa con color tiene su barra de intensidad; sin color, no', () => {
+    const w = montar({ modelValue: { nurturing: '#F2C230', cierre: null } });
+    expect(fila(w, 0).find('input[type="range"]').exists()).toBe(true);
+    expect(fila(w, 1).find('input[type="range"]').exists()).toBe(false);
+  });
+
+  it('mover la barra de una etapa cambia solo esa', async () => {
     const w = montar({
-      modelValue: { nurturing: '#16883F', cierre: '#F2C230' },
-      intensidad: 2,
+      modelValue: { nurturing: '#F2C230', cierre: '#16883F' },
+      intensidades: { nurturing: null, cierre: null },
+    });
+    await fila(w, 1).find('input[type="range"]').setValue('1.5');
+    expect(ultimaIntensidad(w)).toEqual({ nurturing: null, cierre: 1.5 });
+  });
+
+  it('solida: avisa de que el texto puede no leerse', () => {
+    const w = montar({
+      modelValue: { nurturing: '#F2C230', cierre: null },
+      intensidades: { nurturing: 2 },
+    });
+    expect(fila(w, 0).text()).toContain('Sin transparencia');
+    expect(fila(w, 0).text()).toContain('Sólido');
+  });
+
+  it('con mas intensidad avisa donde el texto se lee peor', () => {
+    const w = montar({
+      modelValue: { nurturing: '#16883F', cierre: null },
+      intensidades: { nurturing: 1.75 },
     });
     expect(fila(w, 0).text()).toContain('el texto se lee peor');
   });
 
   it('con la de por defecto no avisa', () => {
     const w = montar({ modelValue: { nurturing: '#16883F', cierre: null } });
-    expect(fila(w, 0).text()).not.toContain('el texto se lee peor');
+    expect(fila(w, 0).text()).not.toContain('se lee peor');
+    expect(fila(w, 0).text()).not.toContain('Sin transparencia');
+  });
+
+  it('en el perfil, la del equipo vale hasta que se elige otra', async () => {
+    const conIntensidad = [
+      {
+        codigo: 'nurturing',
+        nombre: 'En seguimiento',
+        color: '#F2C230',
+        intensidad: 1.5,
+      },
+    ];
+    const w = mount(EditorDeColores, {
+      props: { etapas: conIntensidad, personal: true },
+      global: { stubs: { Button: BotonFalso, ColorPicker: true } },
+    });
+    expect(fila(w, 0).text()).toContain('150 %');
+    expect(fila(w, 0).text()).toContain('la del equipo');
+    await fila(w, 0).find('input[type="range"]').setValue('1');
+    expect(ultimaIntensidad(w)).toEqual({ nurturing: 1 });
   });
 });

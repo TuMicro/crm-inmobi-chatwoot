@@ -1,55 +1,55 @@
 <script setup>
 // [turuta] Ajustes -> Colores de etapa (solo administradores; 16/11,
-// MadHouse): el color con que se tinen en la lista de chats los de cada
-// etapa, y su intensidad (17/11), para todo el equipo. Cada persona puede
-// cambiarlos solo para ella en su perfil (MisColoresDeEtapa.vue). La API
-// comprueba que quien guarda es administrador: la pantalla manda el token del
-// propio usuario.
+// MadHouse): el color con que se tinen en la lista de chats los de cada etapa
+// y su intensidad (17/11), para todo el equipo. Cada persona puede cambiarlos
+// solo para ella en su perfil (MisColoresDeEtapa.vue). La API comprueba que
+// quien guarda es administrador: la pantalla manda el token del propio
+// usuario.
 import { computed, ref, watch } from 'vue';
 import { useAlert } from 'dashboard/composables';
 import Button from 'dashboard/components-next/button/Button.vue';
 import ReportHeader from 'dashboard/routes/dashboard/settings/reports/components/ReportHeader.vue';
 import EditorDeColores from './EditorDeColores.vue';
-import ControlDeIntensidad from './ControlDeIntensidad.vue';
 import {
+  cambiosDeIntensidad,
   cambiosDelEquipo,
   coloresDelEquipo,
-  normalizarIntensidad,
+  intensidadesDelEquipo,
   useColoresDeEtapa,
 } from './coloresDeEtapa';
 
-const { etapas, intensidadEquipo, cargarEtapas, guardarEquipo } =
-  useColoresDeEtapa();
+const { etapas, cargarEtapas, guardarEquipo } = useColoresDeEtapa();
 
 const guardado = computed(() => coloresDelEquipo(etapas.value));
-/** La intensidad guardada; null, la de por defecto. */
-const intensidadGuardada = computed(
-  () => normalizarIntensidad(intensidadEquipo.value) ?? null
+const intensidadesGuardadas = computed(() =>
+  intensidadesDelEquipo(etapas.value)
 );
 
 const borrador = ref({});
-const borradorIntensidad = ref(null);
+const borradorIntensidades = ref({});
 const guardando = ref(false);
 
 const cambios = computed(() =>
   cambiosDelEquipo(borrador.value, guardado.value)
 );
-const cambiaIntensidad = computed(
-  () => borradorIntensidad.value !== intensidadGuardada.value
+const cambiosIntensidad = computed(() =>
+  cambiosDeIntensidad(borradorIntensidades.value, intensidadesGuardadas.value)
 );
 const hayCambios = computed(
-  () => Object.keys(cambios.value).length > 0 || cambiaIntensidad.value
+  () =>
+    Object.keys(cambios.value).length > 0 ||
+    Object.keys(cambiosIntensidad.value).length > 0
 );
 
 const descartar = () => {
   borrador.value = { ...guardado.value };
-  borradorIntensidad.value = intensidadGuardada.value;
+  borradorIntensidades.value = { ...intensidadesGuardadas.value };
 };
 
 // Lo guardado se refresca al volver a la pestana: si no hay nada sin guardar,
 // la pantalla lo sigue; si lo hay, no se pisa.
 watch(
-  [guardado, intensidadGuardada],
+  [guardado, intensidadesGuardadas],
   () => {
     if (!hayCambios.value) descartar();
   },
@@ -63,7 +63,7 @@ async function guardar() {
   try {
     await guardarEquipo({
       colores: cambios.value,
-      intensidad: cambiaIntensidad.value ? borradorIntensidad.value : undefined,
+      intensidades: cambiosIntensidad.value,
     });
     descartar();
     useAlert('Colores del equipo guardados');
@@ -88,7 +88,7 @@ const TARJETA =
     <div class="max-w-3xl pb-24 mx-auto">
       <ReportHeader
         header-title="Colores de etapa"
-        header-description="El color con que se pinta en la lista cada chat, según la etapa de su lead. Vale para todo el equipo; cada persona puede cambiarlo solo para sí en su perfil."
+        header-description="El color con que se pinta en la lista cada chat, según la etapa de su lead, y su intensidad. Vale para todo el equipo; cada persona puede cambiarlo solo para sí en su perfil."
       />
 
       <!-- Arriba y fija al bajar: la primera vez no se veia al final. -->
@@ -114,10 +114,6 @@ const TARJETA =
         </span>
       </div>
 
-      <section class="mb-5" :class="TARJETA">
-        <ControlDeIntensidad v-model="borradorIntensidad" />
-      </section>
-
       <section :class="TARJETA">
         <p v-if="!etapas.length" class="m-0 text-sm text-n-slate-11">
           Cargando las etapas…
@@ -125,8 +121,8 @@ const TARJETA =
         <EditorDeColores
           v-else
           v-model="borrador"
+          v-model:intensidades="borradorIntensidades"
           :etapas="etapas"
-          :intensidad="borradorIntensidad ?? 1"
         />
       </section>
     </div>
