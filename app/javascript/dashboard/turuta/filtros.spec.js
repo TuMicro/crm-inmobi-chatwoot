@@ -19,26 +19,21 @@ const claves = l => l.map(f => f.attributeKey);
 
 describe('ordenarFiltros', () => {
   it('pone la etapa primero y las etiquetas despues', () => {
-    const r = claves(ordenarFiltros(lista, { esAdmin: true }));
+    const r = claves(ordenarFiltros(lista));
     expect(r).toEqual([ETAPA, 'labels', 'status', 'assignee_id', 'otro']);
   });
 
   it('quita los filtros ocultos', () => {
-    const r = claves(ordenarFiltros(lista, { esAdmin: true }));
+    const r = claves(ordenarFiltros(lista));
     expect(r).not.toContain('priority');
   });
 
-  it('el agente asignado solo lo ve un administrador', () => {
-    const agente = claves(ordenarFiltros(lista, { esAdmin: false }));
-    const admin = claves(ordenarFiltros(lista, { esAdmin: true }));
-    expect(agente).not.toContain('assignee_id');
-    expect(admin).toContain('assignee_id');
+  it('el agente asignado lo ve tambien el asesor: con un filtro no hay pestanas (12/11)', () => {
+    expect(claves(ordenarFiltros(lista))).toContain('assignee_id');
   });
 
   it('agrupa la etapa con los estandar sin tocar attributeModel', () => {
-    const etapa = ordenarFiltros(lista, { esAdmin: true }).find(
-      f => f.attributeKey === ETAPA
-    );
+    const etapa = ordenarFiltros(lista).find(f => f.attributeKey === ETAPA);
     expect(etapa.grupoVisual).toBe('standard');
     expect(etapa.attributeModel).toBe('conversation_attribute');
   });

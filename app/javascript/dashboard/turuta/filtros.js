@@ -1,6 +1,5 @@
 // [turuta] Que filtros de chats se ofrecen y en que orden.
 export const ETIQUETAS = 'labels';
-const AGENTE = 'assignee_id';
 export const ETAPA = 'crm_stage_name';
 
 export const FILTROS_OCULTOS = new Set([
@@ -20,12 +19,12 @@ const peso = filtro => {
 /** La etapa del lead primero y las etiquetas justo despues, en el grupo de los
  *  filtros estandar (grupoVisual) aunque por dentro siga siendo un atributo
  *  personalizado: attributeModel NO se toca, porque de el depende la
- *  consulta que se manda al servidor. "Agente asignado" solo para admins:
- *  el asesor ya tiene sus pestanas Mias / Sin asignar. */
-export function ordenarFiltros(lista, { esAdmin }) {
+ *  consulta que se manda al servidor. "Agente asignado" para todos (12/11):
+ *  con un filtro aplicado no estan las pestanas Mias / Sin asignar, y sin el
+ *  el asesor no tenia forma de quedarse solo con lo suyo. */
+export function ordenarFiltros(lista) {
   return lista
     .filter(f => !FILTROS_OCULTOS.has(f.attributeKey))
-    .filter(f => esAdmin || f.attributeKey !== AGENTE)
     .map(f =>
       f.attributeKey === ETAPA ? { ...f, grupoVisual: 'standard' } : f
     )
