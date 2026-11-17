@@ -2,6 +2,11 @@ class SuperAdmin::AppConfigsController < SuperAdmin::ApplicationController
   GENERAL_CONFIGS = %w[ENABLE_ACCOUNT_SIGNUP FIREBASE_PROJECT_ID FIREBASE_CREDENTIALS WEBHOOK_TIMEOUT MAXIMUM_FILE_UPLOAD_SIZE
                        WIDGET_TOKEN_EXPIRY].freeze
   META_INCIDENT_CONFIGS = %w[DISABLE_META_INBOX_CREATION DISABLE_META_MESSAGE_SENDING].freeze
+  INSTAGRAM_CONFIGS = %w[
+    INSTAGRAM_LOGIN_METHOD INSTAGRAM_APP_NAME INSTAGRAM_APP_ID INSTAGRAM_APP_SECRET
+    INSTAGRAM_UNIFIED_APP_NAME INSTAGRAM_UNIFIED_APP_ID INSTAGRAM_UNIFIED_APP_SECRET INSTAGRAM_CONFIGURATION_ID
+    INSTAGRAM_VERIFY_TOKEN INSTAGRAM_API_VERSION ENABLE_INSTAGRAM_CHANNEL_HUMAN_AGENT
+  ].freeze
 
   before_action :set_config
   before_action :allowed_configs
@@ -13,6 +18,7 @@ class SuperAdmin::AppConfigsController < SuperAdmin::ApplicationController
                                     .map { |name, serialized_value| [name, serialized_value['value']] }
                                     .to_h
     # rubocop:enable Style/HashTransformValues
+    @app_config['INSTAGRAM_LOGIN_METHOD'] = Instagram::LoginConfiguration.login_method if @config == 'instagram'
     @installation_configs = ConfigLoader.new.general_configs.each_with_object({}) do |config_hash, result|
       result[config_hash['name']] = config_hash.except('name')
     end
@@ -51,7 +57,7 @@ class SuperAdmin::AppConfigsController < SuperAdmin::ApplicationController
       'email' => %w[MAILER_INBOUND_EMAIL_DOMAIN ACCOUNT_EMAILS_LIMIT ACCOUNT_EMAILS_PLAN_LIMITS],
       'linear' => %w[LINEAR_CLIENT_ID LINEAR_CLIENT_SECRET],
       'slack' => %w[SLACK_CLIENT_ID SLACK_CLIENT_SECRET],
-      'instagram' => %w[INSTAGRAM_APP_ID INSTAGRAM_APP_SECRET INSTAGRAM_VERIFY_TOKEN INSTAGRAM_API_VERSION ENABLE_INSTAGRAM_CHANNEL_HUMAN_AGENT],
+      'instagram' => INSTAGRAM_CONFIGS,
       'tiktok' => %w[TIKTOK_APP_ID TIKTOK_APP_SECRET TIKTOK_API_VERSION],
       'whatsapp_embedded' => %w[WHATSAPP_APP_ID WHATSAPP_APP_SECRET WHATSAPP_CONFIGURATION_ID WHATSAPP_API_VERSION],
       'notion' => %w[NOTION_CLIENT_ID NOTION_CLIENT_SECRET],

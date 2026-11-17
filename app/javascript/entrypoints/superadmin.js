@@ -1,4 +1,15 @@
 import '../dashboard/assets/scss/super_admin/index.scss';
+import { initializeInstagramLoginSettings } from '../superadmin/instagramLoginSettings';
+
+// El modulo se carga diferido (type=module), pero por si acaso.
+if (document.readyState === 'loading') {
+  document.addEventListener(
+    'DOMContentLoaded',
+    initializeInstagramLoginSettings
+  );
+} else {
+  initializeInstagramLoginSettings();
+}
 
 const initializeAccountSuspensionForm = () => {
   const form = document.querySelector('[data-account-suspension-form]');

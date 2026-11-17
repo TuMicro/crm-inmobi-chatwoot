@@ -37,6 +37,7 @@ class InstallationConfig < ApplicationRecord
   before_validation :set_lock
   validates :name, presence: true
   validate :saml_sso_users_check, if: -> { name == 'ENABLE_SAML_SSO_LOGIN' }
+  validate :instagram_login_method, if: -> { name == 'INSTAGRAM_LOGIN_METHOD' }
 
   # TODO: Get rid of default scope
   # https://stackoverflow.com/a/1834250/939299
@@ -56,6 +57,12 @@ class InstallationConfig < ApplicationRecord
   end
 
   private
+
+  def instagram_login_method
+    return if value.blank? || %w[instagram_login unified_login].include?(value)
+
+    errors.add(:value, :inclusion)
+  end
 
   def set_lock
     self.locked = true if locked.nil?

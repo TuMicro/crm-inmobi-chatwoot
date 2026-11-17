@@ -17,11 +17,16 @@
 <section class="main-content__body">
   <%= form_with url: super_admin_app_config_url(config: @config) , method: :post do |form| %>
     <% @allowed_configs.each do |key| %>
+      <%# Instagram: cada metodo de inicio de sesion ensena solo sus claves (instagramLoginSettings.js). %>
+      <% login_method = @installation_configs[key]&.dig('instagram_login_method') %>
+      <% visible = login_method.blank? || login_method == @app_config['INSTAGRAM_LOGIN_METHOD'] %>
+      <div data-instagram-login-method="<%= login_method %>" class="<%= visible ? 'grid' : 'hidden' %>">
       <div class="flex mb-8">
         <div class="field-unit__label">
           <%= form.label "app_config[#{key}]", @installation_configs[key]&.dig('display_title') || key %>
         </div>
         <div class="-mt-2 field-unit__field ">
+          <fieldset class="min-w-0 m-0 p-0 border-0" <%= 'disabled' unless visible %>>
           <% if @installation_configs[key]&.dig('type') == 'boolean' %>
             <%= form.select "app_config[#{key}]",
               [["True", true], ["False", false]],
@@ -57,17 +62,20 @@
             <%= form.select "app_config[#{key}]",
               @installation_configs[key]['options'].map { |val, label| [label, val] },
               { selected: @app_config[key] },
+              id: "app_config_#{key}",
               class: "mt-2 border border-slate-100 p-1 rounded-md"
             %>
         <% else %>
           <%= form.text_field "app_config[#{key}]", value: @app_config[key] %>
         <% end %>
+          </fieldset>
           <%if @installation_configs[key]&.dig('description').present? %>
             <p class="pt-2 text-xs italic text-slate-400">
               <%= @installation_configs[key]&.dig('description') %>
             </p>
           <% end %>
         </div>
+      </div>
       </div>
     <% end %>
     <div class="form-actions">
