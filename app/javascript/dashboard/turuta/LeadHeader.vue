@@ -9,6 +9,7 @@
 import { computed, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import Button from 'dashboard/components-next/button/Button.vue';
+import CampoHora from './CampoHora.vue';
 import { useLead } from './useLead';
 import {
   HORAS_POR_DEFECTO,
@@ -107,21 +108,33 @@ const rutaCalendario = computed(() => ({
   params: { accountId: route.params.accountId },
 }));
 
+// La visita vigente que todavia no ha pasado: la que se cambiaria al agendar.
+const visitaPorVenir = computed(() => {
+  const actual = lead.value?.visita;
+  return actual && new Date(actual.scheduledAt) > new Date() ? actual : null;
+});
+
 function abrirVisita(etapa) {
   const actual = lead.value?.visita;
+  // Al volver a "Visita agendada" con una visita que ya paso (17/11) se
+  // agenda otra: su fecha y su hora no sirven, y dejarian el boton apagado.
+  const cuando = etapa ? visitaPorVenir.value : actual;
   visitaPara.value = etapa;
   editandoVisita.value = !etapa;
-  vFecha.value = fechaInput(actual ? actual.scheduledAt : new Date());
-  vHora.value = actual ? horaInput(actual.scheduledAt) : '';
-  vDireccion.value = actual ? actual.address : '';
+  vFecha.value = fechaInput(cuando ? cuando.scheduledAt : new Date());
+  vHora.value = cuando ? horaInput(cuando.scheduledAt) : '';
+  // Sin direccion llega null (17/11): con null, guardar reventaba al limpiarla
+  // y el boton no hacia nada.
+  vDireccion.value = actual?.address || '';
   vInvitados.value = (actual?.guests || []).join(', ');
   vHorasRecordatorio.value = actual?.reminderHours || HORAS_POR_DEFECTO;
-  vModoRecordatorio.value = actual?.reminderAt ? 'momento' : 'horas';
-  vFechaRecordatorio.value = actual?.reminderAt
-    ? fechaInput(actual.reminderAt)
+  // El dia y la hora del recordatorio eran para la fecha de esa visita.
+  vModoRecordatorio.value = cuando?.reminderAt ? 'momento' : 'horas';
+  vFechaRecordatorio.value = cuando?.reminderAt
+    ? fechaInput(cuando.reminderAt)
     : '';
-  vHoraRecordatorio.value = actual?.reminderAt
-    ? horaInput(actual.reminderAt)
+  vHoraRecordatorio.value = cuando?.reminderAt
+    ? horaInput(cuando.reminderAt)
     : '';
   abierto.value = false;
 }
@@ -146,8 +159,8 @@ function elegirModoRecordatorio(modo) {
   proponerMomento();
 }
 
-// Que cualquier clic en el campo abra el selector de fecha u hora, no solo
-// el icono de la derecha. showPicker solo existe en navegadores modernos y
+// Que cualquier clic en el campo abra el selector de fecha, no solo el icono
+// de la derecha (la hora tiene el suyo: CampoHora). showPicker solo existe en navegadores modernos y
 // solo funciona dentro de un gesto del usuario; si no, el navegador hace lo
 // suyo.
 function abrirSelector(event) {
@@ -526,6 +539,20 @@ const claseEtapa = computed(() => {
         <p class="mt-0.5 text-xs text-n-slate-11">
           Antes de la visita le llega al lead un recordatorio por WhatsApp.
         </p>
+        <!-- Al volver a "Visita agendada" con la visita anterior todavia en
+             pie (17/11): el formulario trae sus datos, y se dice que pasa. -->
+        <p
+          v-if="visitaPara && visitaPorVenir"
+          class="flex items-start gap-1.5 px-2 py-1.5 mt-2 mb-0 text-xs rounded-lg bg-n-amber-2 text-n-amber-11"
+          data-turuta="visita-ya-habia"
+        >
+          <span class="flex-shrink-0 i-lucide-calendar-clock size-3.5 mt-px" />
+          <span>
+            Ya tiene una visita agendada:
+            {{ cuandoVisita(visitaPorVenir.scheduledAt) }}. Al agendar, esta la
+            reemplaza.
+          </span>
+        </p>
         <label class="block mt-3 text-xs font-medium text-n-slate-11">
           Fecha
           <input
@@ -536,15 +563,11 @@ const claseEtapa = computed(() => {
             @click="abrirSelector"
           />
         </label>
-        <label class="block mt-2 text-xs font-medium text-n-slate-11">
+        <!-- Un div y no un label: dentro va un desplegable con botones. -->
+        <div class="mt-2 text-xs font-medium text-n-slate-11">
           Hora
-          <input
-            v-model="vHora"
-            type="time"
-            class="turuta-input"
-            @click="abrirSelector"
-          />
-        </label>
+          <CampoHora v-model="vHora" class="mt-1" data-turuta="visita-hora" />
+        </div>
         <div class="mt-2 text-xs font-medium text-n-slate-11">
           Recordatorio por WhatsApp
           <!-- Horas antes (lo comodo el mismo dia) o dia y hora (06/11: lo
@@ -593,12 +616,10 @@ const claseEtapa = computed(() => {
               data-turuta="visita-recordatorio-fecha"
               @click="abrirSelector"
             />
-            <input
+            <CampoHora
               v-model="vHoraRecordatorio"
-              type="time"
-              class="turuta-input !mt-0"
+              class="w-full"
               data-turuta="visita-recordatorio-hora"
-              @click="abrirSelector"
             />
           </span>
           <span
@@ -736,8 +757,7 @@ const claseEtapa = computed(() => {
 .turuta-input {
   @apply block w-full h-9 px-3 mt-1 text-sm font-normal rounded-lg border border-n-weak bg-n-alpha-black2 text-n-slate-12 outline-none hover:border-n-slate-6 focus:border-n-strong;
 }
-input[type='date'].turuta-input::-webkit-calendar-picker-indicator,
-input[type='time'].turuta-input::-webkit-calendar-picker-indicator {
+input[type='date'].turuta-input::-webkit-calendar-picker-indicator {
   @apply opacity-60 cursor-pointer;
 }
 </style>

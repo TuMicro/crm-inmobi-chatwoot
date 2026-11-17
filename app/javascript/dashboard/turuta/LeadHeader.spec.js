@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { flushPromises, mount } from '@vue/test-utils';
 import { reactive, ref } from 'vue';
 import LeadHeader from './LeadHeader.vue';
+import CampoHora from './CampoHora.vue';
 
 // La visita y Google Calendar en la ficha (docs/18 del repo crm-inmobi).
 const state = reactive({ lead: null, busy: false, conversationId: 63 });
@@ -71,8 +72,13 @@ const invitados = w => w.find('[data-turuta="visita-invitados"]');
 // Dentro de una semana: hoy a esa hora puede haber pasado ya.
 const ponerHora = async w => {
   await w.find('input[type="date"]').setValue(EN_UNA_SEMANA.slice(0, 10));
-  await w.find('input[type="time"]').setValue('10:30');
+  await w.findComponent('[data-turuta="visita-hora"]').setValue('10:30');
 };
+// La hora del recordatorio es un CampoHora: su valor, no el de un input.
+const horaRecordatorio = w =>
+  w
+    .findAllComponents(CampoHora)
+    .find(c => c.attributes('data-turuta') === 'visita-recordatorio-hora');
 
 describe('LeadHeader: la visita y Google Calendar', () => {
   beforeEach(() => {
@@ -205,6 +211,51 @@ describe('LeadHeader: la visita y Google Calendar', () => {
     );
   });
 
+  // 17/11: la visita sin direccion llega con address null, y "Agendar" no
+  // hacia nada (ni decia nada) al volver a Visita agendada o al cambiarla.
+  it('volver a Visita agendada con la visita anterior, sin direccion: agenda y avisa de que la cambia', async () => {
+    state.lead = lead({ visita: visita({ address: null }) });
+    const w = montar();
+    await boton(w, 'Mover a Visita agendada').trigger('click');
+    expect(w.find('[data-turuta="visita-ya-habia"]').text()).toContain(
+      'Ya tiene una visita'
+    );
+    await boton(w, 'Agendar').trigger('click');
+    await flushPromises();
+    expect(cambiarEtapa).toHaveBeenCalledWith(
+      'visita_agendada',
+      expect.objectContaining({ visitAddress: '' })
+    );
+  });
+
+  it('volver a Visita agendada con una visita que ya paso: pide otra fecha y otra hora', async () => {
+    const ayer = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
+    state.lead = lead({ visita: visita({ scheduledAt: ayer }) });
+    const w = montar();
+    await boton(w, 'Mover a Visita agendada').trigger('click');
+    expect(w.find('[data-turuta="visita-ya-habia"]').exists()).toBe(false);
+    expect(
+      w.findComponent('[data-turuta="visita-hora"]').props('modelValue')
+    ).toBe('');
+    await ponerHora(w);
+    await boton(w, 'Agendar').trigger('click');
+    await flushPromises();
+    expect(cambiarEtapa).toHaveBeenCalledWith(
+      'visita_agendada',
+      expect.objectContaining({ visitAddress: 'Av. Larco 1234' })
+    );
+  });
+
+  it('cambiar una visita sin direccion: guarda', async () => {
+    state.lead = lead({ visita: visita({ address: null }) });
+    const w = montar();
+    await boton(w, 'Cambiar').trigger('click');
+    expect(w.find('[data-turuta="visita-ya-habia"]').exists()).toBe(false);
+    await boton(w, 'Guardar').trigger('click');
+    await flushPromises();
+    expect(agendarVisita).toHaveBeenCalled();
+  });
+
   it('por dia y hora propone la vispera a las 8 p. m. y manda ese momento (06/11)', async () => {
     state.lead = lead({
       recordatorio: { zonaHoraria: 'America/Lima', plantillaDelDia: true },
@@ -214,13 +265,12 @@ describe('LeadHeader: la visita y Google Calendar', () => {
     await ponerHora(w);
     await w.find('[data-turuta="visita-modo-momento"]').trigger('click');
     const fecha = w.find('[data-turuta="visita-recordatorio-fecha"]');
-    const hora = w.find('[data-turuta="visita-recordatorio-hora"]');
     const vispera = new Date(`${EN_UNA_SEMANA.slice(0, 10)}T10:30:00`);
     vispera.setDate(vispera.getDate() - 1);
     expect(fecha.element.value).toBe(
       `${vispera.getFullYear()}-${String(vispera.getMonth() + 1).padStart(2, '0')}-${String(vispera.getDate()).padStart(2, '0')}`
     );
-    expect(hora.element.value).toBe('20:00');
+    expect(horaRecordatorio(w).props('modelValue')).toBe('20:00');
     expect(w.find('[data-turuta="visita-horas"]').exists()).toBe(false);
     expect(w.find('[data-turuta="visita-horas-aviso"]').text()).toContain(
       'Le llegará'
@@ -242,9 +292,8 @@ describe('LeadHeader: la visita y Google Calendar', () => {
     const w = montar();
     await boton(w, 'Mover a Visita agendada').trigger('click');
     await w.find('[data-turuta="visita-modo-momento"]').trigger('click');
-    const hora = w.find('[data-turuta="visita-recordatorio-hora"]');
-    expect(hora.element.value).toBe('');
+    expect(horaRecordatorio(w).props('modelValue')).toBe('');
     await ponerHora(w);
-    expect(hora.element.value).toBe('20:00');
+    expect(horaRecordatorio(w).props('modelValue')).toBe('20:00');
   });
 });
