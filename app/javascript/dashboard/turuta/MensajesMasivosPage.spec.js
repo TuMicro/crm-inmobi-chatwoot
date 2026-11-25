@@ -8,7 +8,16 @@ const PLANTILLA = {
   name: 'promo_noviembre',
   language: 'es',
   category: 'MARKETING',
-  components: [{ type: 'BODY', text: 'Hola {{1}}, hay novedades.' }],
+  components: [
+    { type: 'BODY', text: 'Hola {{1}}, hay novedades.' },
+    {
+      type: 'BUTTONS',
+      buttons: [
+        { type: 'QUICK_REPLY', text: 'Me interesa' },
+        { type: 'URL', text: 'Ver más', url: 'https://x' },
+      ],
+    },
+  ],
 };
 const bandejas = ref([]);
 // El almacen de Chatwoot: se puede "recargar" a mitad de una prueba.
@@ -675,5 +684,92 @@ describe('MensajesMasivosPage', () => {
     const w2 = await montar();
     expect(w2.find('[data-turuta="nuevo-envio"]').exists()).toBe(true);
     expect(w2.text()).not.toContain('Recuperamos');
+  });
+
+  // ------------------------------- el mensaje a la vista y lo que falta
+
+  it('ensena el mensaje como llega, con sus botones y el nombre de la primera persona', async () => {
+    api();
+    const w = await montar();
+    await w.find('[data-turuta="nuevo-envio"]').trigger('click');
+    await flushPromises();
+    await w.find('select').setValue('promo_noviembre|es');
+    await flushPromises();
+    const vista = () => w.find('[data-turuta="vista-de-mensaje"]');
+    // Sin haber visto la lista, {nombre} se queda a la vista.
+    expect(vista().text()).toContain('Hola {nombre}, hay novedades.');
+    expect(
+      vista()
+        .findAll('[data-turuta="vista-boton"]')
+        .map(b => b.text())
+    ).toEqual(['Me interesa', 'Ver más']);
+
+    await w.find('[data-turuta="ver-audiencia"]').trigger('click');
+    await flushPromises();
+    expect(vista().text()).toContain('Hola Ana, hay novedades.');
+    expect(w.text()).toContain('Como le llega a Ana, la primera persona');
+  });
+
+  it('dice que falta para poder enviar, y lo va quitando', async () => {
+    api();
+    const w = await montar();
+    await w.find('[data-turuta="nuevo-envio"]').trigger('click');
+    await flushPromises();
+    const falta = () =>
+      w.findAll('[data-turuta="falta"] li').map(li => li.text());
+    expect(falta()).toEqual([
+      'Pulsa «Ver a quiénes les llega» (paso 1).',
+      'Elige la plantilla (paso 2).',
+      'Ponle un nombre al envío.',
+      'Escribe ENVIAR en el recuadro de abajo.',
+    ]);
+
+    await w.find('[data-turuta="ver-audiencia"]').trigger('click');
+    await flushPromises();
+    await w.find('select').setValue('promo_noviembre|es');
+    await flushPromises();
+    await escribir(w, 'Nombre del envío', 'Promo');
+    await escribir(w, 'Escribe ENVIAR', 'ENVIAR');
+    // Lo que le paso a Kefrin el 25/11: todo lleno y el boton apagado.
+    expect(falta()).toEqual([
+      'Escribe qué poner cuando el contacto no tiene nombre (paso 2, debajo de los campos).',
+    ]);
+    expect(w.text()).toContain('Falta llenarlo');
+    expect(
+      w.find('[data-turuta="enviar"]').attributes('disabled')
+    ).toBeDefined();
+
+    await escribir(w, 'Si el contacto no tiene nombre', 'vecino');
+    expect(w.find('[data-turuta="falta"]').exists()).toBe(false);
+    expect(
+      w.find('[data-turuta="enviar"]').attributes('disabled')
+    ).toBeUndefined();
+  });
+
+  it('el detalle de un envio ensena el mensaje con sus botones', async () => {
+    api({
+      envios: [ENVIO],
+      detalle: {
+        ...DETALLE,
+        componentes: PLANTILLA.components,
+        params: { body: { 1: '{nombre}' } },
+      },
+    });
+    const w = await montar();
+    await w.find('[data-turuta="envio"]').trigger('click');
+    await flushPromises();
+    const vista = w.find('[data-turuta="vista-de-mensaje"]');
+    expect(vista.text()).toContain('Hola {nombre}, hay novedades.');
+    expect(vista.findAll('[data-turuta="vista-boton"]')).toHaveLength(2);
+    expect(w.text()).toContain('sale el nombre de cada persona');
+  });
+
+  it('un envio antiguo, sin la plantilla guardada, ensena su texto', async () => {
+    api({ envios: [ENVIO] });
+    const w = await montar();
+    await w.find('[data-turuta="envio"]').trigger('click');
+    await flushPromises();
+    expect(w.find('[data-turuta="vista-de-mensaje"]').exists()).toBe(false);
+    expect(w.text()).toContain('Hola {{1}}, hay novedades.');
   });
 });

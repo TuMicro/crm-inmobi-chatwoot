@@ -36,6 +36,7 @@ import WhatsAppTemplateParser from 'dashboard/components-next/whatsapp/WhatsAppT
 import ReportHeader from 'dashboard/routes/dashboard/settings/reports/components/ReportHeader.vue';
 import CampoSelect from './CampoSelect.vue';
 import FiltroDeAudiencia from './FiltroDeAudiencia.vue';
+import VistaDeMensaje from './VistaDeMensaje.vue';
 import { leadAppConfig } from './leadApp';
 import {
   CONFIRMACION,
@@ -52,7 +53,9 @@ import {
   guardarBorrador,
   leerBorrador,
   opcionesDePlantilla,
+  personaDeEjemplo,
   plantillaElegida,
+  queFalta,
   textoDeFiltros,
   usaNombre,
   volcarValores,
@@ -277,14 +280,30 @@ const plantillaLista = computed(
 const aLaVista = computed(() =>
   (audiencia.value?.destinatarios || []).slice(0, A_LA_VISTA)
 );
-const puedeEnviar = computed(
-  () =>
-    !!audiencia.value?.total &&
-    plantillaLista.value &&
-    !!titulo.value.trim() &&
-    (!pideNombre.value || !!sinNombre.value.trim()) &&
-    confirmacion.value.trim().toUpperCase() === CONFIRMACION
+// El mensaje se ensena como le llega a la primera persona de la lista, si ya
+// se vio la lista: con su nombre donde se escribio {nombre}.
+const ejemplo = computed(() => {
+  const d = audiencia.value?.destinatarios?.[0];
+  if (!d) return null;
+  return {
+    quien: d.nombre || d.telefono || (d.usuario ? `@${d.usuario}` : ''),
+    persona: personaDeEjemplo(d, sinNombre.value),
+  };
+});
+// Lo que falta para poder enviar, dicho: el boton apagado sin mas parece un fallo.
+const falta = computed(() =>
+  queFalta({
+    audiencia: audiencia.value,
+    hayPlantillas: plantillas.value.length > 0,
+    plantilla: laPlantilla.value,
+    plantillaLista: plantillaLista.value,
+    pideNombre: pideNombre.value,
+    sinNombre: sinNombre.value,
+    titulo: titulo.value,
+    confirmacion: confirmacion.value,
+  })
 );
+const puedeEnviar = computed(() => falta.value.length === 0);
 
 const cuenta = () => route.params.accountId;
 
@@ -931,6 +950,29 @@ const AVISO = 'flex gap-3 px-4 py-3 text-sm rounded-lg';
                 ayuda="Las aprobadas por Meta para este número. Cada mensaje de plantilla lo cobra Meta."
               />
               <template v-if="laPlantilla">
+                <div class="flex flex-col gap-2">
+                  <p class="mb-0 text-heading-3 text-n-slate-12">
+                    Así le llega
+                  </p>
+                  <VistaDeMensaje
+                    :componentes="laPlantilla.components"
+                    :params="params"
+                    :persona="ejemplo?.persona"
+                  />
+                  <p class="mb-0 text-xs text-n-slate-10">
+                    <template v-if="pideNombre && ejemplo">
+                      Como le llega a {{ ejemplo.quien }}, la primera persona de
+                      la lista. A cada una le sale su nombre.
+                    </template>
+                    <template v-else-if="pideNombre">
+                      Donde dice {{ CAMPO_NOMBRE }} sale el nombre de cada
+                      persona. Pulsa «Ver a quiénes les llega» para verlo con la
+                      primera de la lista.
+                    </template>
+                    Categoría {{ laPlantilla.category }}, idioma
+                    {{ laPlantilla.language }}.
+                  </p>
+                </div>
                 <p class="mb-0 text-sm text-n-slate-11">
                   Para que en un campo salga el nombre de cada persona, escribe
                   <code class="px-1 rounded bg-n-alpha-2">{{
@@ -938,17 +980,26 @@ const AVISO = 'flex gap-3 px-4 py-3 text-sm rounded-lg';
                   }}</code>
                   en ese campo.
                 </p>
-                <WhatsAppTemplateParser
-                  ref="parserRef"
-                  :key="plantilla"
-                  :template="laPlantilla"
-                />
+                <!-- Del parser de Chatwoot, solo los campos: su recuadro con el
+                     texto se esconde, que arriba esta el mensaje entero -->
+                <div class="[&>div>div:first-child]:hidden">
+                  <WhatsAppTemplateParser
+                    ref="parserRef"
+                    :key="plantilla"
+                    :template="laPlantilla"
+                  />
+                </div>
                 <Input
                   v-if="pideNombre"
                   v-model="sinNombre"
-                  label="Si el contacto no tiene nombre, poner"
+                  label="Si el contacto no tiene nombre, poner (obligatorio)"
                   placeholder="vecino"
-                  message="Un contacto sin guardar se llama como su número. En su lugar sale esto."
+                  :message="
+                    sinNombre.trim()
+                      ? 'Un contacto sin guardar se llama como su número. En su lugar sale esto.'
+                      : 'Falta llenarlo: un contacto sin guardar se llama como su número, y en su lugar sale lo que pongas aquí.'
+                  "
+                  :message-type="sinNombre.trim() ? 'info' : 'error'"
                 />
               </template>
             </template>
@@ -1003,6 +1054,19 @@ const AVISO = 'flex gap-3 px-4 py-3 text-sm rounded-lg';
                   quien espera saber de ustedes.
                 </p>
               </div>
+            </div>
+            <div
+              v-if="falta.length"
+              class="flex-col bg-n-amber-2 text-n-amber-11"
+              :class="[AVISO]"
+              data-turuta="falta"
+            >
+              <p class="mb-0 font-medium">
+                Para poder {{ yo.directo ? 'enviar' : 'solicitarlo' }} falta:
+              </p>
+              <ul class="pl-5 mb-0 list-disc">
+                <li v-for="f in falta" :key="f">{{ f }}</li>
+              </ul>
             </div>
             <form
               class="flex flex-wrap items-end gap-3"
@@ -1208,7 +1272,20 @@ const AVISO = 'flex gap-3 px-4 py-3 text-sm rounded-lg';
           <p v-if="detalle.filtros" class="mb-0 text-sm text-n-slate-11">
             A quiénes: {{ detalle.filtros }}
           </p>
+          <template v-if="detalle.componentes?.length">
+            <VistaDeMensaje
+              :componentes="detalle.componentes"
+              :params="detalle.params"
+            />
+            <p
+              v-if="usaNombre(detalle.params)"
+              class="mb-0 text-xs text-n-slate-10"
+            >
+              Donde dice {{ CAMPO_NOMBRE }} sale el nombre de cada persona.
+            </p>
+          </template>
           <p
+            v-else
             class="p-3 mb-0 text-sm whitespace-pre-wrap rounded-lg bg-n-alpha-1 text-n-slate-12"
           >
             {{ detalle.texto }}

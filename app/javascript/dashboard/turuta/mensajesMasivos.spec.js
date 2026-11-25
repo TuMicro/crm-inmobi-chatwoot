@@ -5,6 +5,11 @@ import {
   guardarBorrador,
   leerBorrador,
   volcarValores,
+  nombreCompleto,
+  personaDeEjemplo,
+  primerNombre,
+  queFalta,
+  vistaDeMensaje,
   clienteDeDifusion,
   consultaDeFiltros,
   cuantoTarda,
@@ -350,5 +355,172 @@ describe('el borrador de un envio', () => {
     // Sin nada guardado, o con cualquier cosa, no rompe.
     expect(() => volcarValores(campos, undefined)).not.toThrow();
     expect(() => volcarValores(null, { body: {} })).not.toThrow();
+  });
+});
+
+describe('el mensaje tal como llega', () => {
+  // recordatorio_visita, como la copia Chatwoot de Meta.
+  const COMPONENTES = [
+    { type: 'HEADER', format: 'TEXT', text: 'Recordatorio de visita' },
+    {
+      type: 'BODY',
+      text: 'Hola {{1}}, te recordamos tu visita de hoy a las {{2}} en {{3}}.\n\n¿Sigue en pie?',
+    },
+    { type: 'FOOTER', text: 'MadHouse' },
+    {
+      type: 'BUTTONS',
+      buttons: [
+        { type: 'QUICK_REPLY', text: 'Confirmar' },
+        { type: 'URL', text: 'Ver el mapa', url: 'https://x/{{1}}' },
+      ],
+    },
+  ];
+
+  it('cabecera, cuerpo con lo escrito, pie y botones', () => {
+    const v = vistaDeMensaje(COMPONENTES, {
+      body: { 1: '{nombre}', 2: '3pm', 3: 'Lince' },
+    });
+    expect(v).toEqual({
+      cabecera: { tipo: 'TEXT', texto: 'Recordatorio de visita', url: '' },
+      cuerpo:
+        'Hola {nombre}, te recordamos tu visita de hoy a las 3pm en Lince.\n\n¿Sigue en pie?',
+      pie: 'MadHouse',
+      botones: [
+        { tipo: 'QUICK_REPLY', texto: 'Confirmar' },
+        { tipo: 'URL', texto: 'Ver el mapa' },
+      ],
+    });
+  });
+
+  it('un campo sin llenar se queda a la vista, para que se note', () => {
+    const v = vistaDeMensaje(COMPONENTES, { body: { 1: 'Ana', 2: '', 3: '' } });
+    expect(v.cuerpo).toContain(
+      'Hola Ana, te recordamos tu visita de hoy a las {{2}} en {{3}}.'
+    );
+  });
+
+  it('con una persona, {nombre} sale ya cambiado', () => {
+    const params = {
+      body: { 1: '{nombre}', 2: '3pm', 3: '{nombre_completo}' },
+    };
+    const v = vistaDeMensaje(COMPONENTES, params, {
+      nombre: 'Kiev',
+      completo: 'Kiev Ruiz',
+    });
+    expect(v.cuerpo).toContain(
+      'Hola Kiev, te recordamos tu visita de hoy a las 3pm en Kiev Ruiz.'
+    );
+    // Sin saber que poner (contacto sin nombre y sin el texto de reserva), se queda.
+    const sin = vistaDeMensaje(COMPONENTES, params, {
+      nombre: null,
+      completo: null,
+    });
+    expect(sin.cuerpo).toContain('Hola {nombre},');
+  });
+
+  it('una cabecera con imagen lleva su direccion; una plantilla de solo cuerpo, nada mas', () => {
+    const conImagen = vistaDeMensaje(
+      [
+        { type: 'HEADER', format: 'IMAGE' },
+        { type: 'BODY', text: 'Hola' },
+      ],
+      { header: { media_url: 'https://x/y.jpg' } }
+    );
+    expect(conImagen.cabecera).toEqual({
+      tipo: 'IMAGE',
+      texto: '',
+      url: 'https://x/y.jpg',
+    });
+    expect(vistaDeMensaje([{ type: 'BODY', text: 'Hola' }], {})).toEqual({
+      cabecera: null,
+      cuerpo: 'Hola',
+      pie: '',
+      botones: [],
+    });
+    expect(vistaDeMensaje(undefined, undefined).cuerpo).toBe('');
+  });
+
+  it('primerNombre y nombreCompleto, igual que en la API', () => {
+    expect(primerNombre('ana ruiz')).toBe('Ana');
+    expect(primerNombre('JUAN PÉREZ')).toBe('Juan');
+    expect(primerNombre('McDonald Ruiz')).toBe('McDonald');
+    expect(primerNombre('51966723347')).toBeNull();
+    expect(primerNombre(null)).toBeNull();
+    expect(nombreCompleto('  ana   ruiz ')).toBe('ana ruiz');
+    expect(nombreCompleto('+51 966 723 347')).toBeNull();
+  });
+
+  it('personaDeEjemplo: su nombre, o lo que se eligio si no tiene', () => {
+    expect(personaDeEjemplo({ nombre: 'kiev' }, 'Estimado')).toEqual({
+      nombre: 'Kiev',
+      completo: 'kiev',
+    });
+    expect(personaDeEjemplo({ nombre: '51966723347' }, ' Estimado ')).toEqual({
+      nombre: 'Estimado',
+      completo: 'Estimado',
+    });
+    expect(personaDeEjemplo({ nombre: null }, '')).toEqual({
+      nombre: null,
+      completo: null,
+    });
+    expect(personaDeEjemplo(null, 'x')).toBeNull();
+  });
+});
+
+describe('queFalta: por que no se puede enviar todavia', () => {
+  const LISTO = {
+    audiencia: { total: 2 },
+    hayPlantillas: true,
+    plantilla: { name: 'promo' },
+    plantillaLista: true,
+    pideNombre: true,
+    sinNombre: 'vecino',
+    titulo: 'Promo',
+    confirmacion: 'enviar',
+  };
+
+  it('con todo, nada', () => {
+    expect(queFalta(LISTO)).toEqual([]);
+  });
+
+  it('el caso del 25/11: todo lleno menos lo que va en lugar del nombre', () => {
+    const f = queFalta({ ...LISTO, sinNombre: ' ' });
+    expect(f).toHaveLength(1);
+    expect(f[0]).toContain('cuando el contacto no tiene nombre');
+    // Si la plantilla no usa {nombre}, no se pide.
+    expect(queFalta({ ...LISTO, sinNombre: '', pideNombre: false })).toEqual(
+      []
+    );
+  });
+
+  it('cada cosa que falta, con su paso', () => {
+    const f = queFalta({
+      audiencia: null,
+      hayPlantillas: true,
+      plantilla: null,
+      plantillaLista: false,
+      pideNombre: false,
+      sinNombre: '',
+      titulo: '',
+      confirmacion: '',
+    });
+    expect(f).toEqual([
+      'Pulsa «Ver a quiénes les llega» (paso 1).',
+      'Elige la plantilla (paso 2).',
+      'Ponle un nombre al envío.',
+      'Escribe ENVIAR en el recuadro de abajo.',
+    ]);
+  });
+
+  it('una lista que no alcanza a nadie, campos a medias y un numero sin plantillas', () => {
+    expect(queFalta({ ...LISTO, audiencia: { total: 0 } })[0]).toContain(
+      'Nadie recibe el mensaje'
+    );
+    expect(queFalta({ ...LISTO, plantillaLista: false })[0]).toContain(
+      'Llena todos los campos'
+    );
+    expect(
+      queFalta({ ...LISTO, hayPlantillas: false, plantilla: null })[0]
+    ).toContain('no tiene plantillas aprobadas');
   });
 });

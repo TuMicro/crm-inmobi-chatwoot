@@ -260,3 +260,127 @@ export function volcarValores(campos, guardados) {
     else if (typeof g === 'string' && g !== '') campos[k] = g;
   });
 }
+
+// ---------------------------------------------- el mensaje tal como llega
+//
+// La plantilla con lo escrito en sus campos: cabecera, cuerpo, pie y botones.
+// Para verla antes de enviar (VistaDeMensaje.vue) y en el detalle de un envio.
+
+const UNA_LETRA = /\p{L}/u;
+const BORDES = /^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu;
+const enUnaLinea = s => s.replace(/\s+/g, ' ').trim();
+
+/**
+ * El nombre de pila, como lo pone la API en {nombre} (difusion.logic.ts,
+ * primerNombre): null si el contacto se llama como su numero.
+ */
+export function primerNombre(nombre) {
+  if (typeof nombre !== 'string') return null;
+  const palabra = enUnaLinea(nombre)
+    .split(' ')
+    .map(p => p.replace(BORDES, ''))
+    .find(p => UNA_LETRA.test(p));
+  if (!palabra) return null;
+  if (palabra === palabra.toUpperCase() || palabra === palabra.toLowerCase()) {
+    return palabra.charAt(0).toUpperCase() + palabra.slice(1).toLowerCase();
+  }
+  return palabra;
+}
+
+/** El nombre entero, o null si no es un nombre. */
+export function nombreCompleto(nombre) {
+  if (typeof nombre !== 'string') return null;
+  const limpio = enUnaLinea(nombre);
+  return UNA_LETRA.test(limpio) ? limpio : null;
+}
+
+/**
+ * Lo que sale en {nombre} y {nombre_completo} para una persona de la lista:
+ * su nombre o, si no tiene, lo que se eligio para ese caso. Null donde no se
+ * sabe todavia.
+ */
+export function personaDeEjemplo(destinatario, sinNombre) {
+  if (!destinatario) return null;
+  const otro = (sinNombre || '').trim() || null;
+  return {
+    nombre: primerNombre(destinatario.nombre) ?? otro,
+    completo: nombreCompleto(destinatario.nombre) ?? otro,
+  };
+}
+
+const VARIABLE = /\{\{\s*([^}]+?)\s*\}\}/g;
+const NOMBRES = /\{(nombre|nombre_completo)\}/gi;
+
+/** "{{1}}" por su valor; el campo sin llenar se queda como "{{1}}". */
+const conValores = (texto, valores) =>
+  String(texto || '').replace(VARIABLE, (todo, clave) => {
+    const v = valores?.[clave];
+    return typeof v === 'string' && v !== '' ? v : todo;
+  });
+
+/** "{nombre}" por el de la persona; sin persona se queda como esta. */
+const conNombre = (texto, persona) =>
+  persona
+    ? texto.replace(NOMBRES, (todo, cual) => {
+        const v =
+          cual.toLowerCase() === 'nombre' ? persona.nombre : persona.completo;
+        return v ?? todo;
+      })
+    : texto;
+
+const deTipo = (componentes, tipo) =>
+  (componentes || []).find(c => String(c?.type || '').toUpperCase() === tipo);
+
+/**
+ * El mensaje de una plantilla (sus `components`, como los copia Chatwoot de
+ * Meta) con los valores escritos (`processed_params`) y, si se da, con el
+ * nombre de una persona. Devuelve { cabecera, cuerpo, pie, botones }.
+ */
+export function vistaDeMensaje(componentes, params, persona) {
+  const cabecera = deTipo(componentes, 'HEADER');
+  const formato = String(cabecera?.format || '').toUpperCase();
+  const texto = t => conNombre(t, persona);
+  return {
+    cabecera: cabecera
+      ? {
+          tipo: formato || 'TEXT',
+          texto:
+            formato === 'TEXT' || !formato
+              ? texto(conValores(cabecera.text, params?.header))
+              : '',
+          url: texto(String(params?.header?.media_url || '')),
+        }
+      : null,
+    cuerpo: texto(conValores(deTipo(componentes, 'BODY')?.text, params?.body)),
+    pie: String(deTipo(componentes, 'FOOTER')?.text || ''),
+    botones: (deTipo(componentes, 'BUTTONS')?.buttons || []).map(b => ({
+      tipo: String(b?.type || '').toUpperCase(),
+      texto: String(b?.text || ''),
+    })),
+  };
+}
+
+/**
+ * Lo que falta para poder enviar, dicho para quien lo esta llenando. Vacio:
+ * se puede enviar. Sin esto el boton se quedaba apagado sin decir por que
+ * (25/11).
+ */
+export function queFalta(e) {
+  const falta = [];
+  if (!e.audiencia) falta.push('Pulsa «Ver a quiénes les llega» (paso 1).');
+  else if (!e.audiencia.total)
+    falta.push('Nadie recibe el mensaje: cambia a quiénes (paso 1).');
+  if (!e.hayPlantillas)
+    falta.push('Este número no tiene plantillas aprobadas (paso 2).');
+  else if (!e.plantilla) falta.push('Elige la plantilla (paso 2).');
+  else if (!e.plantillaLista)
+    falta.push('Llena todos los campos de la plantilla (paso 2).');
+  if (e.plantilla && e.pideNombre && !e.sinNombre.trim())
+    falta.push(
+      'Escribe qué poner cuando el contacto no tiene nombre (paso 2, debajo de los campos).'
+    );
+  if (!e.titulo.trim()) falta.push('Ponle un nombre al envío.');
+  if (e.confirmacion.trim().toUpperCase() !== CONFIRMACION)
+    falta.push(`Escribe ${CONFIRMACION} en el recuadro de abajo.`);
+  return falta;
+}
