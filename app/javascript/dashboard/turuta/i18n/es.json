@@ -288,7 +288,7 @@
   "COMPOSE_NEW_CONVERSATION": {
     "FORM": {
       "CONTACT_SELECTOR": {
-        "TAG_INPUT_PLACEHOLDER": "Escribe al menos 2 caracteres para buscar por nombre, correo o teléfono"
+        "TAG_INPUT_PLACEHOLDER": "Busca un contacto por nombre o teléfono, o escribe un número nuevo (987 654 321)"
       },
       "ERROR_MESSAGE": "Se ha producido un error al crear el chat. Por favor, inténtalo de nuevo más tarde.",
       "NO_INBOX_ALERT": "No hay bandejas de entrada disponibles para iniciar un chat con este contacto."

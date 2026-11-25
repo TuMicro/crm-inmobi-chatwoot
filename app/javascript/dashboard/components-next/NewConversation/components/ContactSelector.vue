@@ -5,6 +5,7 @@ import { INPUT_TYPES } from 'dashboard/components-next/taginput/helper/tagInputH
 
 import TagInput from 'dashboard/components-next/taginput/TagInput.vue';
 import Button from 'dashboard/components-next/button/Button.vue';
+import { conPrefijoDePeru, pareceTelefono } from 'dashboard/turuta/numeroNuevo';
 
 const props = defineProps({
   contacts: {
@@ -91,7 +92,9 @@ const handleInput = value => {
   // Update input type based on whether input starts with '+'
   // If it does, set input type to 'tel'
   // Otherwise, set input type to 'email'
-  inputType.value = value.startsWith('+') ? INPUT_TYPES.TEL : INPUT_TYPES.EMAIL;
+  // [turuta] Tambien si empieza por un digito: el celular a secas, que el
+  // campo completa con +51 (turuta/numeroNuevo.js).
+  inputType.value = pareceTelefono(value) ? INPUT_TYPES.TEL : INPUT_TYPES.EMAIL;
   emit('searchContacts', value);
 };
 </script>
@@ -142,6 +145,7 @@ const handleInput = value => {
         :is-loading="isLoading"
         :disabled="contactableInboxesList?.length > 0 && showInboxesDropdown"
         allow-create
+        :normalizar="conPrefijoDePeru"
         :type="inputType"
         class="flex-1 min-h-7"
         :class="errorClass"

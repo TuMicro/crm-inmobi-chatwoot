@@ -32,7 +32,7 @@
   "CONTACTS_BULK_ACTIONS.DELETE_DIALOG.DESCRIPTION": "Se eliminarán para siempre {count} contactos. Esta acción no se puede deshacer.",
   "CONTACTS_BULK_ACTIONS.DELETE_DIALOG.SINGULAR_DESCRIPTION": "Se eliminará para siempre el contacto seleccionado. Esta acción no se puede deshacer.",
   "CONTACTS_BULK_ACTIONS.DELETE_DIALOG.CONFIRM_MULTIPLE": "Eliminar contactos",
-  "COMPOSE_NEW_CONVERSATION.FORM.CONTACT_SELECTOR.TAG_INPUT_PLACEHOLDER": "Escribe al menos 2 caracteres para buscar por nombre, correo o teléfono",
+  "COMPOSE_NEW_CONVERSATION.FORM.CONTACT_SELECTOR.TAG_INPUT_PLACEHOLDER": "Busca un contacto por nombre o teléfono, o escribe un número nuevo (987 654 321)",
   "REPORT.DOWNLOAD_CONVERSATION_REPORTS": "Descargar informe de chats",
   "REPORT.METRICS.FIRST_RESPONSE_TIME.TOOLTIP_DESCRIPTION": "Calculado con {count} chat | Calculado con {count} chats",
   "REPORT.METRICS.RESOLUTION_TIME.TOOLTIP_DESCRIPTION": "Calculado con {count} chat | Calculado con {count} chats",

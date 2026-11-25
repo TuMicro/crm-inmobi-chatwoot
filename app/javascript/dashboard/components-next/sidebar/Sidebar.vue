@@ -645,6 +645,15 @@ const menuItems = computed(() => {
       to: accountScopedRoute('turuta_ia'),
       activeOn: ['turuta_ia'],
     },
+    // [turuta] Nuestra pagina: la misma plantilla a todos los chats de un
+    // filtro. Administradores y asesores; cada uno alcanza los chats que ve.
+    {
+      name: 'Turuta Mensajes masivos',
+      label: 'Mensajes masivos',
+      icon: 'i-lucide-megaphone',
+      to: accountScopedRoute('turuta_mensajes_masivos'),
+      activeOn: ['turuta_mensajes_masivos'],
+    },
     {
       name: 'Contacts',
       label: t('SIDEBAR.CONTACTS'),
@@ -1124,9 +1133,12 @@ const menuItems = computed(() => {
         >
           <span class="i-lucide-search size-4 text-n-slate-11" />
         </RouterLink>
-        <ComposeConversation v-if="false" align="start">
+        <!-- [turuta] El lapiz de "mensaje nuevo" vuelve (25/11): es como se le
+             escribe a alguien que no esta en el CRM, con su numero. -->
+        <ComposeConversation align="start">
           <template #trigger="{ isOpen }">
             <Button
+              v-tooltip.right="'Mensaje nuevo: a un contacto o a un número'"
               icon="i-lucide-pen-line"
               color="slate"
               size="sm"

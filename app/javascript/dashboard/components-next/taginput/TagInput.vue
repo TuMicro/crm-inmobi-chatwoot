@@ -41,6 +41,9 @@ const props = defineProps({
   skipLabelDedup: { type: Boolean, default: false },
   // When false, the dropdown won't auto-open on mount; it opens only on click/focus.
   autoOpenDropdown: { type: Boolean, default: true },
+  // [turuta] Arregla lo escrito cuando ya se sabe que es (un celular sin
+  // prefijo -> con +51). Devuelve el texto nuevo, o null para no tocarlo.
+  normalizar: { type: Function, default: null },
 });
 
 const emit = defineEmits([
@@ -194,6 +197,12 @@ watch(
 watch(
   () => newTag.value,
   async newValue => {
+    // [turuta] Ver la prop normalizar.
+    const arreglado = props.normalizar?.(newValue);
+    if (arreglado && arreglado !== newValue) {
+      newTag.value = arreglado;
+      return;
+    }
     if (props.type === 'email' && newValue?.trim()?.length > 2) {
       await v$.value.$validate();
     }

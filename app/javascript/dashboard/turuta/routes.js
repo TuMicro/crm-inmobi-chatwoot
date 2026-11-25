@@ -8,6 +8,7 @@ import ReiniciarLeadPage from './ReiniciarLeadPage.vue';
 import ImportarChatPage from './ImportarChatPage.vue';
 import CalendarioPage from './CalendarioPage.vue';
 import ColoresDeEtapaPage from './ColoresDeEtapaPage.vue';
+import MensajesMasivosPage from './MensajesMasivosPage.vue';
 
 export const routes = [
   {
@@ -33,6 +34,15 @@ export const routes = [
     // Solo administradores: el interruptor y lo que la IA dice de la empresa
     // no son cosa de un asesor. El item del menu se esconde solo.
     meta: { permissions: ['administrator'] },
+  },
+  {
+    path: frontendURL('accounts/:accountId/turuta/mensajes-masivos'),
+    name: 'turuta_mensajes_masivos',
+    component: MensajesMasivosPage,
+    // Tambien los asesores (lo pidio el cliente el 25/11). A quien alcanza
+    // cada uno lo decide la API con su token: un asesor, los chats que ve en
+    // su lista; un administrador, todos.
+    meta: { permissions: ['administrator', 'agent'] },
   },
   {
     path: frontendURL('accounts/:accountId/turuta/reiniciar-lead'),
