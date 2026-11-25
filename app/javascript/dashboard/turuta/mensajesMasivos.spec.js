@@ -1,6 +1,10 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import {
   avance,
+  borradorConAlgo,
+  guardarBorrador,
+  leerBorrador,
+  volcarValores,
   clienteDeDifusion,
   consultaDeFiltros,
   cuantoTarda,
@@ -216,5 +220,135 @@ describe('clienteDeDifusion', () => {
     await expect(clienteDeDifusion(null, usuario, 4).lista()).rejects.toThrow(
       'configuración'
     );
+  });
+});
+
+describe('clienteDeDifusion: la lista de numeros y la aprobacion', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  const conFetch = () => {
+    const llamadas = [];
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url, init = {}) => {
+        llamadas.push({
+          url,
+          metodo: init.method || 'GET',
+          cuerpo: init.body ? JSON.parse(init.body) : null,
+        });
+        return { ok: true, json: async () => ({}) };
+      })
+    );
+    const api = clienteDeDifusion(
+      { api: 'https://api.crm.x', token: 'T' },
+      { access_token: 'U' },
+      '4'
+    );
+    return { api, llamadas };
+  };
+  const BASE = 'https://api.crm.x/dashboard-app/difusiones';
+
+  it('la lista de numeros va tal cual: la lee el servidor', async () => {
+    const { api, llamadas } = conFetch();
+    await api.audienciaDeLista(3, '987654321, 912 345 678');
+    expect(llamadas[0]).toEqual({
+      url: `${BASE}/audiencia`,
+      metodo: 'POST',
+      cuerpo: { accountId: 4, inboxId: 3, lista: '987654321, 912 345 678' },
+    });
+  });
+
+  it('aprobar, no aprobar y dar permiso', async () => {
+    const { api, llamadas } = conFetch();
+    await api.aprobar('e1');
+    await api.rechazar('e1', 'ya terminó');
+    await api.permiso(9, true);
+    expect(llamadas).toEqual([
+      { url: `${BASE}/e1/aprobar`, metodo: 'POST', cuerpo: { accountId: 4 } },
+      {
+        url: `${BASE}/e1/rechazar`,
+        metodo: 'POST',
+        cuerpo: { accountId: 4, razon: 'ya terminó' },
+      },
+      {
+        url: `${BASE}/permisos`,
+        metodo: 'PUT',
+        cuerpo: { accountId: 4, agenteId: 9, directo: true },
+      },
+    ]);
+  });
+});
+
+describe('el borrador de un envio', () => {
+  const almacen = () => {
+    const datos = new Map();
+    return {
+      getItem: k => (datos.has(k) ? datos.get(k) : null),
+      setItem: (k, v) => datos.set(k, v),
+      removeItem: k => datos.delete(k),
+    };
+  };
+
+  it('se guarda por cuenta, se lee y se borra', () => {
+    const a = almacen();
+    guardarBorrador(1, { titulo: 'Promo' }, a);
+    expect(leerBorrador(1, a)).toEqual({ titulo: 'Promo' });
+    expect(leerBorrador(2, a)).toBeNull();
+    guardarBorrador(1, null, a);
+    expect(leerBorrador(1, a)).toBeNull();
+  });
+
+  it('un almacen roto o que no deja escribir no rompe la pagina', () => {
+    const roto = {
+      getItem: () => '{no es json',
+      setItem: () => {
+        throw new Error('lleno');
+      },
+      removeItem: () => {},
+    };
+    expect(leerBorrador(1, roto)).toBeNull();
+    expect(() => guardarBorrador(1, { titulo: 'x' }, roto)).not.toThrow();
+  });
+
+  it('borradorConAlgo: solo si hay algo escrito', () => {
+    expect(borradorConAlgo(null)).toBe(false);
+    // Lo que hay al abrir el formulario sin tocar nada: una fila sin valor.
+    expect(
+      borradorConAlgo({
+        modo: 'filtros',
+        lista: ' ',
+        titulo: '',
+        plantilla: '',
+        filas: [{ attributeKey: 'crm_stage_name', values: {} }],
+      })
+    ).toBe(false);
+    expect(borradorConAlgo({ titulo: 'Promo' })).toBe(true);
+    expect(borradorConAlgo({ lista: '987654321' })).toBe(true);
+    expect(borradorConAlgo({ plantilla: 'promo|es' })).toBe(true);
+    expect(
+      borradorConAlgo({ filas: [{ values: { id: 'Nuevo', name: 'Nuevo' } }] })
+    ).toBe(true);
+    expect(borradorConAlgo({ filas: [{ values: ['surco'] }] })).toBe(true);
+  });
+
+  it('volcarValores: pone lo escrito en los campos que la plantilla tiene, sin vaciar ninguno', () => {
+    const campos = {
+      body: { 1: '', 2: 'ya puesto', 3: '' },
+      header: { media_url: '' },
+      buttons: [{ type: 'url', parameter: '' }],
+    };
+    volcarValores(campos, {
+      body: { 1: '{nombre}', 2: '', 9: 'de otra plantilla' },
+      header: { media_url: 'https://x/y.jpg' },
+      buttons: [{ type: 'url', parameter: 'abc' }],
+    });
+    expect(campos).toEqual({
+      body: { 1: '{nombre}', 2: 'ya puesto', 3: '' },
+      header: { media_url: 'https://x/y.jpg' },
+      buttons: [{ type: 'url', parameter: 'abc' }],
+    });
+    // Sin nada guardado, o con cualquier cosa, no rompe.
+    expect(() => volcarValores(campos, undefined)).not.toThrow();
+    expect(() => volcarValores(null, { body: {} })).not.toThrow();
   });
 });

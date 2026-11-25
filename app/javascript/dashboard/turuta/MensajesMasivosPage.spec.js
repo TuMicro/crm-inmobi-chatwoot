@@ -11,6 +11,9 @@ const PLANTILLA = {
   components: [{ type: 'BODY', text: 'Hola {{1}}, hay novedades.' }],
 };
 const bandejas = ref([]);
+// El almacen de Chatwoot: se puede "recargar" a mitad de una prueba.
+const plantillasDe = ref(() => [PLANTILLA]);
+const agentes = ref([]);
 
 vi.mock('dashboard/composables/store', () => ({
   useStore: () => ({ dispatch: vi.fn() }),
@@ -21,7 +24,8 @@ vi.mock('dashboard/composables/store', () => ({
       ]),
       getCurrentUser: ref({ id: 7, name: 'Admin', access_token: 'U' }),
       'inboxes/getWhatsAppInboxes': bandejas,
-      'inboxes/getFilteredWhatsAppTemplates': ref(() => [PLANTILLA]),
+      'inboxes/getFilteredWhatsAppTemplates': plantillasDe,
+      'agents/getAgents': agentes,
     })[nombre],
 }));
 vi.mock('vue-router', () => ({
@@ -66,7 +70,7 @@ const FiltroFalso = {
   },
 };
 
-// El parser de plantillas, con los huecos ya rellenos.
+// El parser de plantillas, con los campos ya rellenos.
 const parametros = ref({ body: { 1: '{nombre}' } });
 const ParserFalso = {
   props: ['template'],
@@ -135,9 +139,39 @@ const AUDIENCIA = {
   ],
   fuera: { otraBandeja: 3, repetidos: 0 },
 };
+const AUDIENCIA_DE_LISTA = {
+  audienciaId: 'aud-2',
+  total: 2,
+  nuevos: 1,
+  destinatarios: [
+    {
+      conversationId: 10,
+      nombre: 'Ana',
+      telefono: '+51911111111',
+      etapa: 'Seguimiento',
+      asesor: 'Eva',
+    },
+    {
+      conversationId: null,
+      nombre: null,
+      telefono: '+51987654321',
+      etapa: null,
+      asesor: null,
+    },
+  ],
+  fuera: {
+    otraBandeja: 0,
+    repetidos: 1,
+    noReconocidos: ['Juan'],
+    usuariosSinChat: ['nadie'],
+    deOtroAsesor: 2,
+  },
+};
+const ADMIN = { admin: true, directo: true };
+const ASESOR = { admin: false, directo: false };
 
 /** La API: responde segun la ruta y apunta lo que se le pidio. */
-function api({ envios = [], error = null } = {}) {
+function api({ envios = [], error = null, yo = ADMIN, detalle = null } = {}) {
   const llamadas = [];
   const fetchFalso = vi.fn(async (url, init = {}) => {
     const ruta = url.replace('https://api.crm.x/dashboard-app/difusiones', '');
@@ -149,17 +183,37 @@ function api({ envios = [], error = null } = {}) {
       headers: init.headers,
     });
     if (error) return { ok: false, json: async () => ({ message: error }) };
-    let respuesta = { envios };
-    if (ruta === '/audiencia') respuesta = AUDIENCIA;
-    else if (ruta === '' && init.method === 'POST') respuesta = DETALLE;
+    const elDetalle = detalle || DETALLE;
+    let respuesta = { envios, yo, ...(yo.admin ? { directos: [] } : {}) };
+    if (ruta === '/audiencia')
+      respuesta = cuerpo.lista === undefined ? AUDIENCIA : AUDIENCIA_DE_LISTA;
+    else if (ruta === '/permisos')
+      respuesta = { directos: cuerpo.directo ? [cuerpo.agenteId] : [] };
+    else if (ruta === '' && init.method === 'POST')
+      respuesta = yo.directo
+        ? DETALLE
+        : { ...DETALLE, estado: 'PENDING_APPROVAL' };
     else if (ruta.endsWith('/cancelar'))
       respuesta = { ...DETALLE, estado: 'CANCELLED' };
-    else if (ruta.startsWith('/e1')) respuesta = DETALLE;
+    else if (ruta.endsWith('/aprobar'))
+      respuesta = { ...DETALLE, estado: 'SENDING', aprobadoPor: 'Admin' };
+    else if (ruta.endsWith('/rechazar'))
+      respuesta = {
+        ...DETALLE,
+        estado: 'REJECTED',
+        rechazadoPor: 'Admin',
+        razonDelRechazo: cuerpo.razon,
+      };
+    else if (ruta.startsWith('/e1')) respuesta = elDetalle;
     return { ok: true, json: async () => respuesta };
   });
   vi.stubGlobal('fetch', fetchFalso);
   return llamadas;
 }
+
+// Las pantallas montadas en una prueba: se desmontan al acabar, o seguirian
+// guardando su borrador mientras corre la siguiente.
+const montadas = [];
 
 const montar = async () => {
   const w = mount(MensajesMasivosPage, {
@@ -173,6 +227,7 @@ const montar = async () => {
     },
   });
   await flushPromises();
+  montadas.push(w);
   return w;
 };
 
@@ -203,8 +258,18 @@ describe('MensajesMasivosPage', () => {
     filtroValido.value = true;
     parametros.value = { body: { 1: '{nombre}' } };
     bandejas.value = [{ id: 3, name: 'Ventas', phone_number: '+51900000000' }];
+    plantillasDe.value = () => [PLANTILLA];
+    agentes.value = [
+      { id: 7, name: 'Admin', role: 'administrator' },
+      { id: 9, name: 'Eva', role: 'agent' },
+    ];
+    // El borrador de un envio vive en la pestana: cada prueba, la suya.
+    window.sessionStorage.clear();
   });
-  afterEach(() => vi.unstubAllGlobals());
+  afterEach(() => {
+    montadas.splice(0).forEach(w => w.unmount());
+    vi.unstubAllGlobals();
+  });
 
   it('sin envios, lo dice y ofrece hacer uno', async () => {
     const llamadas = api();
@@ -350,5 +415,265 @@ describe('MensajesMasivosPage', () => {
     await flushPromises();
     expect(w.text()).toContain('no tiene ningún número de WhatsApp');
     expect(w.find('[data-turuta="ver-audiencia"]').exists()).toBe(false);
+  });
+
+  // ------------------------------------------------- una lista de numeros
+
+  it('una lista de numeros: manda lo que se pego y dice quien es nuevo y que no entendio', async () => {
+    const llamadas = api();
+    const w = await montar();
+    await w.find('[data-turuta="nuevo-envio"]').trigger('click');
+    await flushPromises();
+    await w.find('[data-turuta="modo-lista"]').trigger('click');
+    await w
+      .find('[data-turuta="lista"]')
+      .setValue('911111111, 987 654 321\nJuan');
+    await w.find('[data-turuta="ver-audiencia"]').trigger('click');
+    await flushPromises();
+
+    const pedido = llamadas.find(l => l.ruta === '/audiencia');
+    expect(pedido.cuerpo).toEqual({
+      accountId: 1,
+      inboxId: 3,
+      lista: '911111111, 987 654 321\nJuan',
+    });
+    const lista = w.find('[data-turuta="audiencia"]');
+    expect(lista.text()).toContain('Les llega a 2 personas');
+    expect(lista.text()).toContain('es un número nuevo');
+    expect(lista.text()).toContain('Nuevo');
+    expect(lista.text()).toContain('Una entrada no es un número');
+    expect(lista.text()).toContain('Juan');
+    expect(lista.text()).toContain('@nadie');
+    expect(lista.text()).toContain('2 son leads de otro asesor');
+  });
+
+  it('una lista vacia no se manda', async () => {
+    const llamadas = api();
+    const w = await montar();
+    await w.find('[data-turuta="nuevo-envio"]').trigger('click');
+    await flushPromises();
+    await w.find('[data-turuta="modo-lista"]').trigger('click');
+    await w.find('[data-turuta="ver-audiencia"]').trigger('click');
+    await flushPromises();
+    expect(llamadas.some(l => l.ruta === '/audiencia')).toBe(false);
+    expect(w.text()).toContain('Escribe o pega al menos un número');
+  });
+
+  it('cambiar la lista despues de verla obliga a verla otra vez', async () => {
+    api();
+    const w = await montar();
+    await w.find('[data-turuta="nuevo-envio"]').trigger('click');
+    await flushPromises();
+    await w.find('[data-turuta="modo-lista"]').trigger('click');
+    await w.find('[data-turuta="lista"]').setValue('911111111');
+    await w.find('[data-turuta="ver-audiencia"]').trigger('click');
+    await flushPromises();
+    expect(w.find('[data-turuta="audiencia"]').exists()).toBe(true);
+    await w.find('[data-turuta="lista"]').setValue('911111111, 922222222');
+    await flushPromises();
+    expect(w.find('[data-turuta="audiencia"]').exists()).toBe(false);
+  });
+
+  // ------------------------------------------------------- la aprobacion
+
+  it('un asesor sin permiso no envia: solicita, y se le dice', async () => {
+    const llamadas = api({ yo: ASESOR });
+    const w = await montar();
+    await hastaEnviar(w);
+    expect(w.find('[data-turuta="pide-aprobacion"]').exists()).toBe(true);
+    expect(w.find('[data-turuta="enviar"]').text()).toContain(
+      'Solicitar envío a 2'
+    );
+    await escribir(w, 'Nombre del envío', 'Promo');
+    await escribir(w, 'Si el contacto no tiene nombre', 'vecino');
+    await escribir(w, 'Escribe ENVIAR', 'ENVIAR');
+    await w.find('form').trigger('submit');
+    await flushPromises();
+
+    expect(llamadas.some(l => l.ruta === '' && l.metodo === 'POST')).toBe(true);
+    expect(alerta).toHaveBeenCalledWith(
+      'Solicitud enviada: saldrá cuando un administrador la apruebe.'
+    );
+    expect(w.text()).toContain('Esperando la aprobación de un administrador');
+    // Puede retirarla; aprobarla, no.
+    expect(w.find('[data-turuta="retirar"]').exists()).toBe(true);
+    expect(w.find('[data-turuta="aprobar"]').exists()).toBe(false);
+  });
+
+  it('a quien envia directamente no se le habla de aprobacion', async () => {
+    api({ yo: { admin: false, directo: true } });
+    const w = await montar();
+    await hastaEnviar(w);
+    expect(w.find('[data-turuta="pide-aprobacion"]').exists()).toBe(false);
+    expect(w.find('[data-turuta="enviar"]').text()).toContain('Enviar a 2');
+  });
+
+  const PENDIENTE = { ...ENVIO, estado: 'PENDING_APPROVAL', creadoPor: 'Eva' };
+  const abrirPendiente = async yo => {
+    const llamadas = api({
+      envios: [PENDIENTE],
+      yo,
+      detalle: { ...DETALLE, estado: 'PENDING_APPROVAL', creadoPor: 'Eva' },
+    });
+    const w = await montar();
+    expect(w.find('[data-turuta="envio"]').text()).toContain(
+      'Espera aprobación'
+    );
+    await w.find('[data-turuta="envio"]').trigger('click');
+    await flushPromises();
+    return { w, llamadas };
+  };
+
+  it('un administrador aprueba el envio de un asesor, en dos pasos', async () => {
+    const { w, llamadas } = await abrirPendiente(ADMIN);
+    expect(w.find('[data-turuta="por-aprobar"]').text()).toContain(
+      'Eva pide enviar este mensaje a 2 personas'
+    );
+    await w.find('[data-turuta="aprobar"]').trigger('click');
+    // El primer clic no envia nada.
+    expect(llamadas.some(l => l.ruta.endsWith('/aprobar'))).toBe(false);
+    await w.find('[data-turuta="aprobar-si"]').trigger('click');
+    await flushPromises();
+    expect(llamadas.at(-1)).toMatchObject({
+      ruta: '/e1/aprobar',
+      metodo: 'POST',
+      cuerpo: { accountId: 1 },
+    });
+    expect(w.find('[data-turuta="por-aprobar"]').exists()).toBe(false);
+    expect(w.text()).toContain('aprobado por Admin');
+  });
+
+  it('un administrador no lo aprueba y dice por que', async () => {
+    const { w, llamadas } = await abrirPendiente(ADMIN);
+    await w.find('[data-turuta="no-aprobar"]').trigger('click');
+    await escribir(w, 'Por qué no', 'Esa promoción ya terminó');
+    await w.find('[data-turuta="por-aprobar"] form').trigger('submit');
+    await flushPromises();
+    expect(llamadas.at(-1)).toMatchObject({
+      ruta: '/e1/rechazar',
+      cuerpo: { accountId: 1, razon: 'Esa promoción ya terminó' },
+    });
+    expect(w.find('[data-turuta="rechazado"]').text()).toContain(
+      'Esa promoción ya terminó'
+    );
+  });
+
+  it('el asesor que lo pidio puede retirarlo', async () => {
+    const { w, llamadas } = await abrirPendiente(ASESOR);
+    await w.find('[data-turuta="retirar"]').trigger('click');
+    await flushPromises();
+    expect(llamadas.at(-1).ruta).toBe('/e1/cancelar');
+    expect(alerta).toHaveBeenCalledWith('Solicitud retirada: no sale nada.');
+  });
+
+  it('el administrador marca que asesor envia sin pedir aprobacion', async () => {
+    const llamadas = api();
+    const w = await montar();
+    const permisos = w.find('[data-turuta="permisos"]');
+    // Solo los asesores: un administrador no pide aprobacion a nadie.
+    expect(permisos.text()).toContain('Eva');
+    expect(permisos.text()).not.toContain('Admin');
+    expect(permisos.text()).toContain('pide aprobación');
+    await permisos.find('input[type="checkbox"]').setValue(true);
+    await flushPromises();
+    expect(llamadas.at(-1)).toMatchObject({
+      ruta: '/permisos',
+      metodo: 'PUT',
+      cuerpo: { accountId: 1, agenteId: 9, directo: true },
+    });
+    expect(permisos.text()).toContain('envía directamente');
+  });
+
+  it('un asesor no ve quien envia sin aprobacion', async () => {
+    api({ yo: ASESOR });
+    const w = await montar();
+    expect(w.find('[data-turuta="permisos"]').exists()).toBe(false);
+  });
+
+  // ---------------------------------------- lo escrito no se pierde (25/11)
+
+  it('Chatwoot recarga las bandejas: la plantilla elegida y sus campos siguen igual', async () => {
+    api();
+    const w = await montar();
+    await hastaEnviar(w);
+    const antes = w.findComponent(ParserFalso).props('template');
+    expect(antes).toEqual(PLANTILLA);
+    // Llega otra copia de las mismas plantillas, como cuando el servidor avisa
+    // de que cambiaron las bandejas.
+    plantillasDe.value = () => [JSON.parse(JSON.stringify(PLANTILLA))];
+    await flushPromises();
+    // El parser reinicia sus campos cuando cambia el objeto: no debe cambiar.
+    expect(w.findComponent(ParserFalso).props('template')).toBe(antes);
+  });
+
+  it('si la pagina se vuelve a montar, el formulario sigue como estaba', async () => {
+    api();
+    const w = await montar();
+    await w.find('[data-turuta="nuevo-envio"]').trigger('click');
+    await flushPromises();
+    await w.find('[data-turuta="modo-lista"]').trigger('click');
+    await w.find('[data-turuta="lista"]').setValue('911111111, 922222222');
+    await w.find('select').setValue('promo_noviembre|es');
+    await flushPromises();
+    parametros.value.body[1] = 'Surco';
+    await escribir(w, 'Nombre del envío', 'Promo BlackFriday');
+    w.unmount();
+
+    // El parser nuevo nace con sus campos vacios.
+    parametros.value = { body: { 1: '' } };
+    const w2 = await montar();
+    expect(w2.text()).toContain('Recuperamos lo que tenías escrito');
+    expect(w2.find('[data-turuta="lista"]').element.value).toBe(
+      '911111111, 922222222'
+    );
+    expect(w2.find('select').element.value).toBe('promo_noviembre|es');
+    expect(parametros.value.body[1]).toBe('Surco');
+    const titulo = w2
+      .findAll('label')
+      .find(l => l.text().includes('Nombre del envío'))
+      .element.closest('div')
+      .querySelector('input');
+    expect(titulo.value).toBe('Promo BlackFriday');
+
+    // Y se puede tirar.
+    await w2.find('[data-turuta="de-cero"]').trigger('click');
+    await flushPromises();
+    expect(w2.text()).not.toContain('Recuperamos lo que tenías escrito');
+    expect(w2.find('[data-turuta="lista"]').exists()).toBe(false);
+  });
+
+  it('salir del formulario a proposito lleva a la lista, pero guarda lo escrito', async () => {
+    api();
+    const w = await montar();
+    await w.find('[data-turuta="nuevo-envio"]').trigger('click');
+    await flushPromises();
+    await escribir(w, 'Nombre del envío', 'Promo');
+    await w
+      .findAll('button')
+      .find(b => b.text().includes('Volver a los envíos'))
+      .trigger('click');
+    await flushPromises();
+    w.unmount();
+
+    const w2 = await montar();
+    expect(w2.find('[data-turuta="nuevo-envio"]').exists()).toBe(true);
+    await w2.find('[data-turuta="nuevo-envio"]').trigger('click');
+    await flushPromises();
+    expect(w2.text()).toContain('Recuperamos lo que tenías escrito');
+  });
+
+  it('despues de enviar no queda borrador', async () => {
+    api();
+    const w = await montar();
+    await hastaEnviar(w);
+    await escribir(w, 'Nombre del envío', 'Promo');
+    await escribir(w, 'Si el contacto no tiene nombre', 'vecino');
+    await escribir(w, 'Escribe ENVIAR', 'ENVIAR');
+    await w.find('form').trigger('submit');
+    await flushPromises();
+    w.unmount();
+    const w2 = await montar();
+    expect(w2.find('[data-turuta="nuevo-envio"]').exists()).toBe(true);
+    expect(w2.text()).not.toContain('Recuperamos');
   });
 });

@@ -11,8 +11,8 @@ import filterQueryGenerator from 'dashboard/helper/filterQueryGenerator';
 /** Lo que hay que escribir para lanzar un envio. */
 export const CONFIRMACION = 'ENVIAR';
 
-/** Lo que se escribe en un hueco de la plantilla para poner el nombre. */
-export const HUECO_NOMBRE = '{nombre}';
+/** Lo que se escribe en un campo de la plantilla para poner el nombre. */
+export const CAMPO_NOMBRE = '{nombre}';
 
 /** Si una fila del filtro tiene con que filtrar. */
 const conValor = fila => {
@@ -111,6 +111,11 @@ export function cuantoTarda(personas) {
 }
 
 export const ESTADO_DE_ENVIO = {
+  PENDING_APPROVAL: {
+    texto: 'Espera aprobación',
+    clase: 'bg-n-blue-3 text-n-blue-11',
+  },
+  REJECTED: { texto: 'No aprobado', clase: 'bg-n-ruby-3 text-n-ruby-11' },
   SENDING: { texto: 'Enviando', clase: 'bg-n-amber-3 text-n-amber-11' },
   DONE: { texto: 'Terminado', clase: 'bg-n-teal-3 text-n-teal-11' },
   CANCELLED: { texto: 'Cancelado', clase: 'bg-n-alpha-2 text-n-slate-11' },
@@ -180,7 +185,78 @@ export function clienteDeDifusion(config, usuario, accountId) {
     lista: () => pedir(`?accountId=${cuenta}`),
     detalle: id => pedir(`/${id}?accountId=${cuenta}`),
     audiencia: (inboxId, filtros) => post('/audiencia', { inboxId, filtros }),
+    audienciaDeLista: (inboxId, lista) =>
+      post('/audiencia', { inboxId, lista }),
     crear: datos => post('', datos),
     cancelar: id => post(`/${id}/cancelar`, {}),
+    aprobar: id => post(`/${id}/aprobar`, {}),
+    rechazar: (id, razon) => post(`/${id}/rechazar`, { razon }),
+    permiso: (agenteId, directo) =>
+      pedir('/permisos', {
+        method: 'PUT',
+        body: JSON.stringify({ accountId: cuenta, agenteId, directo }),
+      }),
   };
+}
+
+// ------------------------------------------------------------- el borrador
+//
+// Lo que se lleva escrito de un envio nuevo se guarda en la pestana
+// (sessionStorage): si la pagina se vuelve a montar —se va a mirar un chat y se
+// vuelve, o se recarga— el formulario sigue como estaba. No se guarda ni la
+// lista de destinatarios (hay que volver a verla) ni la palabra ENVIAR.
+
+const claveDeBorrador = accountId => `turuta_masivos_borrador_${accountId}`;
+
+export function leerBorrador(accountId, almacen = window.sessionStorage) {
+  try {
+    const b = JSON.parse(almacen.getItem(claveDeBorrador(accountId)));
+    return b && typeof b === 'object' ? b : null;
+  } catch {
+    return null;
+  }
+}
+
+export function guardarBorrador(
+  accountId,
+  borrador,
+  almacen = window.sessionStorage
+) {
+  try {
+    if (borrador)
+      almacen.setItem(claveDeBorrador(accountId), JSON.stringify(borrador));
+    else almacen.removeItem(claveDeBorrador(accountId));
+  } catch {
+    // Sin sitio o sin permiso: el formulario funciona igual, solo no se guarda.
+  }
+}
+
+/** Si en un borrador hay algo escrito que valga la pena recuperar. */
+export function borradorConAlgo(b) {
+  if (!b) return false;
+  return !!(
+    (b.lista || '').trim() ||
+    (b.titulo || '').trim() ||
+    b.plantilla ||
+    (b.filas || []).some(f => {
+      const v = f?.values;
+      if (Array.isArray(v)) return v.length > 0;
+      if (v && typeof v === 'object') return Object.keys(v).length > 0;
+      return v !== '' && v !== null && v !== undefined;
+    })
+  );
+}
+
+/**
+ * Pone en los campos de una plantilla (processed_params: cuerpo, cabecera,
+ * botones) los valores que se habian escrito, EN EL SITIO: solo los campos que
+ * la plantilla tiene ahora, y sin vaciar ninguno.
+ */
+export function volcarValores(campos, guardados) {
+  if (!campos || typeof campos !== 'object') return;
+  Object.keys(campos).forEach(k => {
+    const g = guardados?.[k];
+    if (campos[k] && typeof campos[k] === 'object') volcarValores(campos[k], g);
+    else if (typeof g === 'string' && g !== '') campos[k] = g;
+  });
 }
