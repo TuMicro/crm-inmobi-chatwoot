@@ -87,6 +87,17 @@ jobs:
           ruby -ryaml -e 'ARGV.each { |f| YAML.load_file(f); puts "YAML OK #{f}" }' config/locales/turuta.es.yml config/locales/turuta.en.yml config/locales/secure_password.es.yml config/locales/turuta_mensajes.es.yml
           ruby -rerb -e 'File.write("/tmp/layout.rb", ERB.new(File.read("app/views/layouts/vueapp.html.erb"), trim_mode: "-").src)'
           ruby -c /tmp/layout.rb
+          # Instagram con inicio de sesion unificado, traido de Chatwoot 4.20.0 (PR #16645, #16646 y #16647)
+          for f in app/services/instagram/*.rb app/controllers/instagram/callbacks_controller.rb \
+                   app/controllers/api/v1/accounts/instagram/*.rb app/controllers/super_admin/app_configs_controller.rb \
+                   app/controllers/webhooks/instagram_controller.rb app/controllers/dashboard_controller.rb \
+                   app/helpers/instagram/integration_helper.rb app/models/channel/instagram.rb \
+                   app/models/installation_config.rb app/builders/messages/instagram/message_builder.rb \
+                   lib/redis/secure_storage.rb db/migrate/20261113073350_add_unified_login_to_channel_instagram.rb \
+                   db/schema.rb; do
+            ruby -c "$f"
+          done
+          ruby -ryaml -e 'ARGV.each { |f| YAML.load_file(f); puts "YAML OK #{f}" }' config/installation_config.yml config/locales/en.yml
 
       # Igual que hace Chatwoot para su imagen sin sufijo.
       - name: Fijar la edicion

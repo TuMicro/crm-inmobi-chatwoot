@@ -30,6 +30,16 @@
 # available at https://guides.rubyonrails.org/i18n.html.
 
 en:
+  instagram:
+    no_accounts: 'No Instagram accounts were shared. Connect again and select an Instagram professional account.'
+    connection_expired: 'This Instagram connection has expired. Please start again.'
+    authorization_expired: 'This Instagram authorization has expired. Please start the connection again.'
+    wrong_account: 'Please reconnect using the Instagram account already linked to this inbox.'
+    invalid_account: 'Please select an Instagram account shared during this connection.'
+    subscription_failed: 'Instagram messaging could not be enabled. Please check the app permissions and connect again.'
+    missing_credentials: 'Configure the Unified Login Meta app ID, secret, and configuration ID in Super Admin before connecting Instagram.'
+    request_failed: 'Instagram could not complete the request. Please try again.'
+    encryption_required: 'Configure the Active Record encryption keys before enabling Instagram Unified Login.'
   hello: 'Hello world'
   inbox:
     reauthorization:
