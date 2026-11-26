@@ -298,15 +298,11 @@ const TARJETA =
           class="flex flex-wrap items-end gap-3"
           @submit.prevent="guardarCopia"
         >
-          <div class="grow basis-64">
+          <div class="min-w-0 grow basis-64">
             <Input
               v-model="copia"
               label="Correos"
               placeholder="gerencia@empresa.com"
-              :message="
-                errorCopia ||
-                'Separados por comas. Las visitas ya agendadas que aún no han pasado también se ponen al día.'
-              "
               :message-type="errorCopia ? 'error' : 'info'"
             />
           </div>
@@ -319,6 +315,18 @@ const TARJETA =
             :disabled="!!errorCopia || !copiaCambiada"
           />
         </form>
+        <!-- La ayuda, aqui y no en `message` del Input: ese va en una sola
+             linea y un texto largo se sale de la tarjeta o se corta -->
+        <p
+          class="mb-0 text-xs"
+          :class="errorCopia ? 'text-n-ruby-9' : 'text-n-slate-11'"
+          data-turuta="ayuda-copia"
+        >
+          {{
+            errorCopia ||
+            'Separados por comas. Las visitas ya agendadas que aún no han pasado también se ponen al día.'
+          }}
+        </p>
       </section>
 
       <section

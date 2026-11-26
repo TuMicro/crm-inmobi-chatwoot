@@ -989,18 +989,28 @@ const AVISO = 'flex gap-3 px-4 py-3 text-sm rounded-lg';
                     :template="laPlantilla"
                   />
                 </div>
-                <Input
-                  v-if="pideNombre"
-                  v-model="sinNombre"
-                  label="Si el contacto no tiene nombre, poner (obligatorio)"
-                  placeholder="vecino"
-                  :message="
-                    sinNombre.trim()
-                      ? 'Un contacto sin guardar se llama como su número. En su lugar sale esto.'
-                      : 'Falta llenarlo: un contacto sin guardar se llama como su número, y en su lugar sale lo que pongas aquí.'
-                  "
-                  :message-type="sinNombre.trim() ? 'info' : 'error'"
-                />
+                <div v-if="pideNombre" class="flex flex-col gap-1">
+                  <Input
+                    v-model="sinNombre"
+                    label="Si el contacto no tiene nombre, poner (obligatorio)"
+                    placeholder="vecino"
+                    :message-type="sinNombre.trim() ? 'info' : 'error'"
+                  />
+                  <!-- La ayuda, aqui y no en `message` del Input: ese va en una
+                       sola linea y un texto largo se corta -->
+                  <p
+                    class="mb-0 text-xs"
+                    :class="
+                      sinNombre.trim() ? 'text-n-slate-11' : 'text-n-ruby-9'
+                    "
+                  >
+                    {{
+                      sinNombre.trim()
+                        ? 'Un contacto sin guardar se llama como su número. En su lugar sale esto.'
+                        : 'Falta llenarlo: un contacto sin guardar se llama como su número, y en su lugar sale lo que pongas aquí.'
+                    }}
+                  </p>
+                </div>
               </template>
             </template>
           </section>
@@ -1072,7 +1082,7 @@ const AVISO = 'flex gap-3 px-4 py-3 text-sm rounded-lg';
               class="flex flex-wrap items-end gap-3"
               @submit.prevent="enviar"
             >
-              <div class="grow basis-64">
+              <div class="min-w-0 grow basis-64">
                 <Input
                   v-model="confirmacion"
                   :label="`Escribe ${CONFIRMACION} para ${yo.directo ? 'lanzarlo' : 'solicitarlo'}`"
@@ -1213,7 +1223,7 @@ const AVISO = 'flex gap-3 px-4 py-3 text-sm rounded-lg';
                 class="flex flex-wrap items-end gap-2"
                 @submit.prevent="rechazar"
               >
-                <div class="grow basis-64">
+                <div class="min-w-0 grow basis-64">
                   <Input
                     v-model="razon"
                     label="Por qué no (lo verá quien lo pidió; puede ir vacío)"

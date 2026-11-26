@@ -141,25 +141,35 @@ const TARJETA =
           </div>
         </div>
 
-        <form class="flex flex-wrap items-end gap-3" @submit.prevent="buscar">
-          <div class="grow basis-64">
-            <Input
-              v-model="busqueda"
-              label="Número, usuario de WhatsApp o número del chat"
-              placeholder="+51 966 723 347 · @usuario · #63"
-              message="El número con el código de país (un celular de Perú de 9 dígitos también vale). Si escribe sin mostrar su número, su usuario de WhatsApp (@…) o el número del chat (#63, arriba del chat)."
+        <div class="flex flex-col gap-2">
+          <form class="flex flex-wrap items-end gap-3" @submit.prevent="buscar">
+            <!-- min-w-0: sin el, un texto largo dentro ensancha el campo
+                 hasta salirse de la tarjeta -->
+            <div class="min-w-0 grow basis-64">
+              <Input
+                v-model="busqueda"
+                label="Número, usuario de WhatsApp o número del chat"
+                placeholder="+51 966 723 347 · @usuario · #63"
+              />
+            </div>
+            <Button
+              type="submit"
+              label="Buscar"
+              icon="i-lucide-search"
+              variant="faded"
+              color="slate"
+              :is-loading="buscando"
+              :disabled="!busqueda.trim()"
             />
-          </div>
-          <Button
-            type="submit"
-            label="Buscar"
-            icon="i-lucide-search"
-            variant="faded"
-            color="slate"
-            :is-loading="buscando"
-            :disabled="!busqueda.trim()"
-          />
-        </form>
+          </form>
+          <!-- La ayuda, aqui y no en `message` del Input: ese va en una sola
+               linea, y con este texto el campo se salia de la tarjeta -->
+          <p class="mb-0 text-xs text-n-slate-11" data-turuta="ayuda-busqueda">
+            El número con el código de país (un celular de Perú de 9 dígitos
+            también vale). Si escribe sin mostrar su número, su usuario de
+            WhatsApp (@…) o el número del chat (#63, arriba del chat).
+          </p>
+        </div>
 
         <p v-if="errorBusqueda" class="mb-0 text-sm text-n-ruby-11">
           {{ errorBusqueda }}
@@ -194,7 +204,7 @@ const TARJETA =
             class="flex flex-wrap items-end gap-3"
             @submit.prevent="borrar"
           >
-            <div class="grow basis-64">
+            <div class="min-w-0 grow basis-64">
               <Input
                 v-model="confirmacion"
                 :label="`Escribe ${CONFIRMACION} para borrarlo`"
