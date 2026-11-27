@@ -72,6 +72,47 @@ jobs:
             # La marca principal de produccion va por TURUTA_BRAND_NAME, TURUTA_LOGO... en el .env de crm-inmobi: sus ficheros tienen que estar en la imagen
             %w[inmobipro-icon.png inmobipro-logo-dark.png inmobipro-logo-white.png].each { |f| raise "falta #{f}" unless File.exist?("public/brand-assets/#{f}") }
             puts "Marcas por dominio OK"'
+          # Volver al dominio de origen al conectar Instagram o TikTok (docs/21 § 4.4)
+          ruby -c app/services/turuta/dominio_de_origen.rb
+          ruby -c app/controllers/tiktok/callbacks_controller.rb
+          ruby -c app/controllers/api/v1/accounts/tiktok/authorizations_controller.rb
+          ruby -c app/helpers/tiktok/integration_helper.rb
+          ruby -e '
+            require "./app/services/turuta/dominio_de_origen"
+            d = Turuta::DominioDeOrigen
+            principal = "https://app.crm.inmobipro.com"
+            extra = "flyboard.crm.inmobipro.com crm.madhouseinmobiliaria.com"
+            raise "extra" unless d.extra("CRM.madhouseinmobiliaria.com", principal, extra) == "crm.madhouseinmobiliaria.com"
+            raise "principal" unless d.extra("app.crm.inmobipro.com", principal, "#{extra} app.crm.inmobipro.com").nil?
+            raise "fuera de la lista" unless d.extra("malo.com", principal, extra).nil?
+            raise "parecido" unless d.extra("crm.madhouseinmobiliaria.com.malo.com", principal, extra).nil?
+            raise "sin variable" unless d.extra("crm.madhouseinmobiliaria.com", principal, "").nil?
+            raise "opciones" unless d.opciones_de_url("crm.madhouseinmobiliaria.com", principal, extra) == { host: "crm.madhouseinmobiliaria.com", port: nil, protocol: "https" }
+            raise "opciones vacias" unless d.opciones_de_url("malo.com", principal, extra) == {}
+            # El controlador de la vuelta, sin Rails: a su dominio si, a otro no
+            base = Class.new do
+              attr_reader :destino
+              def default_url_options; { locale: "es" }; end
+              def redirect_to(url, opciones = {}); @destino = [url, opciones]; end
+            end
+            vuelta = Class.new(base) do
+              include Turuta::DominioDeOrigen::EnLaVuelta
+              def initialize(origen); @origen = origen; end
+              def dominio_de_origen; @origen; end
+            end
+            ENV["FRONTEND_URL"] = principal
+            ENV["CHATWOOT_HOSTS_EXTRA"] = extra
+            c = vuelta.new("crm.madhouseinmobiliaria.com")
+            raise "url de vuelta" unless c.default_url_options == { locale: "es", host: "crm.madhouseinmobiliaria.com", port: nil, protocol: "https" }
+            c.redirect_to("https://crm.madhouseinmobiliaria.com/app/accounts/1/settings/inboxes/new/instagram")
+            raise "su dominio" unless c.destino[1] == { allow_other_host: true }
+            c.redirect_to("https://malo.com/")
+            raise "otro dominio" unless c.destino[1] == {}
+            c = vuelta.new("malo.com")
+            raise "fuera de la lista" unless c.default_url_options == { locale: "es" }
+            c.redirect_to("https://malo.com/")
+            raise "sin permiso" unless c.destino[1] == {}
+            puts "Dominio de origen OK"'
           for f in app/services/turuta/own_conversations.rb app/services/turuta/own_conversations/*.rb; do ruby -c "$f"; done
           ruby -c app/services/conversations/permission_filter_service.rb
           ruby -c app/policies/conversation_policy.rb

@@ -136,4 +136,40 @@ RSpec.describe 'TikTok Callbacks', type: :request do
       )
     )
   end
+
+  # [turuta] Volver al dominio de origen (Turuta::DominioDeOrigen)
+  context 'when the state carries the extra domain the request came from' do
+    let(:state) do
+      JWT.encode({ sub: account.id, iat: Time.current.to_i, origin: 'crm.cliente.test' }, client_secret, 'HS256')
+    end
+
+    it 'creates the inbox and returns to that domain' do
+      with_modified_env TIKTOK_APP_ID: client_id, TIKTOK_APP_SECRET: client_secret, CHATWOOT_HOSTS_EXTRA: 'crm.cliente.test' do
+        expect do
+          get '/tiktok/callback', params: { code: 'valid_code', state: state }
+        end.to change(Inbox, :count).by(1)
+      end
+
+      expect(response.location).to eq("https://crm.cliente.test/app/accounts/#{account.id}/settings/inboxes/new/#{Inbox.last.id}/agents")
+    end
+
+    it 'returns errors to that domain too' do
+      with_modified_env TIKTOK_APP_ID: client_id, TIKTOK_APP_SECRET: client_secret, CHATWOOT_HOSTS_EXTRA: 'crm.cliente.test' do
+        get '/tiktok/callback', params: { error: 'access_denied', error_description: 'User cancelled', error_code: '400', state: state }
+      end
+
+      location = URI(response.location)
+      expect(location.host).to eq('crm.cliente.test')
+      expect(location.path).to eq("/app/accounts/#{account.id}/settings/inboxes/new/tiktok")
+      expect(Rack::Utils.parse_query(location.query)['error_type']).to eq('access_denied')
+    end
+
+    it 'stays on the main domain when that domain is not in CHATWOOT_HOSTS_EXTRA' do
+      with_modified_env TIKTOK_APP_ID: client_id, TIKTOK_APP_SECRET: client_secret, CHATWOOT_HOSTS_EXTRA: 'flyboard.crm.test' do
+        get '/tiktok/callback', params: { code: 'valid_code', state: state }
+      end
+
+      expect(response).to redirect_to(app_tiktok_inbox_agents_url(account_id: account.id, inbox_id: Inbox.last.id))
+    end
+  end
 end

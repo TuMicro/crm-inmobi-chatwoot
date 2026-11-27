@@ -1,5 +1,7 @@
 class Tiktok::CallbacksController < ApplicationController
   include Tiktok::IntegrationHelper
+  # [turuta] Volver al dominio por el que se pidio el permiso (dominio_de_origen, abajo)
+  include Turuta::DominioDeOrigen::EnLaVuelta
 
   def show
     return handle_authorization_error if params[:error].present?
@@ -156,5 +158,10 @@ class Tiktok::CallbacksController < ApplicationController
       business_id: short_term_access_token[:business_id],
       access_token: short_term_access_token[:access_token]
     )
+  end
+
+  # [turuta] Del state firmado
+  def dominio_de_origen
+    tiktok_token_origin(params[:state])
   end
 end

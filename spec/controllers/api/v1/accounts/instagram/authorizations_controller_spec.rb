@@ -41,6 +41,30 @@ RSpec.describe 'Instagram Authorization API', type: :request do
           expect(payload).to include('sub' => account.id, 'configuration_id' => 'config1', 'return_to' => 'onboarding')
         end
 
+        # [turuta] Volver al dominio de origen (Turuta::DominioDeOrigen)
+        it 'signs the extra domain the request came from, keeping the main domain as redirect_uri' do
+          host! 'crm.cliente.test'
+          with_modified_env CHATWOOT_HOSTS_EXTRA: 'flyboard.crm.test crm.cliente.test' do
+            post "/api/v1/accounts/#{account.id}/instagram/authorization", headers: administrator.create_new_auth_token, as: :json
+          end
+
+          query = Rack::Utils.parse_query(URI(response.parsed_body.fetch('url')).query)
+          expect(query.fetch('redirect_uri')).to eq("#{ENV.fetch('FRONTEND_URL', 'http://localhost:3000')}/instagram/callback")
+          payload = JWT.decode(query.fetch('state'), 'state_secret', true, algorithm: 'HS256').first
+          expect(payload).to include('sub' => account.id, 'origin' => 'crm.cliente.test')
+        end
+
+        it 'does not sign a domain that is not in CHATWOOT_HOSTS_EXTRA' do
+          host! 'malo.test'
+          with_modified_env CHATWOOT_HOSTS_EXTRA: 'crm.cliente.test' do
+            post "/api/v1/accounts/#{account.id}/instagram/authorization", headers: administrator.create_new_auth_token, as: :json
+          end
+
+          query = Rack::Utils.parse_query(URI(response.parsed_body.fetch('url')).query)
+          payload = JWT.decode(query.fetch('state'), 'state_secret', true, algorithm: 'HS256').first
+          expect(payload).not_to have_key('origin')
+        end
+
         it 'rejects an incomplete configuration before redirecting to Meta' do
           allow(Instagram::UnifiedLoginService).to receive(:credentials)
             .and_raise(Instagram::UnifiedLoginService::Error, I18n.t('instagram.missing_credentials'))

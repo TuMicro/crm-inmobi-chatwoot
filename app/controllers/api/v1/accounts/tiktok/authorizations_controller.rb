@@ -3,7 +3,8 @@ class Api::V1::Accounts::Tiktok::AuthorizationsController < Api::V1::Accounts::O
 
   def create
     redirect_url = Tiktok::AuthClient.authorize_url(
-      state: generate_tiktok_token(Current.account.id, params[:return_to])
+      # [turuta] origin: el dominio por el que se pide, para volver a el (Turuta::DominioDeOrigen)
+      state: generate_tiktok_token(Current.account.id, params[:return_to], origin: Turuta::DominioDeOrigen.extra(request.host_with_port))
     )
 
     if redirect_url
