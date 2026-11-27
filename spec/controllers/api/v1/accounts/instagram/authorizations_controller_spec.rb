@@ -65,6 +65,32 @@ RSpec.describe 'Instagram Authorization API', type: :request do
           expect(payload).not_to have_key('origin')
         end
 
+        # Produccion desde el 03/11: FRONTEND_URL es el dominio de MadHouse y la vuelta registrada, la de app.crm
+        it 'uses TURUTA_URL_DE_VUELTA as redirect_uri and signs FRONTEND_URL as origin when they differ' do
+          host! 'crm.cliente.test'
+          with_modified_env FRONTEND_URL: 'https://crm.cliente.test', CHATWOOT_HOSTS_EXTRA: 'app.crm.test',
+                            TURUTA_URL_DE_VUELTA: 'https://app.crm.test' do
+            post "/api/v1/accounts/#{account.id}/instagram/authorization", headers: administrator.create_new_auth_token, as: :json
+          end
+
+          query = Rack::Utils.parse_query(URI(response.parsed_body.fetch('url')).query)
+          expect(query.fetch('redirect_uri')).to eq('https://app.crm.test/instagram/callback')
+          payload = JWT.decode(query.fetch('state'), 'state_secret', true, algorithm: 'HS256').first
+          expect(payload).to include('sub' => account.id, 'origin' => 'crm.cliente.test')
+        end
+
+        it 'does not sign the domain of TURUTA_URL_DE_VUELTA, where the callback already lands' do
+          host! 'app.crm.test'
+          with_modified_env FRONTEND_URL: 'https://crm.cliente.test', CHATWOOT_HOSTS_EXTRA: 'app.crm.test',
+                            TURUTA_URL_DE_VUELTA: 'https://app.crm.test' do
+            post "/api/v1/accounts/#{account.id}/instagram/authorization", headers: administrator.create_new_auth_token, as: :json
+          end
+
+          query = Rack::Utils.parse_query(URI(response.parsed_body.fetch('url')).query)
+          expect(query.fetch('redirect_uri')).to eq('https://app.crm.test/instagram/callback')
+          expect(JWT.decode(query.fetch('state'), 'state_secret', true, algorithm: 'HS256').first).not_to have_key('origin')
+        end
+
         it 'rejects an incomplete configuration before redirecting to Meta' do
           allow(Instagram::UnifiedLoginService).to receive(:credentials)
             .and_raise(Instagram::UnifiedLoginService::Error, I18n.t('instagram.missing_credentials'))

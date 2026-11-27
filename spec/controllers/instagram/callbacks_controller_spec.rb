@@ -114,6 +114,21 @@ RSpec.describe Instagram::CallbacksController do
         expect(location.host).to eq('test.host')
         expect(location.path).to eq("/app/accounts/#{account.id}/settings/inboxes/new/instagram")
       end
+
+      it 'exchanges the code with TURUTA_URL_DE_VUELTA and returns to FRONTEND_URL when the permission was asked from there' do
+        allow(controller).to receive(:base_url).and_call_original
+        allow(controller).to receive(:instagram_token_origin).and_return('crm.cliente.test')
+        with_modified_env FRONTEND_URL: 'https://crm.cliente.test', CHATWOOT_HOSTS_EXTRA: 'app.chatwoot.com',
+                          TURUTA_URL_DE_VUELTA: 'https://app.chatwoot.com' do
+          get :show, params: valid_params
+        end
+
+        expect(a_request(:get, 'https://graph.facebook.com/v22.0/oauth/access_token')
+          .with(query: hash_including(redirect_uri: 'https://app.chatwoot.com/instagram/callback'))).to have_been_made
+        location = URI(response.location)
+        expect([location.scheme, location.host]).to eq(%w[https crm.cliente.test])
+        expect(Rack::Utils.parse_query(location.query)).to have_key('connection_token')
+      end
     end
 
     context 'with expired signed state' do

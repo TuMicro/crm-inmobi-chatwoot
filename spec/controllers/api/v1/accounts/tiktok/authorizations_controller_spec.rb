@@ -64,6 +64,19 @@ RSpec.describe 'TikTok Authorization API', type: :request do
         payload = JWT.decode(query.fetch('state'), 'tiktok-app-secret', true, algorithm: 'HS256').first
         expect(payload).to include('sub' => account.id, 'origin' => 'crm.cliente.test')
       end
+
+      it 'uses TURUTA_URL_DE_VUELTA as redirect_uri and signs FRONTEND_URL as origin when they differ' do
+        host! 'crm.cliente.test'
+        with_modified_env TIKTOK_APP_ID: 'tiktok-app-id', TIKTOK_APP_SECRET: 'tiktok-app-secret', FRONTEND_URL: 'https://crm.cliente.test',
+                          CHATWOOT_HOSTS_EXTRA: 'app.crm.test', TURUTA_URL_DE_VUELTA: 'https://app.crm.test' do
+          post "/api/v1/accounts/#{account.id}/tiktok/authorization", headers: administrator.create_new_auth_token, as: :json
+        end
+
+        query = Rack::Utils.parse_query(URI(response.parsed_body.fetch('url')).query)
+        expect(query.fetch('redirect_uri')).to eq('https://app.crm.test/tiktok/callback')
+        payload = JWT.decode(query.fetch('state'), 'tiktok-app-secret', true, algorithm: 'HS256').first
+        expect(payload).to include('sub' => account.id, 'origin' => 'crm.cliente.test')
+      end
     end
   end
 end

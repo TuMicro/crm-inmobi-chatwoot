@@ -35,7 +35,7 @@ class Api::V1::Accounts::Instagram::AuthorizationsController < Api::V1::Accounts
   def authorization_state
     inbox = Current.account.inboxes.where(channel_type: 'Channel::Instagram').find(params[:inbox_id]) if params[:inbox_id].present?
     # [turuta] origin: el dominio por el que se pide, para volver a el (Turuta::DominioDeOrigen)
-    origin = Turuta::DominioDeOrigen.extra(request.host_with_port)
+    origin = Turuta::DominioDeOrigen.origen(request.host_with_port)
     generate_instagram_token(Current.account.id, params[:return_to], inbox_id: inbox&.id, origin: origin)
   end
 

@@ -6,7 +6,7 @@ module Instagram::IntegrationHelper
   # @param account_id [Integer] The account ID to encode in the token
   # @param return_to [String, nil] Optional onboarding return hint
   # @return [String, nil] The encoded JWT token or nil if client secret is missing
-  # [turuta] origin: el dominio extra por el que se pidio (Turuta::DominioDeOrigen)
+  # [turuta] origin: el dominio por el que se pidio, para volver a el (Turuta::DominioDeOrigen)
   def generate_instagram_token(account_id, return_to = nil, inbox_id: nil, origin: nil)
     return if client_secret.blank?
 
