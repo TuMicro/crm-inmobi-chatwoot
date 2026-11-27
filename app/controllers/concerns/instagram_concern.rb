@@ -68,7 +68,9 @@ module InstagramConcern
     end
   end
 
+  # [turuta] La de la vuelta registrada en Meta: TURUTA_URL_DE_VUELTA o, si falta,
+  # FRONTEND_URL (Turuta::DominioDeOrigen). Solo se usa para la redirect_uri.
   def base_url
-    ENV.fetch('FRONTEND_URL', 'http://localhost:3000')
+    Turuta::DominioDeOrigen.url_de_vuelta
   end
 end

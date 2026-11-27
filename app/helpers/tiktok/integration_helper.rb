@@ -4,10 +4,11 @@ module Tiktok::IntegrationHelper
   # @param account_id [Integer] The account ID to encode in the token
   # @param return_to [String, nil] Optional onboarding return hint
   # @return [String, nil] The encoded JWT token or nil if client secret is missing
-  def generate_tiktok_token(account_id, return_to = nil)
+  # [turuta] origin: el dominio por el que se pidio, para volver a el (Turuta::DominioDeOrigen)
+  def generate_tiktok_token(account_id, return_to = nil, origin: nil)
     return if client_secret.blank?
 
-    JWT.encode(token_payload(account_id, return_to), client_secret, 'HS256')
+    JWT.encode(token_payload(account_id, return_to, origin: origin), client_secret, 'HS256')
   rescue StandardError => e
     Rails.logger.error("Failed to generate TikTok token: #{e.message}")
     nil
@@ -30,15 +31,25 @@ module Tiktok::IntegrationHelper
     decode_token(token, client_secret)&.dig('return_to')
   end
 
+  # [turuta] El dominio por el que se pidio el permiso, para volver a el
+  # (docs/21 § 4.4 en crm-inmobi). Turuta::DominioDeOrigen lo comprueba otra
+  # vez contra la lista.
+  def tiktok_token_origin(token)
+    return if token.blank? || client_secret.blank?
+
+    decode_token(token, client_secret)&.dig('origin')
+  end
+
   private
 
   def client_secret
     @client_secret ||= GlobalConfigService.load('TIKTOK_APP_SECRET', nil)
   end
 
-  def token_payload(account_id, return_to = nil)
+  def token_payload(account_id, return_to = nil, origin: nil)
     payload = { sub: account_id, iat: Time.current.to_i }
     payload[:return_to] = return_to if return_to.present?
+    payload[:origin] = origin if origin.present? # [turuta]
     payload
   end
 

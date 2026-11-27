@@ -1,6 +1,8 @@
 class Instagram::CallbacksController < ApplicationController
   include InstagramConcern
   include Instagram::IntegrationHelper
+  # [turuta] Volver al dominio por el que se pidio el permiso (dominio_de_origen, abajo)
+  include Turuta::DominioDeOrigen::EnLaVuelta
 
   def show
     return handle_invalid_state if account_id.blank?
@@ -226,5 +228,10 @@ class Instagram::CallbacksController < ApplicationController
 
   def provider_name
     'instagram'
+  end
+
+  # [turuta] Del state firmado, tambien si caduco (para la pagina de reintentar)
+  def dominio_de_origen
+    instagram_token_origin(params[:state])
   end
 end

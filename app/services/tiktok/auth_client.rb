@@ -138,8 +138,10 @@ class Tiktok::AuthClient
       "#{base_url}/webhooks/tiktok"
     end
 
+    # [turuta] La de lo registrado en TikTok (vuelta y webhook): TURUTA_URL_DE_VUELTA
+    # o, si falta, FRONTEND_URL (Turuta::DominioDeOrigen)
     def base_url
-      ENV.fetch('FRONTEND_URL', 'http://localhost:3000')
+      Turuta::DominioDeOrigen.url_de_vuelta
     end
 
     def api_base_url

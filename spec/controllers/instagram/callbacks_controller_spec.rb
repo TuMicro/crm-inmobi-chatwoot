@@ -89,6 +89,46 @@ RSpec.describe Instagram::CallbacksController do
         expect(query['error_type']).to eq('Instagram::ConnectionError')
         expect(channel.reload[:access_token]).not_to eq('system_token')
       end
+
+      # [turuta] Volver al dominio de origen (Turuta::DominioDeOrigen)
+      it 'returns to the extra domain signed in the state, where the administrator is signed in' do
+        allow(controller).to receive(:instagram_token_origin).and_return('crm.cliente.test')
+        with_modified_env CHATWOOT_HOSTS_EXTRA: 'flyboard.crm.test crm.cliente.test' do
+          expect { get :show, params: valid_params }.not_to change(Inbox, :count)
+        end
+
+        location = URI(response.location)
+        expect([location.scheme, location.host]).to eq(%w[https crm.cliente.test])
+        expect(location.path).to eq("/app/accounts/#{account.id}/settings/inboxes/new/instagram")
+        token = Rack::Utils.parse_query(location.query).fetch('connection_token')
+        expect(Instagram::PendingConnection.new(account: account, token: token).accounts.pluck('id')).to eq(%w[12345 67890])
+      end
+
+      it 'stays on the main domain when the signed domain is not in CHATWOOT_HOSTS_EXTRA' do
+        allow(controller).to receive(:instagram_token_origin).and_return('crm.cliente.test')
+        with_modified_env CHATWOOT_HOSTS_EXTRA: 'flyboard.crm.test' do
+          get :show, params: valid_params
+        end
+
+        location = URI(response.location)
+        expect(location.host).to eq('test.host')
+        expect(location.path).to eq("/app/accounts/#{account.id}/settings/inboxes/new/instagram")
+      end
+
+      it 'exchanges the code with TURUTA_URL_DE_VUELTA and returns to FRONTEND_URL when the permission was asked from there' do
+        allow(controller).to receive(:base_url).and_call_original
+        allow(controller).to receive(:instagram_token_origin).and_return('crm.cliente.test')
+        with_modified_env FRONTEND_URL: 'https://crm.cliente.test', CHATWOOT_HOSTS_EXTRA: 'app.chatwoot.com',
+                          TURUTA_URL_DE_VUELTA: 'https://app.chatwoot.com' do
+          get :show, params: valid_params
+        end
+
+        expect(a_request(:get, 'https://graph.facebook.com/v22.0/oauth/access_token')
+          .with(query: hash_including(redirect_uri: 'https://app.chatwoot.com/instagram/callback'))).to have_been_made
+        location = URI(response.location)
+        expect([location.scheme, location.host]).to eq(%w[https crm.cliente.test])
+        expect(Rack::Utils.parse_query(location.query)).to have_key('connection_token')
+      end
     end
 
     context 'with expired signed state' do
@@ -121,6 +161,24 @@ RSpec.describe Instagram::CallbacksController do
         get :show, params: { code: 'valid_code', state: state }
         expect(response).to have_http_status(:redirect)
         expect(Rack::Utils.parse_query(URI(response.location).query)['error_message']).to eq(I18n.t('instagram.authorization_expired'))
+      end
+
+      # [turuta] Volver al dominio de origen (Turuta::DominioDeOrigen)
+      it 'sends an expired connection to the retry page on the domain signed in the state' do
+        state = JWT.encode({ sub: account.id, exp: 1.minute.ago.to_i, origin: 'crm.cliente.test' }, 'state_secret', 'HS256')
+        with_modified_env CHATWOOT_HOSTS_EXTRA: 'crm.cliente.test' do
+          get :show, params: { code: 'valid_code', state: state }
+        end
+
+        location = URI(response.location)
+        expect(location.host).to eq('crm.cliente.test')
+        expect(location.path).to eq("/app/accounts/#{account.id}/settings/inboxes/new/instagram")
+        expect(Rack::Utils.parse_query(location.query)['error_type']).to eq('authorization_expired')
+      end
+
+      it 'ignores the domain of a state with an invalid signature' do
+        state = JWT.encode({ sub: account.id, exp: 1.minute.ago.to_i, origin: 'crm.cliente.test' }, 'wrong_secret', 'HS256')
+        expect(controller.instagram_token_origin(state)).to be_nil
       end
     end
 
@@ -157,6 +215,16 @@ RSpec.describe Instagram::CallbacksController do
 
         expect(Inbox.last.channel.reauthorization_required?).to be false
         expect(response).to redirect_to(app_instagram_inbox_agents_url(account_id: account.id, inbox_id: Inbox.last.id))
+      end
+
+      # [turuta] Volver al dominio de origen (Turuta::DominioDeOrigen)
+      it 'creates the inbox and returns to the extra domain signed in the state' do
+        allow(controller).to receive(:instagram_token_origin).and_return('crm.cliente.test')
+        with_modified_env CHATWOOT_HOSTS_EXTRA: 'crm.cliente.test' do
+          expect { get :show, params: valid_params }.to change(Inbox, :count).by(1)
+        end
+
+        expect(response.location).to eq("https://crm.cliente.test/app/accounts/#{account.id}/settings/inboxes/new/#{Inbox.last.id}/agents")
       end
 
       it 'updates existing channel with new token' do

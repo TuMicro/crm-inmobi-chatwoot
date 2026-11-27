@@ -6,21 +6,33 @@ module Instagram::IntegrationHelper
   # @param account_id [Integer] The account ID to encode in the token
   # @param return_to [String, nil] Optional onboarding return hint
   # @return [String, nil] The encoded JWT token or nil if client secret is missing
-  def generate_instagram_token(account_id, return_to = nil, inbox_id: nil)
+  # [turuta] origin: el dominio por el que se pidio, para volver a el (Turuta::DominioDeOrigen)
+  def generate_instagram_token(account_id, return_to = nil, inbox_id: nil, origin: nil)
     return if client_secret.blank?
 
-    JWT.encode(token_payload(account_id, return_to, inbox_id: inbox_id), client_secret, 'HS256')
+    JWT.encode(token_payload(account_id, return_to, inbox_id: inbox_id, origin: origin), client_secret, 'HS256')
   rescue StandardError => e
     Rails.logger.error("Failed to generate Instagram token: #{e.message}")
     nil
   end
 
-  def token_payload(account_id, return_to = nil, inbox_id: nil)
+  def token_payload(account_id, return_to = nil, inbox_id: nil, origin: nil)
     payload = { sub: account_id, iat: Time.current.to_i, exp: 15.minutes.from_now.to_i }
     payload[:return_to] = return_to if return_to.present?
     payload[:inbox_id] = inbox_id if inbox_id.present?
     payload[:configuration_id] = instagram_configuration_id if instagram_configuration_id.present?
+    payload[:origin] = origin if origin.present? # [turuta]
     payload
+  end
+
+  # [turuta] El dominio por el que se pidio el permiso, para volver a el
+  # (docs/21 § 4.4 en crm-inmobi). Tambien de un state caducado, con la firma
+  # comprobada: solo elige a cual de los dominios del CRM se vuelve, y
+  # Turuta::DominioDeOrigen lo comprueba otra vez contra la lista.
+  def instagram_token_origin(token)
+    return if token.blank? || client_secret.blank?
+
+    decode_token(token, client_secret, verify_expiration: false)&.dig('origin')
   end
 
   # Verifies and decodes a Instagram JWT token
