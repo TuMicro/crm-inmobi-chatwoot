@@ -134,3 +134,57 @@ describe('momentoPorDefecto', () => {
     expect(momentoPorDefecto(null)).toBe(null);
   });
 });
+
+describe('avisoDelRecordatorio en las redes (docs/21 D3)', () => {
+  // La visita: viernes 23, 3:05 p. m. en Lima. El lead escribio por
+  // Instagram el jueves 22 a las 10:00 a. m.: la ventana se cierra el viernes
+  // 23 a las 10:00 a. m. (15:00 UTC).
+  const instagram = {
+    canal: 'instagram',
+    nombre: 'Instagram',
+    horas: 24,
+    abierta: true,
+    cierraEn: '2026-10-23T15:00:00Z',
+    fuera: 'esperar',
+  };
+
+  it('si a esa hora la ventana sigue abierta, le llega en ese chat', () => {
+    expect(aviso({ horas: 6, ventana: instagram })).toEqual({
+      error: false,
+      texto: 'Le llegará el viernes 23, 9:05 a. m., en este chat de Instagram.',
+    });
+  });
+
+  it('si ya estara cerrada, avisa (pero se puede guardar)', () => {
+    expect(aviso({ horas: 2, ventana: instagram })).toEqual({
+      error: false,
+      aviso: true,
+      texto:
+        'Saldría el viernes 23, 1:05 p. m., pero a esa hora ya habrá pasado la ventana de 24 h de Instagram: si el lead no vuelve a escribir antes, no se enviará.',
+    });
+    // Sin ventana conocida (nunca escribio), tambien.
+    expect(
+      aviso({ horas: 2, ventana: { ...instagram, cierraEn: null } }).aviso
+    ).toBe(true);
+  });
+
+  it('el dia anterior vale sin plantilla: en las redes no las hay', () => {
+    const tiktok = {
+      ...instagram,
+      canal: 'tiktok',
+      nombre: 'TikTok',
+      horas: 48,
+      cierraEn: '2026-10-24T15:00:00Z',
+    };
+    expect(aviso({ horas: 24, ventana: tiktok })).toEqual({
+      error: false,
+      texto: 'Le llegará el jueves 22, 3:05 p. m., en este chat de TikTok.',
+    });
+  });
+
+  it('en WhatsApp nada cambia', () => {
+    const whatsapp = { canal: 'whatsapp', nombre: 'WhatsApp', horas: 24 };
+    expect(aviso({ horas: 2, ventana: whatsapp })).toEqual(aviso({ horas: 2 }));
+    expect(aviso({ horas: 24, ventana: whatsapp }).error).toBe(true);
+  });
+});

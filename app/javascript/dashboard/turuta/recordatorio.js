@@ -3,6 +3,7 @@
 // siempre 2). La regla de verdad esta en nuestra API (visits.logic.ts); esto
 // es lo que el formulario dice antes de guardar. Funciones puras:
 // recordatorio.spec.js.
+import { abiertaA, esRed } from './ventana';
 
 export const HORAS_POR_DEFECTO = 2;
 export const MIN_HORAS = 1;
@@ -84,6 +85,12 @@ function errorDelMomento(visita, sale, ahora) {
  * - Saldria un dia antes que la visita y su plantilla no esta aprobada en
  *   Meta: error, porque la de siempre dice "tu visita de hoy".
  * - Si no, cuando sale.
+ * En Messenger, Instagram o TikTok (`ventana`, la del lead; docs/21 D3 del
+ * repo crm-inmobi) no hay plantillas, y el recordatorio es un texto que solo
+ * sale dentro de la ventana:
+ * - El dia anterior vale: no hace falta plantilla.
+ * - Si a esa hora la ventana ya estara cerrada: `aviso` (se puede guardar),
+ *   no saldra si el lead no vuelve a escribir antes.
  */
 export function avisoDelRecordatorio({
   visitaIso,
@@ -92,6 +99,7 @@ export function avisoDelRecordatorio({
   ahora = new Date(),
   zona = 'America/Lima',
   plantillaDelDia = false,
+  ventana = null,
 }) {
   const porMomento = momentoIso !== undefined;
   const h = porMomento ? null : horasValidas(horas);
@@ -117,7 +125,8 @@ export function avisoDelRecordatorio({
       };
     }
   }
-  if (diaEn(sale, zona) !== diaEn(visita, zona) && !plantillaDelDia) {
+  const enRed = esRed(ventana);
+  if (!enRed && diaEn(sale, zona) !== diaEn(visita, zona) && !plantillaDelDia) {
     const falta =
       'Meta apruebe la plantilla del recordatorio del día anterior.';
     return {
@@ -128,6 +137,19 @@ export function avisoDelRecordatorio({
     };
   }
   const cuando = cuandoEn(sale, zona);
+  if (enRed && !abiertaA(ventana, sale)) {
+    return {
+      error: false,
+      aviso: true,
+      texto: `Saldría ${cuando}, pero a esa hora ya habrá pasado la ventana de ${ventana.horas} h de ${ventana.nombre}: si el lead no vuelve a escribir antes, no se enviará.`,
+    };
+  }
+  if (enRed) {
+    return {
+      error: false,
+      texto: `Le llegará ${cuando}, en este chat de ${ventana.nombre}.`,
+    };
+  }
   // "p. m." ya termina en punto.
   return {
     error: false,

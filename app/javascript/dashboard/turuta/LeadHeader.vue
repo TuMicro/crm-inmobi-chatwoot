@@ -30,13 +30,20 @@ import {
 import {
   textoError,
   cuandoVisita,
-  textoVisita,
   fechaInput,
   horaInput,
   isoDesdeInputs,
   textoIa,
   muestraIa,
 } from './leadApp';
+import {
+  ventanaDe,
+  esRed,
+  textoVentana,
+  avisoDeLaRed,
+  textoDeLaVisita,
+  avisoDeLaVisita,
+} from './ventana';
 
 const props = defineProps({
   conversationId: {
@@ -56,6 +63,21 @@ const { state, miId, cambiarEtapa, agendarVisita, quitarVisita, cambiarIa } =
   );
 
 const lead = computed(() => (state.lead?.found ? state.lead : null));
+// La ventana del canal de este chat (docs/21 § 4.2 del repo crm-inmobi): 24 h
+// en WhatsApp, Messenger e Instagram, 48 h en TikTok (turuta/ventana.js).
+const ventana = computed(() => ventanaDe(lead.value));
+const enRed = computed(() => esRed(ventana.value));
+const lineaVentana = computed(() => textoVentana(ventana.value));
+// El WhatsApp que dio un lead de redes para la visita (lo guarda la IA).
+const whatsappDelLead = computed(
+  () => props.contact?.custom_attributes?.whatsapp || ''
+);
+const avisoRed = computed(() =>
+  avisoDeLaRed(ventana.value, whatsappDelLead.value)
+);
+const avisoVisita = computed(() =>
+  avisoDeLaVisita(lead.value?.visita, ventana.value, whatsappDelLead.value)
+);
 const siguiente = computed(() => lead.value?.siguiente || null);
 const otras = computed(() =>
   (lead.value?.siguientes || []).filter(s => s.code !== siguiente.value?.code)
@@ -195,6 +217,7 @@ const avisoRecordatorio = computed(() =>
     momentoIso: momentoIso.value,
     zona: lead.value?.recordatorio?.zonaHoraria,
     plantillaDelDia: !!lead.value?.recordatorio?.plantillaDelDia,
+    ventana: ventana.value,
   })
 );
 const puedeGuardarVisita = computed(
@@ -383,22 +406,25 @@ const claseEtapa = computed(() => {
         <div v-if="lead.perdida.nota">{{ lead.perdida.nota }}</div>
       </div>
 
-      <!-- La ventana de 24 h: abierta, una linea discreta; cerrada, un aviso. -->
+      <!-- La ventana del canal (24 h; 48 h en TikTok): abierta, una linea
+           discreta; cerrada, un aviso con lo que se puede hacer en ese canal:
+           en WhatsApp, la plantilla; en las redes, esperar a que escriba. -->
       <div
-        v-if="lead.ventana24h"
+        v-if="lineaVentana.abierta"
         class="flex items-center gap-1.5 mt-2 text-xs text-n-slate-11"
+        data-turuta="lead-ventana"
       >
         <span class="flex-shrink-0 i-lucide-clock size-3.5 text-n-teal-10" />
-        <span>Ventana de 24 h abierta: responder es gratis.</span>
+        <span>{{ lineaVentana.texto }}</span>
       </div>
       <div
         v-else
         class="flex items-start gap-1.5 px-2 py-1.5 mt-2 text-xs rounded-lg bg-n-amber-2 text-n-amber-11"
+        data-turuta="lead-ventana"
       >
         <span class="flex-shrink-0 i-lucide-alert-triangle size-3.5 mt-px" />
         <span>
-          <b>Fuera de la ventana de 24 h.</b> Solo se puede escribir con una
-          plantilla aprobada, y tiene coste.
+          <b>{{ lineaVentana.titulo }}</b> {{ lineaVentana.texto }}
         </span>
       </div>
 
@@ -418,7 +444,19 @@ const claseEtapa = computed(() => {
         <div v-if="lead.visita.address" class="truncate text-n-slate-11">
           {{ lead.visita.address }}
         </div>
-        <div class="text-n-slate-11">{{ textoVisita(lead.visita) }}</div>
+        <div class="text-n-slate-11">
+          {{ textoDeLaVisita(lead.visita, ventana) }}
+        </div>
+        <!-- En las redes el recordatorio puede no salir (D3): por que y que
+             hacer. -->
+        <div
+          v-if="avisoVisita"
+          class="flex items-start gap-1.5 mt-1 text-n-amber-11"
+          data-turuta="visita-aviso-red"
+        >
+          <span class="flex-shrink-0 i-lucide-alert-triangle size-3.5 mt-px" />
+          <span>{{ avisoVisita }}</span>
+        </div>
         <!-- Google Calendar: en el de quien esta la visita, o por que no. -->
         <div
           v-if="lead.visita.calendario"
@@ -536,8 +574,18 @@ const claseEtapa = computed(() => {
         <div class="text-sm font-medium text-n-slate-12">
           {{ visitaPara ? 'Agendar la visita' : 'Cambiar la visita' }}
         </div>
-        <p class="mt-0.5 text-xs text-n-slate-11">
+        <p v-if="!enRed" class="mt-0.5 text-xs text-n-slate-11">
           Antes de la visita le llega al lead un recordatorio por WhatsApp.
+        </p>
+        <!-- En las redes no hay plantillas: el recordatorio es un texto en el
+             mismo chat y solo sale dentro de la ventana (docs/21 D3). -->
+        <p
+          v-else
+          class="flex items-start gap-1.5 px-2 py-1.5 mt-2 mb-0 text-xs rounded-lg bg-n-amber-2 text-n-amber-11"
+          data-turuta="visita-aviso-red"
+        >
+          <span class="flex-shrink-0 i-lucide-alert-triangle size-3.5 mt-px" />
+          <span>{{ avisoRed }}</span>
         </p>
         <!-- Al volver a "Visita agendada" con la visita anterior todavia en
              pie (17/11): el formulario trae sus datos, y se dice que pasa. -->
@@ -569,7 +617,7 @@ const claseEtapa = computed(() => {
           <CampoHora v-model="vHora" class="mt-1" data-turuta="visita-hora" />
         </div>
         <div class="mt-2 text-xs font-medium text-n-slate-11">
-          Recordatorio por WhatsApp
+          Recordatorio por {{ ventana.nombre }}
           <!-- Horas antes (lo comodo el mismo dia) o dia y hora (06/11: lo
                comodo para la vispera, sin contar horas). -->
           <span class="flex gap-0.5 p-0.5 mt-1 rounded-lg bg-n-alpha-2 w-fit">
@@ -626,7 +674,11 @@ const claseEtapa = computed(() => {
             v-if="avisoRecordatorio"
             class="block mt-1 font-normal"
             :class="
-              avisoRecordatorio.error ? 'text-n-ruby-11' : 'text-n-slate-10'
+              avisoRecordatorio.error
+                ? 'text-n-ruby-11'
+                : avisoRecordatorio.aviso
+                  ? 'text-n-amber-11'
+                  : 'text-n-slate-10'
             "
             data-turuta="visita-horas-aviso"
           >
