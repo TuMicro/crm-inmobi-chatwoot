@@ -84,6 +84,19 @@ es:
       not_required: "Esta bandeja no necesita volver a autorizarse"
       invalid_channel: "Este tipo de canal no se puede volver a autorizar"
 
+  # Instagram con el inicio de sesion unificado (4.17.1-87): errores al conectar
+  # o reconectar la cuenta, que llegan a la pantalla de anadir bandeja.
+  instagram:
+    no_accounts: "No se compartió ninguna cuenta de Instagram. Vuelve a conectar y elige una cuenta profesional de Instagram."
+    connection_expired: "Esta conexión con Instagram caducó. Empieza de nuevo."
+    authorization_expired: "La autorización de Instagram caducó. Vuelve a empezar la conexión."
+    wrong_account: "Vuelve a conectar con la cuenta de Instagram que ya está vinculada a esta bandeja."
+    invalid_account: "Elige una de las cuentas de Instagram que compartiste en esta conexión."
+    subscription_failed: "No se pudieron activar los mensajes de Instagram. Revisa los permisos de la app y vuelve a conectar."
+    missing_credentials: "Falta configurar en el super admin el ID de la app de Meta, su clave secreta y el ID de configuración del inicio de sesión unificado."
+    request_failed: "Instagram no pudo completar la solicitud. Inténtalo de nuevo."
+    encryption_required: "Faltan las claves de cifrado de Active Record, necesarias para el inicio de sesión unificado de Instagram."
+
   reports:
     agent_csv:
       conversations_count: "Chats asignados"

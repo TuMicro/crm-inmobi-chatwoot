@@ -444,6 +444,7 @@
     "SELECT_A_CONVERSATION": "Por favor, selecciona un chat del panel izquierdo",
     "SUCCESS_DELETE_CONVERSATION": "Chat eliminado con éxito",
     "TWILIO_WHATSAPP_CAN_REPLY": "Sólo puede responder a este chat usando una plantilla de mensaje debido a",
+    "UNSUPPORTED_MESSAGE_TIKTOK": "Este mensaje no es compatible. Puedes ver este mensaje en la aplicación de TikTok.",
     "VIEW_ORIGINAL": "Ver original",
     "VIEW_TRANSLATED": "Ver traducción",
     "VOICE_WIDGET": {
@@ -697,8 +698,66 @@
       }
     },
     "ADD": {
+      "AUTH": {
+        "CHANNEL": {
+          "API": {
+            "DESCRIPTION": "Crea un canal personalizado con nuestra API"
+          },
+          "EMAIL": {
+            "DESCRIPTION": "Conecta Gmail, Outlook u otros proveedores"
+          },
+          "FACEBOOK": {
+            "DESCRIPTION": "Conecta tu página de Facebook"
+          },
+          "INSTAGRAM": {
+            "DESCRIPTION": "Conecta tu cuenta de Instagram"
+          },
+          "LINE": {
+            "DESCRIPTION": "Integra tu canal de Line"
+          },
+          "SMS": {
+            "DESCRIPTION": "Integra un canal de SMS con Twilio o Bandwidth"
+          },
+          "TELEGRAM": {
+            "DESCRIPTION": "Configura un canal de Telegram con el token de un bot"
+          },
+          "TIKTOK": {
+            "DESCRIPTION": "Conecta tu cuenta de TikTok"
+          },
+          "VOICE": {
+            "DESCRIPTION": "Integra Twilio Voice",
+            "TITLE": "Voz"
+          },
+          "WEBSITE": {
+            "DESCRIPTION": "Crea un widget de chat en vivo"
+          },
+          "WHATSAPP": {
+            "DESCRIPTION": "Atiende a tus clientes por WhatsApp"
+          }
+        },
+        "TITLE_NEXT": "Completa la configuración"
+      },
       "FINISH": {
         "DESC": "Has terminado de integrar correctamente tu página de Facebook con Chatwoot. La próxima vez que un cliente envíe un mensaje a tu Página, el chat aparecerá automáticamente en tu bandeja de entrada.<br>También le estamos proporcionando un script de widget que puede agregar fácilmente a su sitio web. Una vez que esto está en vivo en tu sitio web, los clientes pueden enviarle mensajes directamente desde su sitio web sin la ayuda de ninguna herramienta externa y el chat aparecerá aquí, en Chatwoot.<br>¿Genial, eh? Bueno, estamos seguros de que intentaremos ser :)"
+      },
+      "INSTAGRAM": {
+        "CONNECT_ACCOUNT": "Conectar cuenta",
+        "CONNECT_YOUR_INSTAGRAM_PROFILE": "Conecta tu cuenta de Instagram",
+        "CONTINUE_WITH_INSTAGRAM": "Continuar con Instagram",
+        "DUPLICATE_INBOX_BANNER": "Esta cuenta de Instagram se trasladó a la nueva bandeja de Instagram. Desde esta bandeja ya no podrás enviar ni recibir sus mensajes.",
+        "ERROR_AUTH": "Hubo un error al conectar con Instagram. Inténtalo de nuevo.",
+        "ERROR_MESSAGE": "Hubo un error al conectar con Instagram. Inténtalo de nuevo.",
+        "HELP": "Para añadir tu cuenta de Instagram como canal, tienes que autorizarla con el botón «Continuar con Instagram».",
+        "NEW_INBOX_SUGGESTION": "Esta cuenta de Instagram estaba vinculada a otra bandeja y se ha trasladado aquí. Los mensajes nuevos llegarán a esta bandeja; la anterior ya no podrá enviar ni recibir mensajes de esta cuenta.",
+        "SELECT_ACCOUNT": "Elige una cuenta de Instagram",
+        "START_AGAIN": "Empezar de nuevo"
+      },
+      "TIKTOK": {
+        "CONNECT_YOUR_TIKTOK_PROFILE": "Conecta tu cuenta de TikTok",
+        "CONTINUE_WITH_TIKTOK": "Continuar con TikTok",
+        "ERROR_AUTH": "Hubo un error al conectar con TikTok. Inténtalo de nuevo.",
+        "ERROR_MESSAGE": "Hubo un error al conectar con TikTok. Inténtalo de nuevo.",
+        "HELP": "Para añadir tu cuenta de TikTok como canal, tienes que autorizarla con el botón «Continuar con TikTok»."
       },
       "TWITTER": {
         "TWEETS": {
@@ -741,6 +800,9 @@
     "AUTO_ASSIGNMENT": {
       "MAX_ASSIGNMENT_LIMIT_SUB_TEXT": "Limite la cantidad máxima de chats de esta bandeja de entrada que se pueden asignar automáticamente a un agente"
     },
+    "CHANNELS": {
+      "VOICE": "Voz"
+    },
     "CHANNEL_PREFERENCES": "Preferencias del canal",
     "COMPLETE_REGISTRATION": "Completar el registro",
     "COUNT": "{n} bandeja | {n} bandejas",
@@ -759,7 +821,10 @@
       "ALLOW_END_CONVERSATION": "Permitir a los usuarios finalizar chats desde el widget"
     },
     "FINISH": {
-      "WEBSITE_SUCCESS": "Has terminado de crear un canal del sitio web. Copia el código que se muestra a continuación y pégalo en tu sitio web. La próxima vez que un cliente use el chat en vivo, el chat aparecerá automáticamente en su bandeja de entrada."
+      "MESSENGER_QR_INSTRUCTION": "Escanea el código QR de arriba para probar rápidamente tu bandeja de Facebook Messenger",
+      "TELEGRAM_QR_INSTRUCTION": "Escanea el código QR de arriba para probar rápidamente tu bandeja de Telegram",
+      "WEBSITE_SUCCESS": "Has terminado de crear un canal del sitio web. Copia el código que se muestra a continuación y pégalo en tu sitio web. La próxima vez que un cliente use el chat en vivo, el chat aparecerá automáticamente en su bandeja de entrada.",
+      "WHATSAPP_QR_INSTRUCTION": "Escanea el código QR de arriba para probar rápidamente tu bandeja de WhatsApp"
     },
     "NO_RESULTS": "Ninguna bandeja coincide con la búsqueda",
     "PRE_CHAT_FORM": {
