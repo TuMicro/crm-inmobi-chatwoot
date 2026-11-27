@@ -60,12 +60,17 @@ jobs:
           ruby -e '
             require "./app/services/turuta/marca_por_dominio"
             m = Turuta::MarcaPorDominio
-            lista = "flyboard.crm.inmobipro.com=flyboard, otro.com=nada"
+            lista = "flyboard.crm.inmobipro.com=flyboard, otro.com=nada,crm.madhouseinmobiliaria.com=madhouse"
             raise "flyboard" unless m.de("Flyboard.crm.inmobipro.com", lista)["BRAND_NAME"] == "Flyboard CRM"
+            raise "madhouse" unless m.de("crm.madhouseinmobiliaria.com", lista)["LOGO"] == "/brand-assets/madhouse-logo-dark.png"
+            raise "madhouse sin webs ocultas" if m.de("crm.madhouseinmobiliaria.com", lista).key?("TURUTA_OCULTAR_WEBS")
             raise "otro dominio" unless m.de("staging.crm.inmobipro.com", lista).nil?
+            raise "dominio principal" unless m.de("app.crm.inmobipro.com", lista).nil?
             raise "marca que no existe" unless m.de("otro.com", lista).nil?
             raise "sin variable" unless m.de("flyboard.crm.inmobipro.com", "").nil?
             m::MARCAS.each_value { |marca| marca.each_value { |v| raise "falta #{v}" if v.is_a?(String) && v.start_with?("/brand-assets/") && !File.exist?("public#{v}") } }
+            # La marca principal de produccion va por TURUTA_BRAND_NAME, TURUTA_LOGO... en el .env de crm-inmobi: sus ficheros tienen que estar en la imagen
+            %w[inmobipro-icon.png inmobipro-logo-dark.png inmobipro-logo-white.png].each { |f| raise "falta #{f}" unless File.exist?("public/brand-assets/#{f}") }
             puts "Marcas por dominio OK"'
           for f in app/services/turuta/own_conversations.rb app/services/turuta/own_conversations/*.rb; do ruby -c "$f"; done
           ruby -c app/services/conversations/permission_filter_service.rb
